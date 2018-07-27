@@ -1,0 +1,125 @@
+#ifndef cert_h
+#define cert_h
+
+/* This is the CA certificate for the CA trust chain of
+   www.howsmyssl.com in PEM format, as dumped via:
+
+   openssl s_client -showcerts -connect mqtt.thingspeak.com:443 </dev/null
+
+   The CA cert is the last cert in the chain output by the server.
+*/
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
+// Create text cert for C
+// ex +'/BEGIN CERTIFICATE/,/END CERTIFICATE/p' <(echo | openssl s_client -showcerts -connect m13.cloudmqtt.com:28747) -scq > file.crt
+// file.crt has the below required info
+
+
+//get a certificate with a lot of info
+//openssl s_client -showcerts -connect m13.cloudmqtt.com:38747 </dev/null
+// dump to screen
+
+/*
+ 1 s:/C=US/O=Let's Encrypt/CN=Let's Encrypt Authority X3
+   i:/O=Digital Signature Trust Co./CN=DST Root CA X3
+ */
+/* //www.thingspeak.com
+const char *server_root_cert = "-----BEGIN CERTIFICATE-----\r\n"
+"MIIEsTCCA5mgAwIBAgIQBOHnpNxc8vNtwCtCuF0VnzANBgkqhkiG9w0BAQsFADBs\r\n"
+"MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\r\n"
+"d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBIaWdoIEFzc3VyYW5j\r\n"
+"ZSBFViBSb290IENBMB4XDTEzMTAyMjEyMDAwMFoXDTI4MTAyMjEyMDAwMFowcDEL\r\n"
+"MAkGA1UEBhMCVVMxFTATBgNVBAoTDERpZ2lDZXJ0IEluYzEZMBcGA1UECxMQd3d3\r\n"
+"LmRpZ2ljZXJ0LmNvbTEvMC0GA1UEAxMmRGlnaUNlcnQgU0hBMiBIaWdoIEFzc3Vy\r\n"
+"YW5jZSBTZXJ2ZXIgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQC2\r\n"
+"4C/CJAbIbQRf1+8KZAayfSImZRauQkCbztyfn3YHPsMwVYcZuU+UDlqUH1VWtMIC\r\n"
+"Kq/QmO4LQNfE0DtyyBSe75CxEamu0si4QzrZCwvV1ZX1QK/IHe1NnF9Xt4ZQaJn1\r\n"
+"itrSxwUfqJfJ3KSxgoQtxq2lnMcZgqaFD15EWCo3j/018QsIJzJa9buLnqS9UdAn\r\n"
+"4t07QjOjBSjEuyjMmqwrIw14xnvmXnG3Sj4I+4G3FhahnSMSTeXXkgisdaScus0X\r\n"
+"sh5ENWV/UyU50RwKmmMbGZJ0aAo3wsJSSMs5WqK24V3B3aAguCGikyZvFEohQcft\r\n"
+"bZvySC/zA/WiaJJTL17jAgMBAAGjggFJMIIBRTASBgNVHRMBAf8ECDAGAQH/AgEA\r\n"
+"MA4GA1UdDwEB/wQEAwIBhjAdBgNVHSUEFjAUBggrBgEFBQcDAQYIKwYBBQUHAwIw\r\n"
+"NAYIKwYBBQUHAQEEKDAmMCQGCCsGAQUFBzABhhhodHRwOi8vb2NzcC5kaWdpY2Vy\r\n"
+"dC5jb20wSwYDVR0fBEQwQjBAoD6gPIY6aHR0cDovL2NybDQuZGlnaWNlcnQuY29t\r\n"
+"L0RpZ2lDZXJ0SGlnaEFzc3VyYW5jZUVWUm9vdENBLmNybDA9BgNVHSAENjA0MDIG\r\n"
+"BFUdIAAwKjAoBggrBgEFBQcCARYcaHR0cHM6Ly93d3cuZGlnaWNlcnQuY29tL0NQ\r\n"
+"UzAdBgNVHQ4EFgQUUWj/kK8CB3U8zNllZGKiErhZcjswHwYDVR0jBBgwFoAUsT7D\r\n"
+"aQP4v0cB1JgmGggC72NkK8MwDQYJKoZIhvcNAQELBQADggEBABiKlYkD5m3fXPwd\r\n"
+"aOpKj4PWUS+Na0QWnqxj9dJubISZi6qBcYRb7TROsLd5kinMLYBq8I4g4Xmk/gNH\r\n"
+"E+r1hspZcX30BJZr01lYPf7TMSVcGDiEo+afgv2MW5gxTs14nhr9hctJqvIni5ly\r\n"
+"/D6q1UEL2tU2ob8cbkdJf17ZSHwD2f2LSaCYJkJA69aSEaRkCldUxPUd1gJea6zu\r\n"
+"xICaEnL6VpPX/78whQYwvwt/Tv9XBZ0k7YXDK/umdaisLRbvfXknsuvCnQsH6qqF\r\n"
+"0wGjIChBWUMo0oHjqvbsezt3tkBigAVBRQHvFwY+3sAzm2fTYS5yh+Rp/BIAV0Ae\r\n"
+"cPUeybQ=\r\n"
+"-----END CERTIFICATE-----\r\n";
+ */
+
+ //m13.cloudmqtt.com:28747
+const char *server_root_cert = "-----BEGIN CERTIFICATE-----\r\n"
+"MIIFMDCCBBigAwIBAgIQV5SFWjNqKQ7ivjk88Axt3zANBgkqhkiG9w0BAQsFADBv\r\n"
+"MQswCQYDVQQGEwJTRTEUMBIGA1UEChMLQWRkVHJ1c3QgQUIxJjAkBgNVBAsTHUFk\r\n"
+"ZFRydXN0IEV4dGVybmFsIFRUUCBOZXR3b3JrMSIwIAYDVQQDExlBZGRUcnVzdCBF\r\n"
+"eHRlcm5hbCBDQSBSb290MB4XDTE0MTIyMjAwMDAwMFoXDTIwMDUzMDEwNDgzOFow\r\n"
+"gZQxCzAJBgNVBAYTAkdCMRswGQYDVQQIExJHcmVhdGVyIE1hbmNoZXN0ZXIxEDAO\r\n"
+"BgNVBAcTB1NhbGZvcmQxGjAYBgNVBAoTEUNPTU9ETyBDQSBMaW1pdGVkMTowOAYD\r\n"
+"VQQDEzFDT01PRE8gU0hBLTI1NiBEb21haW4gVmFsaWRhdGlvbiBTZWN1cmUgU2Vy\r\n"
+"dmVyIENBMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApe7aGrg+6WaE\r\n"
+"MyvsWocOnfpDXsxsmrOezwlTbnGbsFkuEU4wuOIVLaL2F4H5gX9fFinG7AFz7tdG\r\n"
+"6wq0if2JvKj4us9ewrm+NPvu/pAKAXcr4TavNHLBXeUWdpLCjP/gaAev9W3O07l4\r\n"
+"X8jxZ0DBh1hPUnVyGKUveZCwBAGPasSYlQfo4PcLPilqW/vHZCCOV8l8HW0CeuPO\r\n"
+"VPAIZYaXicngMuyRGo790YSj759Gu8wAMHxMBelVSbBwgb1gAYqANFuLJQvC57oW\r\n"
+"XYa8w/zKn/QJWkkfwkLyqNwhSbnQuoQByVSsGTf2ItQQzzQS+5nl1bF2pTZQfK7Q\r\n"
+"W36GGtK2AwIDAQABo4IBoDCCAZwwHwYDVR0jBBgwFoAUrb2YejS0Jvf6xCZU7wO9\r\n"
+"4CTLVBowHQYDVR0OBBYEFB6sP/wP4Sf1OpwFluiLM3n3dXnxMA4GA1UdDwEB/wQE\r\n"
+"AwIBhjASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdJQQWMBQGCCsGAQUFBwMBBggr\r\n"
+"BgEFBQcDAjAbBgNVHSAEFDASMAYGBFUdIAAwCAYGZ4EMAQIBMEQGA1UdHwQ9MDsw\r\n"
+"OaA3oDWGM2h0dHA6Ly9jcmwudXNlcnRydXN0LmNvbS9BZGRUcnVzdEV4dGVybmFs\r\n"
+"Q0FSb290LmNybDCBswYIKwYBBQUHAQEEgaYwgaMwPwYIKwYBBQUHMAKGM2h0dHA6\r\n"
+"Ly9jcnQudXNlcnRydXN0LmNvbS9BZGRUcnVzdEV4dGVybmFsQ0FSb290LnA3YzA5\r\n"
+"BggrBgEFBQcwAoYtaHR0cDovL2NydC51c2VydHJ1c3QuY29tL0FkZFRydXN0VVRO\r\n"
+"U0dDQ0EuY3J0MCUGCCsGAQUFBzABhhlodHRwOi8vb2NzcC51c2VydHJ1c3QuY29t\r\n"
+"MA0GCSqGSIb3DQEBCwUAA4IBAQCsPFl52og0fw7ZBzEwE0vqi8k2JA/nlQCkXv3A\r\n"
+"rJ8aSqmXjuAwmXUXfZlnaZMWz8nVcT+DnmxWGeqCSqtB3Fvgtmg7fO22aGAJ3H/I\r\n"
+"zTxPd0x+1BebdDpOB3XS/It5Wt8FGKtnJtM+jG76ESoy5DpwTHdwi+ZF9bDlJkBJ\r\n"
+"NwImRkjJWMMPPIJsWE03d2qs6KjxBD/B11wf+aevKFIQ0dN6pt7Gc/0AepKDRW83\r\n"
+"+7eYEqUoBfjcoeK86NSDwpHSXIqaVa3p0SFlSQ16VYE0YWHCPvCzI4bZJGlePq4g\r\n"
+"z5Z2KDJ4sJ7bbAtAU44vI1wTv2aFpY45RAIS4nAFjvwYPRVY\r\n"
+"-----END CERTIFICATE-----\r\n";
+
+ /*// //m13.cloudmqtt.com:28747
+ const char *server_root_cert = "-----BEGIN CERTIFICATE-----\r\n"
+ "MIIFXjCCBEagAwIBAgIQAQk/Vgs7v/PIwSeDip04gjANBgkqhkiG9w0BAQsFADCB\r\n"
+ "lDELMAkGA1UEBhMCR0IxGzAZBgNVBAgTEkdyZWF0ZXIgTWFuY2hlc3RlcjEQMA4G\r\n"
+ "A1UEBxMHU2FsZm9yZDEaMBgGA1UEChMRQ09NT0RPIENBIExpbWl0ZWQxOjA4BgNV\r\n"
+ "BAMTMUNPTU9ETyBTSEEtMjU2IERvbWFpbiBWYWxpZGF0aW9uIFNlY3VyZSBTZXJ2\r\n"
+ "ZXIgQ0EwHhcNMTYwMzE1MDAwMDAwWhcNMTgxMDEzMjM1OTU5WjBcMSEwHwYDVQQL\r\n"
+ "ExhEb21haW4gQ29udHJvbCBWYWxpZGF0ZWQxHTAbBgNVBAsTFFBvc2l0aXZlU1NM\r\n"
+ "IFdpbGRjYXJkMRgwFgYDVQQDDA8qLmNsb3VkbXF0dC5jb20wggEiMA0GCSqGSIb3\r\n"
+ "DQEBAQUAA4IBDwAwggEKAoIBAQC8Bb/3YGgKLtJqQxVYepKj8TUiFoxgswHYqLR4\r\n"
+ "9LZ20Hnb9avoL6iILrNLazUVyKjlaFlAq7NaypFvYv95rbgtRG/fgQ4cD2AZxk+3\r\n"
+ "HzfBznz445PcVRARt4InxjYyIKAw+ct556ILzQEwpi0m77wDjN1wCiuLyFTjvivG\r\n"
+ "3EvKyZegj5rujaY2uqS2xX+z1+6jP/J0sKrbfHlcGUOPrzq4d6leZGuVVvaq2mn+\r\n"
+ "kA7dQu5xYIFGPnZVUa5Cx4tPTxnUMUgZswRpcdIftBERHsSPskq8qRSnBU3H+6fn\r\n"
+ "xS7YSFG797G3Z0+A82+2jA+4yjvrGeo2oNQXmY5oLAziS1lxAgMBAAGjggHhMIIB\r\n"
+ "3TAfBgNVHSMEGDAWgBQerD/8D+En9TqcBZboizN593V58TAdBgNVHQ4EFgQUARgU\r\n"
+ "wbfrXk9P6lulo2gtn/4KJe4wDgYDVR0PAQH/BAQDAgWgMAwGA1UdEwEB/wQCMAAw\r\n"
+ "HQYDVR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMCME8GA1UdIARIMEYwOgYLKwYB\r\n"
+ "BAGyMQECAgcwKzApBggrBgEFBQcCARYdaHR0cHM6Ly9zZWN1cmUuY29tb2RvLmNv\r\n"
+ "bS9DUFMwCAYGZ4EMAQIBMFcGA1UdHwRQME4wTKBKoEiGRmh0dHA6Ly9jcmwuY29t\r\n"
+ "b2RvY2EuY29tL0NPTU9ET1NIQTI1NkRvbWFpblZhbGlkYXRpb25TZWN1cmVTZXJ2\r\n"
+ "ZXJDQS5jcmwwgYgGCCsGAQUFBwEBBHwwejBSBggrBgEFBQcwAoZGaHR0cDovL2Ny\r\n"
+ "dC5jb21vZG9jYS5jb20vQ09NT0RPU0hBMjU2RG9tYWluVmFsaWRhdGlvblNlY3Vy\r\n"
+ "ZVNlcnZlckNBLmNydDAkBggrBgEFBQcwAYYYaHR0cDovL29jc3AuY29tb2RvY2Eu\r\n"
+ "Y29tMCkGA1UdEQQiMCCCDyouY2xvdWRtcXR0LmNvbYINY2xvdWRtcXR0LmNvbTAN\r\n"
+ "BgkqhkiG9w0BAQsFAAOCAQEASnl+UeX546AHVDh0XWj1bv1hOLDlu8Bc91TLdUzH\r\n"
+ "6QC6W35MVcGcVJwLuaxRuiisS43lYD5SSCvOZimLTobk+LTF5PBj7kOPuW0RjS8c\r\n"
+ "Ev/QBWGvQLetaHJwqy0abWo+vrbpbEshI0DyWdZ5G1et+BJWZPpsXK1buNXjXTxA\r\n"
+ "PUcl6ppv4AgHjRp9AmWmWM6wSut61qMlNZ5Gi05UH2tfGB4IbZIxcmj3UAw0Sv7f\r\n"
+ "GP5viIGTB6zpkj9SOp5BpJhmPES/cl/MQ4eNjDztZIZOuo2FSTC4FrH7sD9pcoxA\r\n"
+ "Wx5+UDHkVtPFGnkMV0HjusJMs2VYzf5uJTEC0K2cwY6AgA==\r\n"
+ "-----END CERTIFICATE-----\r\n";
+ */
+#endif
+
+
