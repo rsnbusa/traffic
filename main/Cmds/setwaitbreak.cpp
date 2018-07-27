@@ -24,7 +24,7 @@ void set_waitbreak(void * pArg){
 		goto exit;
 	}
 
-	aqui.waitBreak=true;
+	breakf=true;
 	write_to_flash();
 
 	algo="Break On";

@@ -20,6 +20,7 @@ void processCmds(void * nc,cJSON * comands);
 void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 void displayTimeSequence(int cuantos);
 
+//wbreak w/o timeout
 
 using namespace std;
 
@@ -142,7 +143,6 @@ void timerCallback( TimerHandle_t xTimer )
 	}
 	if(xTimer==closeTimer)
 	{
-		breakf=true;
 		args[2].timinter=1; // Activate LaserManager with option 1 (do not wait for break)
 		xSemaphoreGive(lasert.mimutex);
 		if(aqui.traceflag & (1<<GEND))
@@ -524,8 +524,9 @@ void gCloseBreak(argumento *args)
 			drawString(64, 20,  "WBREAK", 24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
 			xSemaphoreGive(I2CSem);
 		}
-	if( xTimerStart( closeTimer,0) != pdPASS ) // Max time to wait for Break
+	if(!breakf) //If not sent the WBREAK command, start timer else wait forever for a break
 				printf("Failed to start WBREAK\n");
+	breakf=false; //just once
 	while(FOREVER)
 		{
 			if(args->mimutex)
@@ -1311,7 +1312,7 @@ void closeToOpening()
 	if(gGuard)
 	{
 		aqui.waitBreak=1;
-		breakf=guardfopen=guardf=false;
+		guardfopen=guardf=false;
 		lastGRelay=0;
 		gpio_set_level(LASER, LASERON);
 		delay(200);
@@ -1460,9 +1461,8 @@ void openingToOpened()
 	{
 		if(aqui.traceflag & (1<<DOORD))
 			printf("[DOORD]Set opened and break\n");
-		breakf=true;
-		if( xTimerIsTimerActive( openTimer ) != pdFALSE )
-			xTimerStop(openTimer,0);
+			if( xTimerIsTimerActive( openTimer ) != pdFALSE )
+				xTimerStop(openTimer,0);
 		if(guardfopen)  //Break during the opening phase, do not wait for the wbreak
 			{
 				guardfopen=false;
@@ -1488,7 +1488,6 @@ void openedToClosing()
 {
 	gMotorCount=0;
 	gMotorMonitor=true;
-	breakf=false;
 	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 	{
 		drawString(GUARDX,GUARDY, "   ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
