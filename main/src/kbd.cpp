@@ -60,12 +60,15 @@ void kbd(void *arg) {
 	uint32_t add;
 	char lastcmd=10;
 	char data[50];
-	string s1;
+	string s1,s2;
 	time_t t;
 	uint16_t errorcode,code1;
-	int cualf;
+	int cualf,whom;
 	int *p=0;
 	char textl[30];
+	char sermod[]="Only in Server Mode\n";
+	wifi_sta_list_t wifi_sta_list;
+    tcpip_adapter_sta_list_t tcpip_adapter_sta_list;
 
 	uart_config_t uart_config = {
 			.baud_rate = 115200,
@@ -91,6 +94,28 @@ void kbd(void *arg) {
 			lastcmd=data[0];
 			switch(data[0])
 			{
+			case 'C':
+			case 'c':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				esp_wifi_ap_get_sta_list(&wifi_sta_list);
+				tcpip_adapter_get_sta_list(&wifi_sta_list, &tcpip_adapter_sta_list);
+				for (int i=0; i<wifi_sta_list.num; i++)
+				    printf("Connected Nodes[%d]->MAC["MACSTR"]-IP{"IPSTR"}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
+					break;
+			case 'w':
+			case 'W':
+				printf("Whoami(%d)",aqui.whoami);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1=="")
+					break;
+				aqui.whoami=atoi(s1.c_str());
+				write_to_flash();
+				break;
+
 			case 'h':
 			case 'H':
         		printf("Kbd Heap %d\n",xPortGetFreeHeapSize());
@@ -125,11 +150,25 @@ void kbd(void *arg) {
 				break;
 			case 'q':
 			case 'Q':
-					printf("Dump core\n");
-					vTaskDelay(1000 / portTICK_PERIOD_MS);
-
-				*p=0;
-				printf("Paso badaddress\n");
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Quiet To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1=="")
+					break;
+				whom=atoi(s1.c_str());
+				printf("Quiet(%d):",quiet);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+				{
+					quiet=atoi(s1.c_str());
+					sendMsg(QUIET,whom,quiet,0,NULL,0);
+					displayf=quiet;
+				}
 				break;
 			case 'v':
 			case 'V':{
@@ -255,6 +294,162 @@ void kbd(void *arg) {
 				write_to_flash();
 				break;
 			case 'd':
+			case 'D':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Delay To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1=="")
+					break;
+				whom=atoi(s1.c_str());
+				printf("Delay(%d):",howmuch);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+					howmuch=atol(s1.c_str());
+				sendMsg(QUIET,whom,howmuch,0,NULL,0);
+				break;
+			case 'i':
+			case 'I':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Interval To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1=="")
+					break;
+				whom=atoi(s1.c_str());
+				printf("Interval(%d):",interval);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+					interval=atol(s1.c_str());
+				sendMsg(QUIET,whom,interval,0,NULL,0);
+				break;
+			case 'm':
+			case 'M':
+				printf("Mode Server=1 Client=0(%d)",aqui.mode);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					aqui.mode=atol(s1.c_str());
+					write_to_flash();
+				}
+				break;
+							case '0': //send a Start Message. ONLY Controller can send this command
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Start To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					sendMsg(START,atoi(s1.c_str()),0,0,NULL,0);
+				}
+				break;
+			case '1':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Stop To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					sendMsg(STOP,atoi(s1.c_str()),0,0,NULL,0);
+				}
+				break;
+			case '2':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Ping To Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+					sendMsg(PING,atoi(s1.c_str()),0,0,NULL,0);
+				break;
+
+			case '3':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Counter from Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					sendMsg(COUNTERS,atoi(s1.c_str()),0,0,NULL,0);
+				}
+				break;
+
+			case '4':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Reset Counters for Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					sendMsg(RESETC,atoi(s1.c_str()),0,0,NULL,0);
+				}
+				break;
+
+			case '5':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Reset Unit for Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					sendMsg(RESET,atoi(s1.c_str()),0,0,NULL,0);
+				}
+				break;
+
+			case '6':
+				if(!aqui.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("New Id for Whom:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!=""){
+					printf("Id(can duplicate):");
+					fflush(stdout);
+					s2=get_string((uart_port_t)uart_num,10);
+					if (s2!=""){
+						if(atoi(s1.c_str())==255)
+						{
+							printf("Can not do for Everybody\n");
+							break;
+						}
+					}
+					sendMsg(NEWID,atoi(s1.c_str()),atoi(s2.c_str()),0,NULL,0);
+				}
+				break;
+			case '7':
+				printf("Tx %d Rx %d\n",salen,entran);
+				break;
+			case '8':
+				salen=entran=0;
+				printf("Zero Counters\n");
+				break;
+			case '9':
+				displayf=!displayf;
+				printf("Display %s\n",displayf?"On":"Off");
+				break;
+			case 'z':
 				printf("Settings. Host %s Port %d Client %s User %s Pass %s\n",settings.host,settings.port,settings.client_id,settings.username,settings .password );
 				break;
 			default:

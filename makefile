@@ -3,7 +3,7 @@
 # project subdirectory.
 #
 
-PROJECT_NAME := GarageIoT
+PROJECT_NAME := TrafficIoT
 CXXFLAGS += -fpermissive
 include $(IDF_PATH)/make/project.mk
 
