@@ -30,9 +30,14 @@ using namespace std;
 
 // Critical Variables
 
- EXTERN config_flash        			aqui __attribute__((aligned(4))) ;
+ EXTERN config_flash        			sysConfig 	__attribute__((aligned(4)));
+ EXTERN sequence_struct        			sysSequence __attribute__((aligned(4)));
+ EXTERN lights_struct					sysLights 	__attribute__((aligned(4)));
+ EXTERN cycle_struct					allCycles 	__attribute__((aligned(4)));
+
  EXTERN char                			ipaddr[16];
 
+ EXTERN Nodo							esteNodo;
 // Devices and Services
  EXTERN	I2C								miI2C;
 #ifdef GLOBAL
@@ -71,12 +76,12 @@ using namespace std;
  EXTERN char 							TAGG[10];
  EXTERN struct mg_mqtt_topic_expression s_topic_expr;
 
- EXTERN SemaphoreHandle_t 				I2CSem,logSem;
+ EXTERN SemaphoreHandle_t 				I2CSem,logSem,ackSem;
  EXTERN QueueHandle_t 					uart0_queue;
  EXTERN uint8_t 						recontimes;
 
  EXTERN bool 							llogf,timerF,reconf,connf,mongf,mdnsf,timerf,sntpf,guardf,displayf,breakf,errorf,gMotorMonitor,guardfopen,mqttThingf;
- EXTERN bool							gGuard,rxtxf;
+ EXTERN bool							gGuard,rxtxf,semaphoresOff;
  EXTERN ip4_addr_t 						localIp;
  EXTERN struct 							timeval tvStart;
  EXTERN cJSON 							*root;
@@ -87,7 +92,7 @@ using namespace std;
 /* an image total length*/
  EXTERN int 							binary_file_length ;
 /*socket id*/
- EXTERN int 							socket_id ;
+ EXTERN int 							socket_id,keepAlive;
  EXTERN char 							http_request[100] ;
 /* operate handle : uninitialized value is zero ,every ota begin would exponential growth*/
  EXTERN esp_ota_handle_t 				update_handle ;
@@ -105,29 +110,34 @@ using namespace std;
 EXTERN uint8_t							sensors[20][8],numsensors,guardCount;
 EXTERN uint16_t							GMAXLOSSPER;
 EXTERN int								cuenta,gwait;
-EXTERN stateType						stateVM;
 EXTERN uint8_t							cuentaRelay,quiet;
 EXTERN uint32_t							startCycle,wait,menos,endCycle,startClosing,uidLogin[5],globalDisp,globalTotalDisp,basePulse,motorp[4];//,motorcop[4];
 EXTERN QueueSetHandle_t					closeQueueSet,openQueueSet;
-EXTERN TimerHandle_t 					openTimer,closeTimer,dispTimer;
-EXTERN SemaphoreHandle_t 				openTimerSema,closeTimerSema,doorLedSema;
+EXTERN TimerHandle_t 					scheduleTimer,doneTimer;
 EXTERN float							oldtemp;
 EXTERN QueueHandle_t 					mqttQ;
 EXTERN void*							mqttCon;
 EXTERN string							idd;
 EXTERN string							logText[17];
 EXTERN t_symstruct 						lookuptable[NKEYS];
-//= {{ "BOOTD", BOOTD }, { "WIFID", WIFID }, { "MQTTD", MQTTD }, { "PUBSUBD", PUBSUBD }, { "MONGOOSED", MONGOOSED },{ "CMDD", CMDD }, { "WEBD", WEBD }, { "GEND", GEND }, { "LASERD", LASERD }, { "DOORD", DOORD}};
 EXTERN esp_mqtt_client_config_t  		settings,settingsThing;
 EXTERN uint16_t							startLed,gMotorCount;//,pulsecnt;
-EXTERN 	nvs_handle 						nvshandle;
-EXTERN interrupt_type 					lasert,motort;
+EXTERN 	nvs_handle 						nvshandle,seqhandle,lighthandle;
 EXTERN TaskHandle_t 					oBHandle, OBHandle,cBHandle,CBHandle; //openingBreak, OpenedBreak, closingBreak,ClosedBreak
 EXTERN esp_mqtt_client_handle_t 		clientCloud, clientThing;
 EXTERN u32								gsleepTime,entran,salen,howmuch,interval,entrats;
 EXTERN esp_adc_cal_characteristics_t 	*adc_chars;
 EXTERN adc1_channel_t 					adcchannel;     //GPIO34 if ADC1, GPIO14 if ADC2
 EXTERN adc_atten_t 						atten;
-EXTERN uint32_t 						rxMsgT[10];
+EXTERN uint32_t 						connectedToAp[10];
 EXTERN cmd_struct 						answer;
+EXTERN scheduler_struct					scheduler;
+EXTERN u8								nextSchedule,totalConnected;
+EXTERN u8								TODAY;
+EXTERN TaskHandle_t 					cycleHandle,runHandle;
+EXTERN u16								FACTOR,FACTOR2;
+EXTERN sta_status						activeNodes;
+EXTERN char								tcmds[30][10];
+EXTERN string							calles[6];
+EXTERN int								gCycleTime;
 #endif /* MAIN_GLOBALS_H_ */

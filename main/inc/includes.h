@@ -9,6 +9,7 @@
 #include "time.h"
 
 extern "C"{
+#include "Nodo.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/timers.h"

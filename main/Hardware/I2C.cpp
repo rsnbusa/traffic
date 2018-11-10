@@ -104,7 +104,7 @@ void I2C::init(i2c_port_t portNum,gpio_num_t sdaPin, gpio_num_t sclPin, int spee
 	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.master.clk_speed = speed;
 	ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
-	if (!driverInstalled) {
+	//if (!driverInstalled) {
 		i2c_driver_install(portNum, I2C_MODE_MASTER, 0, 0, 0);
 		driverInstalled = true;
 		*i2cSem= xSemaphoreCreateBinary();
@@ -112,5 +112,5 @@ void I2C::init(i2c_port_t portNum,gpio_num_t sdaPin, gpio_num_t sclPin, int spee
 			xSemaphoreGive(*i2cSem);  //SUPER important else its born locked
 		else
 			printf("Can't allocate I2C Sem\n");
-	}
+	//}
 }

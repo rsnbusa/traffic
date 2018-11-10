@@ -23,29 +23,11 @@ typedef struct {
 	int timinter;
 } argumento;
 
-typedef struct {
-    int type;                  /*!< event type */
-    int group;                 /*!< timer group */
-    int idx;                   /*!< timer number */
-    uint64_t counter_val;      /*!< timer counter value */
-    double time_sec;           /*!< calculated time from counter value */
-} timer_event_t;
+enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL};
 
-typedef struct {
-    int 							pin;                  /*!< event type */
-    SemaphoreHandle_t				mimutex;
-    uint32_t 						timestamp;                 // milliseconds
-} interrupt_type;
-
-enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID};
-
-typedef enum {CLOSED,OPENING,OPENED,CLOSING,UNKNOWN,TIMERSTATE,GFAULT,VOLTS} stateType;
-typedef enum {ONCE,TIMER,REPEAT,TIMEREPEAT} resetType;
 typedef enum {NOTSENT,SENT} sendType;
 typedef enum {NOREP,REPLACE} overType;
 typedef enum {NODISPLAY,DISPLAYIT} displayType;
-typedef enum {DISPLAYPULSES,DISPLAYKWH,DISPLAYUSER,DISPLAYMQTT,DISPLAYMONTH,DISPLAYDAY,DISPLAYHOUR} displayModeType;
-typedef enum {NORTC,LOGCLEAR,UPDATED,UPDATEFAIL} alertId;
 typedef enum {SYSBOOT,DLOGCLEAR,FWUPDATE,GERROR,OPENCLOSE,LOGM,DRESET,APSET,LINTERNAL,DCONTROL,DBORN,OPENABORT,DSTUCK,SLEEPMODE,ACTIVEMODE,BREAKMODE,GUARDISCO} nnada;
 #define u16		uint16_t
 #define u8		uint8_t
@@ -56,36 +38,10 @@ typedef struct {
 	 uint16_t code1;
 } logq;
 
-typedef struct{
-    u16      state;
-    u16      meter;
-    u32      life;
-    u16      month;
-    u16      day;
-    u16      cycle;
-    u16      hora;
-    u16      mesg,diag,horag;
-    u16      yearg;
-} scratchType;
-
-typedef struct {
-    resetType resendType;
-    char alertName[MAXCHARS];
-    sendType status;
-    bool retain;
-    u32 countLimit,counter;
-    time_t whenLast;
-} alertType;
-
-typedef struct {
-    u32 curBeat,curLife,curCycle,date;
-    u16 curMonth,curDay,bpk;
-    u8 curHour,state;
-    char mid[MAXCHARS];
-} rawStatus;
 
 typedef struct {
 	u32 centinel;
+	u16 nodeId;
 	u8 cmd;
 	u8 towho;
 	u8 fromwho;
@@ -93,22 +49,51 @@ typedef struct {
 	u16 lapse;
 	u16 seqnum;
 	u16 free1,free2;
+	ip4_addr_t myip;
 	tcpip_adapter_ip_info_t ipstuff; //12 size
-	char buff[228]; //for whatever. Try make struct 256bytes
+	time_t theTime;
+	char buff[218]; //for whatever. Try make struct 256bytes
 } cmd_struct;
+
+typedef struct {
+	u32 ioports;
+	u8 opt;
+	u8 typ;
+	u32 valor;
+} TrafficCompStruct;
+
+typedef struct {
+	u8 numcycles;
+	u16 totalTime[30];
+	char nodeSeq[30][50];
+} cycle_struct;
+
+typedef struct {
+	u8 howmany;
+	u8 nodeid[10];
+	u16 timeval[10];
+} node_struct;
+
+typedef struct {
+	u8 seqNum,weekDay,cycleId;
+	u32 startSeq,stopSeq;
+	u16 countTimes;
+} Sequence;
+
+typedef struct{
+	u8 reported;
+	int8_t nodesReported[20];
+	time_t lastTime[20];
+} sta_status;
 
 typedef struct  {
     u32 centinel;
-    char ssid[5][MAXCHARS],pass[5][10],meterName[MAXCHARS];
+    char ssid[2][MAXCHARS],pass[2][10],meterName[MAXCHARS];
     u8 working;
     time_t lastUpload;
-    char email [MAXEMAILS][MAXCHARS];
-    char emailName[MAXEMAILS][30];
-    u8 except[MAXEMAILS];
     char mqtt[MAXCHARS];
     char domain[MAXCHARS];
-    u16 ecount;
-    u16 bootcount;
+    u16 bootcount,lastSSID;
     time_t lastTime,preLastTime,lastOpen;
     char actualVersion[20];
     char groupName[MAXCHARS];
@@ -117,21 +102,38 @@ typedef struct  {
     u16 mqttport;
     char mqttUser[MAXCHARS];
     char mqttPass[MAXCHARS];
-    u16 opens,stucks;
-    u32 elapsedCycle;
-    u16 guards,aborted;
-    u16 relay,wait,sleepTime,openTimeout,closeTimeout,lastSSID,menos,guardOn;
-    u32 totalCycles;
-    u16 countCycles;
     u16 sendMqtt;
-    u16 waitBreak;
     u16 traceflag;
-    u16 motorw;
     u8 mode,whoami;
+    u16 nodeid;
+    u16 reserved,reserved2;
+    u8 clone;
+    char calles[6][MAXCHARS];
+    u16 keepAlive;
 } config_flash;
 
+typedef struct {
+	u8 howmany,voy;
+	u8 seqNum[30];
+	u32 duration[30];
+} scheduler_struct;
+
+typedef struct {
+    u8 numSequences;
+    Sequence sequences[30]; //repeat weekly
+} sequence_struct;
+
+typedef struct {
+    // Lights for Nodes
+	u8 numLuces;
+    u32 allbitsPort,lastGivenTime;
+    int8_t thePorts[6];
+    TrafficCompStruct lasLuces[6];
+	u8 defaultLight;
+} lights_struct;
+
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
-enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,LASERD,DOORD,MQTTT,HEAPD};
+enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD};
 
 typedef struct { char key[10]; int val; } t_symstruct;
 

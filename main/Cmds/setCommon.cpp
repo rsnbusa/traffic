@@ -10,7 +10,7 @@ extern string getParameter(arg* argument,string cual);
 
 void  set_latest_time(string datestr, string timestr, string utcStr){
 	//set local internal Time and set RTC to received value. Its a total trust thing
-	if(aqui.traceflag & (1<<GEND))
+	if(sysConfig.traceflag & (1<<GEND))
 		PRINT_MSG("%d/%d/%d  %d:%d:%d\n",atoi(datestr.substr(6,4).c_str()),atoi(datestr.substr(0,2).c_str()),atoi(datestr.substr(3,2).c_str()),
 				atoi(timestr.substr(0,2).c_str()),atoi(timestr.substr(3,2).c_str()),atoi(timestr.substr(6,2).c_str()));
 }

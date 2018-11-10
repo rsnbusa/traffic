@@ -134,13 +134,12 @@ void timerManager(void *arg) {
 	struct tm timeinfo ;
 	char textd[20],textt[20];
 	u32 nheap;
-	char textl[10];
 
 	while(true)
 	{
 		nheap=xPortGetFreeHeapSize();
 
-		if(aqui.traceflag & (1<<HEAPD))
+		if(sysConfig.traceflag & (1<<HEAPD))
 			printf("[HEAPD]Heap %d\n",nheap);
 
 		vTaskDelay(1000/portTICK_PERIOD_MS);
@@ -156,7 +155,12 @@ void timerManager(void *arg) {
 				drawString(16, 5, mqttf?string("m"):string("   "), 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				drawString(0, 51, string(textd), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				drawString(86, 51, string(textt), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-				drawString(61, 51, aqui.working?"On  ":"Off", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				drawString(61, 51, sysConfig.working?"On  ":"Off", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				if(gCycleTime>0)
+				{
+					sprintf(textd,"   %3ds   ",gCycleTime--);
+					drawString(90, 0, textd, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				}
 				xSemaphoreGive(I2CSem);
 			}
 		}
@@ -166,34 +170,20 @@ void displayManager(void *arg) {
 	//   gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT);
 	//	int level = 0;
 	char textl[20];
-	stateType oldState,moldState=CLOSED;
+//	stateType oldState,moldState=CLOSED;
 	string local;
 	uint32_t tempwhen=0,t1,oldt1=0,lasttime=0;
 	float temp,diff;
-	oldState=stateVM;
+//	oldState=stateVM;
 	oldtemp=0.0;
 
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
 
 	xTaskCreate(&timerManager,"timeMgr",4096,NULL, MGOS_TASK_PRIORITY, NULL);
 
-	if (aqui.DISPTIME==0)
-		aqui.DISPTIME=DISPMNGR;
+	if (sysConfig.DISPTIME==0)
+		sysConfig.DISPTIME=DISPMNGR;
 	while (true) {
-
-		if (!gpio_get_level((gpio_num_t)0)){
-			if(millis()-lasttime>3000)
-			{
-				lasttime=millis();
-				showVoltage=!showVoltage;
-				if (showVoltage){
-					moldState=stateVM;
-					stateVM=VOLTS;
-				}
-				else
-					stateVM=moldState;
-			}
-		}
 
 		if(millis()-tempwhen>1000 && numsensors>0)
 		{
@@ -214,67 +204,8 @@ void displayManager(void *arg) {
 			}
 			tempwhen=millis();
 		}
-		if (stateVM!=oldState || stateVM==VOLTS)
-		{
-			local="";
-			if(I2CSem)
-			{
-			if(xSemaphoreTake(I2CSem, portMAX_DELAY))
-			{
-			//	local="                "; //Erase previous display
-				drawString(64, 20, local, 24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
-				oldState=stateVM;
 
-				switch(stateVM)
-				{
-				case CLOSED:
-					local="CLOSED";
-					break;
-				case OPENED:
-					local=aqui.waitBreak?"WBREAK":"OPENED";
-					break;
-				case OPENING:
-					local="opening";
-					break;
-				case CLOSING:
-					local="closing";
-					break;
-				case TIMERSTATE:
-					local="TIMEOUT";
-					break;
-				case GFAULT:
-					local="GFAULT";
-					break;
-				case VOLTS:
-					t1=readADC();
-					if(t1!=oldt1)
-					{
-						sprintf(textl, "%d",t1);
-						local=string(textl);
-						oldt1=t1;
-					}
-					else
-						local="";
-					break;
-				default:
-					local="Error";
-				}
-				if(local!=""){
-					eraseMainScreen();
-					drawString(64, 20,  local, 24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
-					local="";
-				}
-				if (mqttf)
-						drawString(16, 5, string("m"), 10, TEXT_ALIGN_LEFT,NODISPLAY, NOREP);
-				else
-					drawString(16, 5, string("  "), 10, TEXT_ALIGN_LEFT,NODISPLAY, NOREP);
-
-
-				xSemaphoreGive(I2CSem);
-			}
-			}
-		}
-		vTaskDelay(aqui.DISPTIME/portTICK_PERIOD_MS);
+		vTaskDelay(sysConfig.DISPTIME/portTICK_PERIOD_MS);
 	}
 }
 

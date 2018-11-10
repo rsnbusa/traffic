@@ -1,18 +1,18 @@
 #ifndef defines_h
 #define defines_h
 
-#define EXAMPLE_WIFI_SSID 	"taller"
-#define EXAMPLE_WIFI_PASS 	"csttpstt"
+#define EXAMPLE_WIFI_SSID 					"taller"
+#define EXAMPLE_WIFI_PASS 					"csttpstt"
 
-#define UDP_PORT 			333
-#define MULTICAST_TTL 		5
-#define MULTICAST_IPV4_ADDR "232.10.11.12"
+#define UDP_PORT 							333
+#define MULTICAST_TTL 						5
+#define MULTICAST_IPV4_ADDR 				"232.10.11.12"
 
-#define SENDLED				23
-#define RXLED				22
-#define EVERYBODY 			255
+#define SENDLED								23
+#define RXLED								22
+#define EVERYBODY 							255
 
-#define THECENTINEL 		0xFAFBFCFD
+#define THECENTINEL 						0xFAFBFCFD
 
 #define FOREVER								true
 #define MINHEAP								20000
@@ -39,19 +39,9 @@
 // pins
 #define SDAW                				GPIO_NUM_18      // SDA
 #define SCLW                				GPIO_NUM_19       // SCL for Wire service
-#define OPENSW								GPIO_NUM_27
-#define CLOSESW								GPIO_NUM_26
-#define LASERSW								GPIO_NUM_25
-#define RELAY								GPIO_NUM_33     // Relay
-#define LASER								GPIO_NUM_14		//Laser On Off
-#define WIFILED 							GPIO_NUM_23
-#define DOORLED								GPIO_NUM_17     // DoorLed
-#define DSPIN 								GPIO_NUM_22
-#define MQTTLED								GPIO_NUM_21
-
-
-#define LASERON								1
-#define LASEROFF							0
+#define WIFILED 							GPIO_NUM_25
+#define DSPIN 								GPIO_NUM_15
+#define MQTTLED								GPIO_NUM_26
 
 // Varios
 #define MAXEMAILS           				3

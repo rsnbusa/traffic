@@ -186,7 +186,6 @@ void set_FirmUpdateCmd(void *pArg)
 					binary_file_length += buff_len;
 					//   printf("Have written image length %d\n", binary_file_length);
 					gpio_set_level((gpio_num_t)WIFILED, como);
-					gpio_set_level((gpio_num_t)DOORLED, !como);
 					como = !como;
 					printf(".");
 					fflush(stdout);
