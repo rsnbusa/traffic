@@ -474,7 +474,14 @@ void kbd(void *arg) {
 				write_to_flash();
 				break;
 			case FIRMWAREc:
-				xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);
+				printf("Lauch Firmware update:");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1=="y")
+				{
+					printf("Firmware update was launched\n");
+					xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);
+				}
 				break;
 			case LOGCLEARc:
 				fclose(bitacora);
