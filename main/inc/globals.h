@@ -134,10 +134,11 @@ EXTERN cmd_struct 						answer;
 EXTERN scheduler_struct					scheduler;
 EXTERN u8								nextSchedule,totalConnected;
 EXTERN u8								TODAY;
-EXTERN TaskHandle_t 					cycleHandle,runHandle;
+EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle;
 EXTERN u16								FACTOR,FACTOR2;
 EXTERN sta_status						activeNodes;
 EXTERN char								tcmds[30][10];
 EXTERN string							calles[6];
 EXTERN int								gCycleTime;
+EXTERN int								theSock;
 #endif /* MAIN_GLOBALS_H_ */

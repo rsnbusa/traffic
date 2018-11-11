@@ -134,6 +134,7 @@ void timerManager(void *arg) {
 	struct tm timeinfo ;
 	char textd[20],textt[20];
 	u32 nheap;
+	wifi_sta_list_t station_list;
 
 	while(true)
 	{
@@ -145,6 +146,13 @@ void timerManager(void *arg) {
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 		time(&t);
 		localtime_r(&t, &timeinfo);
+
+		if(!rxtxf)
+		{
+			esp_wifi_ap_get_sta_list(&station_list);
+			if(station_list.num>=(sysConfig.totalLights-1))
+				rxtxf=true;
+		}
 
 		if (displayf)
 		{

@@ -157,6 +157,8 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 		if(sysConfig.mode==1)
 		{
 			//Cycles
+			printf("Total TLights %d\n",sysConfig.totalLights);
+
 			printf("Num Cycles %4d\n",allCycles.numcycles);
 			for (int a=0;a<allCycles.numcycles;a++){
 
@@ -213,7 +215,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			ts = *localtime(&sysSequence.sequences[este].startSeq);
 			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 			int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
-			printf("Semaphores are %s in Cycle %s of Schedule %s-",semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
+			printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
 			ts = *localtime(&sysSequence.sequences[este].stopSeq);
 			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 			printf("%s\n",textl);

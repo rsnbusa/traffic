@@ -110,6 +110,7 @@ typedef struct  {
     u8 clone;
     char calles[6][MAXCHARS];
     u16 keepAlive;
+    u8 totalLights;
 } config_flash;
 
 typedef struct {

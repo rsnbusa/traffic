@@ -23,6 +23,8 @@ void erase_config() //do the dirty work
 	memcpy(sysConfig.domain,"feediot.co.nf",13);// mosquito server feediot.co.nf
 	sysConfig.domain[13]=0;
 	sysConfig.working=true;
+	sysConfig.keepAlive=60000;
+	sysConfig.reserved=sysConfig.reserved2=1000;
 	write_to_flash();
 }
 

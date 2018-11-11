@@ -303,6 +303,13 @@ void kbd(void *arg) {
 					}
 				break;
 			case 'n':
+				printf("Total Tlights(%d):",sysConfig.totalLights);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if(s1!=""){
+					sysConfig.totalLights=atoi(s1.c_str());
+					write_to_flash();
+				}
 				printf("Cycle#:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);

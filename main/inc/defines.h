@@ -32,7 +32,7 @@
 #define TEXT_BUFFSIZE 						4096
 #define FW_SERVER_IP   						"185.176.43.60"
 #define FW_SERVER_PORT 						"80"
-#define FW_FILENAME 						"http://feediot.co.nf/GarageIoT.bin"
+#define FW_FILENAME 						"http://feediot.co.nf/TrafficIoT.bin"
 
 #define MQTTPORT                   			18747
 

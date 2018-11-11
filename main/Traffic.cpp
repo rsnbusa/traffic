@@ -577,7 +577,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		printf("[WIFID]Wifi Handler %d\n",event->event_id);
   //  mdns_handle_system_event(ctx, event);
 
-	//delay(100);
 	switch(event->event_id)
 	{
     case SYSTEM_EVENT_AP_STADISCONNECTED:
@@ -592,9 +591,11 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
     	esp_wifi_ap_get_sta_list(&station_list);
     	stations=(wifi_sta_info_t*)station_list.sta;
     	dhcp_search_ip_on_mac(stations[station_list.num-1].mac , &addr);
-    	printf("AP Assigned %d.%d.%d.%d \n",IP2STR(&addr));
-    	connectedToAp[station_list.num]=addr.addr;
+    	//printf("AP Assigned %d.%d.%d.%d \n",IP2STR(&addr));
+    	connectedToAp[station_list.num-1]=addr.addr;
     	totalConnected=station_list.num;
+//    	if(totalConnected==sysConfig.totalLights)
+//    		rxtxf=true;
     	break;
 
 	case SYSTEM_EVENT_STA_GOT_IP:
@@ -629,8 +630,11 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 				xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
 			}
 		}
-		xTaskCreate(&rxMultiCast, "rxMulti", 4096, NULL, 4, NULL);
+
+		// Main routine for Commands
+		xTaskCreate(&rxMultiCast, "rxMulti", 4096, NULL, 4, &rxHandle);
 		break;
+
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
 	//	tcpip_adapter_ip_info_t ip_info;
 	//	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
@@ -656,8 +660,8 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
 	case SYSTEM_EVENT_AP_STACONNECTED:
 		staconnected = &event->event_info.sta_connected;
-		printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
-				staconnected->mac[4],staconnected->mac[5]);
+	//	printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
+		//		staconnected->mac[4],staconnected->mac[5]);
 		break;
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
@@ -669,6 +673,21 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			vTaskDelete(runHandle);
 			runHandle=NULL;
 		}
+
+		if(rxHandle){
+			close(theSock);
+			vTaskDelete(rxHandle);
+			rxHandle=NULL;
+		}
+
+		if(cycleHandle)
+		{
+			vTaskDelete(cycleHandle);
+			cycleHandle=NULL;
+		}
+			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.allbitsPort);//clear all set bits
+			gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
+
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Reconnect %d\n",curSSID);
 		curSSID++;
@@ -1206,7 +1225,6 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 void rxMultiCast(void *pArg)
 {
-	int theSock;
 	cmd_struct comando;
     char raddr_name[32];
     struct sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
@@ -1219,6 +1237,7 @@ void rxMultiCast(void *pArg)
 
 	while(1)
 	{
+	//	dale:
 		memset(raddr_name,0,sizeof(raddr_name));
 
 		socklen_t socklen = sizeof(raddr);
@@ -1226,6 +1245,11 @@ void rxMultiCast(void *pArg)
 						   (struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0) {
+//			close(theSock);
+//			theSock = create_multicast_ipv4_socket(UDP_PORT);
+//				if (theSock < 0) {
+//					ESP_LOGE(TAG, "2RX Failed to create IPv4 multicast socket");
+//				}
 			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
 			exit(1);
 		}
@@ -1785,13 +1809,12 @@ void cycleManager(void * pArg)
 	char theNodes[50];
 	int voy=0;
 	node_struct intersections;
-	u32 timeout=0;
 	char textl[10];
 
 	int cual=(int)pArg; //cycle to use
 	int este=sysSequence.sequences[cual].cycleId;
 
-	while(rxtxf)
+	while(!rxtxf)
 	{
 		cycleHandle=NULL;
 		vTaskDelete(NULL);
@@ -1808,7 +1831,6 @@ void cycleManager(void * pArg)
 			printf("Failed to create timer\n");
 	while(true) //will be killed by timer call back every time schedule changes. Try to die gracefully and not abruptly
 	{
-		timeout=0;
 		if(sysConfig.traceflag & (1<<TRAFFICD))
 			printf("[TRAFFICD]Send %s %d secs\n",sysConfig.calles[intersections.nodeid[voy]],intersections.timeval[voy]);
 
@@ -1906,7 +1928,7 @@ int este,cual;
 time_t now;
 struct tm timeinfo ;
 
-	while(!timef)
+	while(!timef || !rxtxf)
 		delay(100);
 	//we got the Day to compare against TODAY
 	//Set default light on
@@ -2011,19 +2033,17 @@ void app_main(void)
 	err = nvs_open("config", NVS_READWRITE, &nvshandle);
 	if(err!=ESP_OK)
 		printf("Error opening NVS File\n");
-//	else
-//		printf("NVS Config open\n");
+	else
+		read_flash();
 
 	tcpip_adapter_init();
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
 	delay(3000);
 	reboot= rtc_get_reset_reason(1); //Reset cause for CPU 1
-	read_flash();
 
 	traceflag=(debugflags)sysConfig.traceflag;
 
 	if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
-		//	if (sysConfig.centinel!=CENTINEL )
 	{
 		printf("Read centinel %x",sysConfig.centinel);
 		erase_config();
@@ -2032,40 +2052,41 @@ void app_main(void)
 	err = nvs_open("lights", NVS_READWRITE, &lighthandle);
 	if(err!=ESP_OK)
 		printf("Error opening Lights File\n");
-//	else
-//		printf("Lights Config open\n");
-	read_flash_lights();
+	else
+		read_flash_lights();
 
 if(sysConfig.mode)  //Scheduler only in Controller Mode
 {
 	err = nvs_open("seq", NVS_READWRITE, &seqhandle);
 	if(err!=ESP_OK)
 		printf("Error opening Seq File\n");
-//	else
-//		printf("Seq Config open\n");
-
-	read_flash_seq();
-	read_flash_cycles();
+	else
+	{
+		read_flash_seq();
+		read_flash_cycles();
+	}
 }
+
+	printf("VersionEsp32-1.0.1\n");
 
 	curSSID=sysConfig.lastSSID;
 	initVars(); 			// used like this instead of var init to be able to have independent file per routine(s)
 	initI2C();  			// for Screen
 	initScreen();			// Screen
     init_temp();			// Temperature sensors
-	printf("VersionEsp32-3.0.3\n");
 	init_log();				// Log file management
 	initSensors();
+
 	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 
-	keepAlive=60000;//minute
+	keepAlive=sysConfig.keepAlive;//minute
 
 	//Save new boot count and reset code
 	sysConfig.bootcount++;
 	sysConfig.lastResetCode=reboot;
 	write_to_flash();
 
-	rxtxf=false; //default start
+	rxtxf=false; //default stop
 
 	memset(&answer,0,sizeof(answer));
 	// Start Main Tasks
