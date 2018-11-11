@@ -971,7 +971,7 @@ void process_cmd(cmd_struct cual)
 
 void runLight(void * pArg)
 {
-	int cuanto=(int)pArg*FACTOR2;
+	cuantoDura=(int)pArg*FACTOR2;
 	int demora=0,son=0;
 	int restar=0;
 
@@ -981,14 +981,14 @@ void runLight(void * pArg)
 				restar+=sysLights.lasLuces[a].valor;
 		}
 
-	cuanto-=(restar*FACTOR2);
+	cuantoDura-=(restar*FACTOR2);
 	   if(sysConfig.traceflag & (1<<WEBD))
-		   printf("[WEBD]RunLights Time %d\n",cuanto);
+		   printf("[WEBD]RunLights Time %d\n",cuantoDura);
 
 	for (int a=0;a<sysLights.numLuces;a++)
 	{
 		if(sysLights.lasLuces[a].typ)
-			demora=cuanto*sysLights.lasLuces[a].valor/100;
+			demora=cuantoDura*sysLights.lasLuces[a].valor/100;
 		else
 			demora=sysLights.lasLuces[a].valor*FACTOR2;
 
@@ -1563,6 +1563,43 @@ void initVars()
 			lookuptable[a].val=a;
 		else
 			lookuptable[a].val=a*-1;
+
+	strcpy(kbdTable[0],"Blink");
+	strcpy(kbdTable[1],"Factor");
+	strcpy(kbdTable[2],"Ports");
+	strcpy(kbdTable[3],"Light");
+	strcpy(kbdTable[4],"Cycle");
+	strcpy(kbdTable[5],"Schedule");
+	strcpy(kbdTable[6],"Connected");
+	strcpy(kbdTable[7],"Id");
+	strcpy(kbdTable[8],"Firmware");
+	strcpy(kbdTable[9],"Logclear");
+	strcpy(kbdTable[10],"Log");
+	strcpy(kbdTable[11],"Quit");
+	strcpy(kbdTable[12],"Trace");
+	strcpy(kbdTable[13],"Temperature");
+	strcpy(kbdTable[14],"Status");
+	strcpy(kbdTable[15],"MqttId");
+	strcpy(kbdTable[16],"AccessPoint");
+	strcpy(kbdTable[17],"Delay");
+	strcpy(kbdTable[18],"Interval");
+	strcpy(kbdTable[19],"Mode");
+	strcpy(kbdTable[20],"Start");
+	strcpy(kbdTable[21],"Stop");
+	strcpy(kbdTable[22],"Ping");
+	strcpy(kbdTable[23],"Counters");
+	strcpy(kbdTable[24],"ResetCount");
+	strcpy(kbdTable[25],"Reset");
+	strcpy(kbdTable[26],"NewId");
+	strcpy(kbdTable[27],"Statistics");
+	strcpy(kbdTable[28],"Zero");
+	strcpy(kbdTable[29],"Display");
+	strcpy(kbdTable[30],"Settings");
+	strcpy(kbdTable[31],"RUAlive");
+	strcpy(kbdTable[32],"StopCycle");
+	strcpy(kbdTable[33],"Alive");
+	strcpy(kbdTable[34],"Streets");
+	strcpy(kbdTable[35],"Help");
 
 	//Set up Mqtt Variables
 	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/MSG";

@@ -17,6 +17,7 @@
 #define FOREVER								true
 #define MINHEAP								20000
 #define NKEYS 								24
+#define KCMDS								36
 
 #define MG_LISTEN_ADDR						"80"
 #define MG_TASK_STACK_SIZE 					4096 /* bytes */

@@ -120,6 +120,7 @@ EXTERN void*							mqttCon;
 EXTERN string							idd;
 EXTERN string							logText[17];
 EXTERN t_symstruct 						lookuptable[NKEYS];
+EXTERN char 							kbdTable[KCMDS][20];
 EXTERN esp_mqtt_client_config_t  		settings,settingsThing;
 EXTERN uint16_t							startLed,gMotorCount;//,pulsecnt;
 EXTERN 	nvs_handle 						nvshandle,seqhandle,lighthandle;
@@ -140,5 +141,5 @@ EXTERN sta_status						activeNodes;
 EXTERN char								tcmds[30][10];
 EXTERN string							calles[6];
 EXTERN int								gCycleTime;
-EXTERN int								theSock;
+EXTERN int								theSock,cuantoDura;
 #endif /* MAIN_GLOBALS_H_ */

@@ -33,6 +33,22 @@ int keyfromstring(char *key)
     return 100;
 }
 
+int cmdfromstring(string key)
+{
+
+    int i;
+    for (i=0; i <KCMDS; i++)
+    {
+    	string s1=string(kbdTable[i]);
+		for (auto & c: s1) c = toupper(c);
+    	if(strstr(s1.c_str(),key.c_str())!=NULL)
+       // if (strcmp(kbdTable[i], key.c_str()) == 0)
+            return i;
+    }
+    return -1;
+}
+
+
 string get_string(uart_port_t uart_num,u8 cual)
 {
 	uint8_t ch;
@@ -160,12 +176,12 @@ const char *byte_to_binary(uint32_t x)
 void kbd(void *arg) {
 	int len;
 	uart_port_t uart_num = UART_NUM_0 ;
-	uint32_t add,bits,epoch=0,epoch1=0;
-	u8 pos,eltipo,lasOps,nodeid,weekd,nodeseq;
+	uint32_t add,epoch=0,epoch1=0;
+	u8 pos,weekd,nodeseq;
 	string algo;
-	char lastcmd=10;
-	char data[50];
-	string s1,s2;
+	int lastcmd=-1;
+	//char data[50];
+	string s1,s2,cmds;
 	time_t t;
 	uint16_t errorcode,code1;
 	int cualf,whom;
@@ -176,6 +192,8 @@ void kbd(void *arg) {
 	struct tm tm;
 	char * resul;
 	struct tm  ts;
+	char temp[20];
+	char local[KCMDS][20];
 
 	uart_config_t uart_config = {
 			.baud_rate = 115200,
@@ -192,18 +210,27 @@ void kbd(void *arg) {
 	if(err!=ESP_OK)
 		printf("Error UART Install %d\n",err);
 
+	memcpy(local,kbdTable, sizeof(local));
+
+	  for(int i=0;i<=KCMDS;i++)
+	    for(int j=i+1;j<=KCMDS;j++){
+	      if(strcmp(local[i],local[j])>0){
+	        strcpy(temp,local[i]);
+	        strcpy(local[i],local[j]);
+	        strcpy(local[j],temp);
+	     }
+	  }
+
 	while(1)
 	{
-		len = uart_read_bytes((uart_port_t)uart_num, (uint8_t*)data,2,20/ portTICK_RATE_MS);
-		if(len>0)
+		cmds=get_string((uart_port_t)uart_num,10);
+		for (auto & c: cmds) c = toupper(c);
+		if(cmds!="")
+			lastcmd=cmdfromstring(cmds);
 		{
-			if(data[0]==10)
-				data[0]=lastcmd;
-			lastcmd=data[0];
-			switch(data[0])
+			switch(lastcmd)
 			{
-			case 'e':
-			case 'E':
+			case BLINKc:
 				for (int b=0;b<10;b++)
 				{
 					REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.allbitsPort);//clear all set bits
@@ -213,7 +240,7 @@ void kbd(void *arg) {
 				}
 				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.allbitsPort);//clear all set bits
 				break;
-			case 'F':
+			case FACTORc:
 				printf("Factorschedule(%d):",FACTOR);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -228,8 +255,7 @@ void kbd(void *arg) {
 				sysConfig.reserved2=FACTOR2;
 				write_to_flash();
 				break;
-			case 'b':
-			case 'B':
+			case PORTSc:
 				printf("Ports(6max)(%s):",byte_to_binary(sysLights.allbitsPort));
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -241,8 +267,7 @@ void kbd(void *arg) {
 					write_to_flash_lights();
 				}
 				break;
-			case 'p':
-			case 'P':
+			case LIGHTSc:
 				algo="";
 				for (int a=0;a<sysLights.numLuces;a++)
 					if(sysLights.thePorts[a]>=0)
@@ -302,7 +327,11 @@ void kbd(void *arg) {
 					}
 					}
 				break;
-			case 'n':
+			case CYCLEc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
 				printf("Total Tlights(%d):",sysConfig.totalLights);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -336,7 +365,11 @@ void kbd(void *arg) {
 					}
 				};
 				break;
-			case 'o':
+			case SCHEDULEc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
 				nodeseq=weekd=0;
 				printf("Controller Sequence#:");
 				fflush(stdout);
@@ -346,7 +379,7 @@ void kbd(void *arg) {
 					pos=atoi(s1.c_str());
 					if (pos<29)
 					{
-						printf("Cycle[max%d]:",allCycles.numcycles);
+						printf("Cycle[max %d]:",allCycles.numcycles);
 						fflush(stdout);
 						s1=get_string((uart_port_t)uart_num,10);
 						if(s1!="")
@@ -410,8 +443,7 @@ void kbd(void *arg) {
 					}
 				}
 			break;
-			case 'C':
-			case 'c':
+			case CONNECTEDc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -423,9 +455,7 @@ void kbd(void *arg) {
 				for (int i=0; i<wifi_sta_list.num; i++)
 				    printf("Connected Nodes[%d]->MAC["MACSTR"]-IP{"IPSTR"}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
 					break;
-			case 'w':
-			case 'W':
-
+			case IDc:
 				printf("Station Whoami(%d)",sysConfig.whoami);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -443,16 +473,15 @@ void kbd(void *arg) {
 					sysConfig.clone=atoi(s1.c_str());
 				write_to_flash();
 				break;
-			case 'x':
-			case 'X':
+			case FIRMWAREc:
 				xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);
 				break;
-			case 'L':
-					fclose(bitacora);
-					bitacora = fopen("/spiflash/log.txt", "w");//truncate to 0 len
-					fclose(bitacora);
-					break;
-			case 'l':
+			case LOGCLEARc:
+				fclose(bitacora);
+				bitacora = fopen("/spiflash/log.txt", "w");//truncate to 0 len
+				fclose(bitacora);
+				break;
+			case LOGc:
 				printf("Log:\n");
 				fseek(bitacora,0,SEEK_SET);
 				while(1)
@@ -471,7 +500,7 @@ void kbd(void *arg) {
 					printf("Date %s|Code %d|%s|Code1 %d\n",makeDateString(t).c_str(),errorcode,logText[errorcode].c_str(),code1);
 				}
 				break;
-			case 'q':
+			case QUIETc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -492,8 +521,8 @@ void kbd(void *arg) {
 					displayf=quiet;
 				}
 				break;
-			case 'v':
-			case 'V':{
+			case TRACEc:
+				{
 				printf("Trace Flags ");
 				for (int a=0;a<NKEYS/2;a++)
 					if (sysConfig.traceflag & (1<<a))
@@ -549,38 +578,45 @@ void kbd(void *arg) {
 
 				}
 
-			case 'T':{
-				printf("Temp: %0.1fC\n",DS_get_temp(&sensors[0][0]));
+			case TEMPc:{
+				printf("Current Temp: %0.1fC\n",DS_get_temp(&sensors[0][0]));
 				break;}
-			case 'f':{
+			case STATUSc:{
 				show_config(0, true) ;
 				break;}
-			case 's':{
+			case MQTTIDc:{
 				sysConfig.sendMqtt=!sysConfig.sendMqtt;
 				printf("SendMqtt is %s\n",sysConfig.sendMqtt?"On":"Off");
 				write_to_flash();
 				break;}
-			case 'S':
-				printf("Pos:");
+			case APc:
+				printf("Which AP:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				len=atoi(s1.c_str());
-				printf("SSID:");
-				fflush(stdout);
-				s1=get_string((uart_port_t)uart_num,10);
-				memset((void*)&sysConfig.ssid[len][0],0,sizeof(sysConfig.ssid[len]));
-				memcpy((void*)&sysConfig.ssid[len][0],(void*)s1.c_str(),s1.length());//without the newline char
-				printf("Password:");
-				fflush(stdout);
-				s1=get_string((uart_port_t)uart_num,10);
-				memset((void*)&sysConfig.pass[len][0],0,sizeof(sysConfig.pass[len]));
-				memcpy((void*)&sysConfig.pass[len][0],(void*)s1.c_str(),s1.length());//without the newline char
-
-				curSSID=sysConfig.lastSSID=0;
-				write_to_flash();
+				if(s1!="")
+				{
+					len=atoi(s1.c_str());
+					printf("SSID(%s):",sysConfig.ssid[len]);
+					fflush(stdout);
+					s1=get_string((uart_port_t)uart_num,10);
+					if(s1!="")
+					{
+						memset((void*)&sysConfig.ssid[len][0],0,sizeof(sysConfig.ssid[len]));
+						memcpy((void*)&sysConfig.ssid[len][0],(void*)s1.c_str(),s1.length());//without the newline char
+					}
+					printf("Password(%s):",sysConfig.pass[len]);
+					fflush(stdout);
+					s1=get_string((uart_port_t)uart_num,10);
+					if(s1!="")
+					{
+						memset((void*)&sysConfig.pass[len][0],0,sizeof(sysConfig.pass[len]));
+						memcpy((void*)&sysConfig.pass[len][0],(void*)s1.c_str(),s1.length());//without the newline char
+					}
+					curSSID=sysConfig.lastSSID=0;
+					write_to_flash();
+				}
 				break;
-			case 'd':
-			case 'D':
+			case DELAYc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -598,8 +634,7 @@ void kbd(void *arg) {
 					howmuch=atol(s1.c_str());
 				sendMsg(QUIET,whom,howmuch,0,NULL,0);
 				break;
-			case 'i':
-			case 'I':
+			case INTERVALc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -617,7 +652,7 @@ void kbd(void *arg) {
 					interval=atol(s1.c_str());
 				sendMsg(QUIET,whom,interval,0,NULL,0);
 				break;
-			case 'm':
+			case MODEc:
 				printf("Mode Server=1 Client=0(%d)",sysConfig.mode);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -626,48 +661,48 @@ void kbd(void *arg) {
 					write_to_flash();
 				}
 				break;
-				case '0': //send a Start Message. ONLY Controller can send this command
+				case STARTc: //send a Start Message. ONLY Controller can send this command
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Start To Whom:");
+				printf("Start Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
 					sendMsg(START,atoi(s1.c_str()),0,0,NULL,0);
 				}
 				break;
-			case '1':
+			case STOPc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Stop To Whom:");
+				printf("Stop Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
 					sendMsg(STOP,atoi(s1.c_str()),0,0,NULL,0);
 				}
 				break;
-			case '2':
+			case PINGc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Ping To Whom:");
+				printf("Ping Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!="")
 					sendMsg(PING,atoi(s1.c_str()),0,0,NULL,0);
 				break;
 
-			case '3':
+			case COUNTERc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Counter from Whom:");
+				printf("Counter from Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
@@ -675,12 +710,12 @@ void kbd(void *arg) {
 				}
 				break;
 
-			case '4':
+			case RESETCOUNTc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Reset Counters for Whom:");
+				printf("Reset Counters:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
@@ -688,12 +723,12 @@ void kbd(void *arg) {
 				}
 				break;
 
-			case '5':
+			case RESETc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Reset Unit for Whom:");
+				printf("Reset Unit:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
@@ -701,12 +736,12 @@ void kbd(void *arg) {
 				}
 				break;
 
-			case '6':
+			case NEWIDc:
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("New Id for Whom:");
+				printf("New Id for Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
@@ -723,29 +758,41 @@ void kbd(void *arg) {
 					sendMsg(NEWID,atoi(s1.c_str()),atoi(s2.c_str()),0,NULL,0);
 				}
 				break;
-			case '7':
+			case STATSc:
 				printf("Tx %d Rx %d\n",salen,entran);
 				break;
-			case '8':
+			case ZEROc:
 				salen=entran=0;
 				printf("Zero Counters\n");
 				break;
-			case '9':
+			case DISPLAYc:
 				displayf=!displayf;
 				printf("Display %s\n",displayf?"On":"Off");
 				break;
-			case 'z':
-				printf("Settings. Host %s Port %d Client %s User %s Pass %s\n",settings.host,settings.port,settings.client_id,settings.username,settings .password );
+			case SETTINGSc:
+				printf("Host %s Port %d Client %s User %s Pass %s\n",settings.host,settings.port,settings.client_id,settings.username,settings .password );
 				break;
-			case 'Z':
+			case RUALIVEc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
 				sendMsg(RUALIVE,EVERYBODY,0,0,NULL,0);
 				printf("RUALIVe sent\n");
 				break;
-			case 'Q':
+			case STOPCYCLEc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
 				rxtxf=!rxtxf;
 				printf("Stop %s\n",rxtxf?"Y":"N");
 				break;
-			case 'M':
+			case ALIVEc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
 				printf("Alive Time(%d):",sysConfig.keepAlive);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -754,20 +801,43 @@ void kbd(void *arg) {
 					write_to_flash();
 				}
 				break;
-			case 'N':
-				printf("Calles Pos:");
+			case STREETc:
+				if(!sysConfig.mode){
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Which Street:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1=="")
 					break;
 				len=atoi(s1.c_str());
-				printf("Nombre(%s):",sysConfig.calles[len]);
+				printf("Name(%s):",sysConfig.calles[len]);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if(s1=="")
 					break;
 				strcpy(sysConfig.calles[len],s1.c_str());
 				write_to_flash();
+				break;
+			case HELPc:
+				printf("Available commands:");
+				pos=0;
+				for (int a=0;a<KCMDS;a++)
+				{
+					if(local[a][0]!=pos)
+					{
+						printf("\n");
+						pos=local[a][0];
+					}
+					else
+						printf("-");
+					if(a<KCMDS-1)
+						printf("%s",local[a]);
+					else
+						printf("%s",local[a]);
+				}
+				printf("\n");
 				break;
 			default:
 				printf("No cmd\n");

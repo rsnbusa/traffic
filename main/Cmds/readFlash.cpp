@@ -224,6 +224,8 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 				if(sysConfig.calles[a][0]!=0)
 					printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
 		}
+		sprintf(textl,"with duration %d secs\n",cuantoDura);
+		printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
 
 }
 
