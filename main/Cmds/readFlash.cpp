@@ -130,7 +130,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 
 		//Station Stuff
 
-			printf("Lights %d Default %d\n",sysLights.numLuces,sysLights.defaultLight);
+			printf("Lights %d Default %d Blink %d\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight);
 			algo="Ports:";
 
 			for(int a=0;a<sysLights.numLuces;a++)
@@ -161,8 +161,14 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 
 			printf("Num Cycles %4d\n",allCycles.numcycles);
 			for (int a=0;a<allCycles.numcycles;a++){
+				if(allCycles.totalTime[a]>3)
+					sprintf(textl,"%5d",allCycles.totalTime[a]);
+				if(allCycles.totalTime[a]==3)
+					strcpy(textl,"Blink");
+				if(allCycles.totalTime[a]==0)
+					strcpy(textl,"  Off");
 
-				printf("Cycle %d Total Time %4d ->%s\n",a,allCycles.totalTime[a],parseCycle(allCycles.nodeSeq[a]).c_str());
+				printf("Cycle %d Total Time %s ->%s\n",a,textl,parseCycle(allCycles.nodeSeq[a]).c_str());
 			}
 
 			//Nodes sequences
@@ -224,7 +230,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 				if(sysConfig.calles[a][0]!=0)
 					printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
 		}
-		sprintf(textl,"with duration %d secs\n",cuantoDura);
+		sprintf(textl,"with duration %d msecs\n",cuantoDura);
 		printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
 
 }

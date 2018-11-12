@@ -17,6 +17,7 @@ void processCmds(void * nc,cJSON * comands);
 void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 void runLight(void * pArg);
 void rxMultiCast(void * pArg);
+void blinkLight(void *pArg);
 
 using namespace std;
 
@@ -594,8 +595,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
     	//printf("AP Assigned %d.%d.%d.%d \n",IP2STR(&addr));
     	connectedToAp[station_list.num-1]=addr.addr;
     	totalConnected=station_list.num;
-//    	if(totalConnected==sysConfig.totalLights)
-//    		rxtxf=true;
     	break;
 
 	case SYSTEM_EVENT_STA_GOT_IP:
@@ -605,6 +604,13 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		get_traffic_name();
 		if(sysConfig.traceflag&(1<<BOOTD))
 			printf( "[BOOTD]Got IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
+
+		   if(blinkHandle)
+		   {
+			   vTaskDelete(blinkHandle);
+			   blinkHandle=NULL;
+			   gpio_set_level(sysLights.defaultLight,1);
+		   }
 
 		if(sysConfig.mode)
 		{
@@ -668,6 +674,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
 		connf=false;
 		gpio_set_level((gpio_num_t)WIFILED, 0);
+
 		if(runHandle)
 		{
 			vTaskDelete(runHandle);
@@ -678,6 +685,20 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			close(theSock);
 			vTaskDelete(rxHandle);
 			rxHandle=NULL;
+		}
+
+		if(blinkHandle){
+			vTaskDelete(blinkHandle);
+			blinkHandle=NULL;
+			printf("Launch Red blink %d\n",sysLights.defaultLight);
+			//put the Light in Danger Mode  Blink Red light. lost host and sync
+			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, 3, &blinkHandle); //will get date
+		}
+		else
+		{
+			printf("Direct Launch Red blink %d\n",sysLights.defaultLight);
+					//put the Light in Danger Mode  Blink Red light. lost host and sync
+					xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, 3, &blinkHandle); //will get date
 		}
 
 		if(cycleHandle)
@@ -727,7 +748,7 @@ void initI2C()
 	i2cp.sdaport=(gpio_num_t)SDAW;
 	i2cp.sclport=(gpio_num_t)SCLW;
 	i2cp.i2cport=I2C_NUM_0;
-	miI2C.init(i2cp.i2cport,i2cp.sdaport,i2cp.sclport,400000,&I2CSem);//Will reserve a Semaphore for Control
+	miI2C.init(i2cp.i2cport,i2cp.sdaport,i2cp.sclport,100000,&I2CSem);//Will reserve a Semaphore for Control
 }
 
 esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
@@ -796,6 +817,19 @@ u8 lastAddr(string que)
 	    pch = strtok (NULL, ".");
 	  }
 	  return res;
+}
+
+void blinkLight(void *pArg)
+{
+	int cual=(int)pArg;
+	printf("Blink %d\n",cual);
+	while(true)
+	{
+		gpio_set_level(cual,1);
+		delay(interval);
+		gpio_set_level(cual,0);
+		delay(interval);
+	}
 }
 
 void process_cmd(cmd_struct cual)
@@ -917,6 +951,7 @@ void process_cmd(cmd_struct cual)
 				   vTaskDelete(runHandle),
 				   runHandle=NULL;
 			   }
+
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
 				   printf("[TRAFFICD]Start Cycle for %d time\n",cual.free1*FACTOR);
 				xTaskCreate(&runLight,"light",4096,(void*)cual.free1, MGOS_TASK_PRIORITY, &runHandle);				//Manages all display to LCD
@@ -937,18 +972,8 @@ void process_cmd(cmd_struct cual)
 				gpio_set_level((gpio_num_t)sysLights.defaultLight, 1); //Default light On
 				break;
 		   case RUALIVE:
-			   if(sysConfig.traceflag & (1<<ALIVED)){
+			   if(sysConfig.traceflag & (1<<ALIVED))
 				   printf("[ALIVED]Heartbeat Received\n");
-				 //  printf("LocalIp: %s\n",inet_ntoa( localIp ));
-				//   algo=string(inet_ntoa( localIp ));
-				//   cuanto=lastAddr(algo);
-				//   printf("Wait %d\n",cuanto);
-				 //  printf( "[Sending IP:" IPSTR "]\n", IP2STR(&cual.myip));
-			   }
-//		    	if(sysConfig.mode)
-//		    		delay(10);
-//		    	else
-//		    		delay(10*cuanto);
 				sendMsg(IMALIVE,EVERYBODY,0,0,NULL,0);
 				break;
 		   case IMALIVE:
@@ -963,6 +988,14 @@ void process_cmd(cmd_struct cual)
 				   activeNodes.lastTime[cual.fromwho]=now;
 			   }
 			   break;
+		   case BLINK:
+			   if(blinkHandle)
+			   {
+				   vTaskDelete(blinkHandle);
+				   blinkHandle=NULL;
+			   }
+				xTaskCreate(&blinkLight,"blight",4096,(void*)sysLights.blinkLight, MGOS_TASK_PRIORITY, &blinkHandle);				//Manages all display to LCD
+				break;
 		   default:
 			   break;
 	   }
@@ -1245,11 +1278,7 @@ void rxMultiCast(void *pArg)
 						   (struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0) {
-//			close(theSock);
-//			theSock = create_multicast_ipv4_socket(UDP_PORT);
-//				if (theSock < 0) {
-//					ESP_LOGE(TAG, "2RX Failed to create IPv4 multicast socket");
-//				}
+
 			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
 			exit(1);
 		}
@@ -1844,7 +1873,7 @@ void doneCallback( TimerHandle_t xTimer )
 void cycleManager(void * pArg)
 {
 	char theNodes[50];
-	int voy=0;
+	int voy=0,restar=0;
 	node_struct intersections;
 	char textl[10];
 
@@ -1879,7 +1908,7 @@ void cycleManager(void * pArg)
 		{
 			gCycleTime=intersections.timeval[voy];
 			sprintf(textl,"   %3ds   ",gCycleTime);
-			gCycleTime-=5;
+		//	gCycleTime-=3;
 			eraseMainScreen();
 			drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
 			drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
@@ -2012,11 +2041,14 @@ struct tm timeinfo ;
 		printf("[TRAFFICD]Timer %d Cycle %d in %d\n",scheduler.voy,cyc,allCycles.totalTime[cyc]);
 	cycleHandle=NULL;
 
-	if(allCycles.totalTime[cyc]!=0)
+	if(allCycles.totalTime[cyc]>3)
 		xTaskCreate(&cycleManager,"cycle",4096,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 	else
 	{
-		sendMsg(OFF,EVERYBODY,0,0,NULL,0);
+		if(allCycles.totalTime[cyc]==0)
+			sendMsg(OFF,EVERYBODY,0,0,NULL,0);
+		else
+			sendMsg(BLINK,EVERYBODY,0,0,NULL,0);
 		semaphoresOff=true;
 	}
 

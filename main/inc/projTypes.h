@@ -23,7 +23,7 @@ typedef struct {
 	int timinter;
 } argumento;
 
-enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL};
+enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK};
 enum {BLINKc,FACTORc,PORTSc,LIGHTSc,CYCLEc,SCHEDULEc,CONNECTEDc,IDc,FIRMWAREc,LOGCLEARc,LOGc,QUIETc,TRACEc,TEMPc,STATUSc,MQTTIDc,APc,DELAYc,INTERVALc,
 	MODEc,STARTc,STOPc,PINGc,COUNTERc,RESETCOUNTc,RESETc,NEWIDc,STATSc,ZEROc,DISPLAYc,SETTINGSc,RUALIVEc,STOPCYCLEc,ALIVEc,STREETc,HELPc};
 typedef enum {NOTSENT,SENT} sendType;
@@ -131,7 +131,7 @@ typedef struct {
     u32 allbitsPort,lastGivenTime;
     int8_t thePorts[6];
     TrafficCompStruct lasLuces[6];
-	u8 defaultLight;
+	u8 defaultLight,blinkLight;
 } lights_struct;
 
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,

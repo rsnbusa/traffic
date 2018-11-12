@@ -285,6 +285,12 @@ void kbd(void *arg) {
 				if (s1!="")
 					sysLights.defaultLight=atoi(s1.c_str());
 
+				printf("Blink Light(%d)(%s):",sysLights.blinkLight,algo.c_str());
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+					sysLights.blinkLight=atoi(s1.c_str());
+
 				printf("Component#:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -323,9 +329,9 @@ void kbd(void *arg) {
 						s1=get_string((uart_port_t)uart_num,10);
 						if(s1!="")
 							sysLights.lasLuces[pos].valor=atol(s1.c_str());
-						write_to_flash_lights();
 					}
 					}
+				write_to_flash_lights();
 				break;
 			case CYCLEc:
 				if(!sysConfig.mode){
@@ -359,7 +365,9 @@ void kbd(void *arg) {
 					if(s1!="")
 					{
 						allCycles.totalTime[pos]=getNodeTime(s1);
+						printf("s1 cycle %s\n",s1.c_str());
 						strcpy(allCycles.nodeSeq[pos],s1.c_str());
+						printf("Cycle %s\n",allCycles.nodeSeq[pos]);
 						allCycles.nodeSeq[pos][s1.length()]=0;
 						write_to_flash_cycles();
 					}
@@ -390,6 +398,8 @@ void kbd(void *arg) {
 						s1=get_string((uart_port_t)uart_num,10);
 						if(s1!="")
 							weekd=atoi(s1.c_str());
+						else
+							weekd=sysSequence.sequences[pos].weekDay;
 
 						ts = *localtime(&sysSequence.sequences[pos].startSeq);
 						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
@@ -409,6 +419,9 @@ void kbd(void *arg) {
 							}
 							epoch = mktime(&tm);
 						}
+						else
+							epoch=sysSequence.sequences[pos].startSeq;
+
 						memset(&tm, 0, sizeof(struct tm));
 						ts = *localtime(&sysSequence.sequences[pos].stopSeq);
 						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
@@ -431,6 +444,8 @@ void kbd(void *arg) {
 								break;
 							}
 						}
+						else
+							epoch1=sysSequence.sequences[pos].stopSeq;
 
 						printf("Seq[%d] Cycle %s Week %d Start %d Stop %d\n",pos,allCycles.nodeSeq[nodeseq],weekd,epoch,epoch1);
 						sysSequence.sequences[pos].cycleId=nodeseq;
@@ -474,7 +489,12 @@ void kbd(void *arg) {
 				write_to_flash();
 				break;
 			case FIRMWAREc:
-				printf("Lauch Firmware update:");
+				if(!sysConfig.mode)
+				{
+					printf(sermod);
+					break;//Only server mode
+				}
+				printf("Launch Firmware update:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1=="y")
@@ -639,7 +659,7 @@ void kbd(void *arg) {
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!="")
 					howmuch=atol(s1.c_str());
-				sendMsg(QUIET,whom,howmuch,0,NULL,0);
+				sendMsg(DELAY,whom,howmuch,0,NULL,0);
 				break;
 			case INTERVALc:
 				if(!sysConfig.mode){
@@ -657,7 +677,7 @@ void kbd(void *arg) {
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!="")
 					interval=atol(s1.c_str());
-				sendMsg(QUIET,whom,interval,0,NULL,0);
+				sendMsg(INTERVAL,whom,interval,0,NULL,0);
 				break;
 			case MODEc:
 				printf("Mode Server=1 Client=0(%d)",sysConfig.mode);

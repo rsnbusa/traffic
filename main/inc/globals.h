@@ -135,7 +135,7 @@ EXTERN cmd_struct 						answer;
 EXTERN scheduler_struct					scheduler;
 EXTERN u8								nextSchedule,totalConnected;
 EXTERN u8								TODAY;
-EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle;
+EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle;
 EXTERN u16								FACTOR,FACTOR2;
 EXTERN sta_status						activeNodes;
 EXTERN char								tcmds[30][10];
