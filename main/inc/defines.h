@@ -17,7 +17,7 @@
 #define FOREVER								true
 #define MINHEAP								20000
 #define NKEYS 								24
-#define KCMDS								36
+#define KCMDS								37
 
 #define MG_LISTEN_ADDR						"80"
 #define MG_TASK_STACK_SIZE 					4096 /* bytes */
@@ -40,9 +40,9 @@
 // pins
 #define SDAW                				GPIO_NUM_18      // SDA
 #define SCLW                				GPIO_NUM_19       // SCL for Wire service
-#define WIFILED 							GPIO_NUM_25
+#define WIFILED 							GPIO_NUM_5
 #define DSPIN 								GPIO_NUM_15
-#define MQTTLED								GPIO_NUM_26
+#define MQTTLED								GPIO_NUM_17
 
 // Varios
 #define MAXEMAILS           				3

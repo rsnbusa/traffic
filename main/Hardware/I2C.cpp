@@ -13,7 +13,7 @@
 #include "sdkconfig.h"
 #include <esp_log.h>
 
-static bool driverInstalled = false;
+//static bool driverInstalled = false;
 
 /**
  * @brief Create an instance of an %I2C object.
@@ -26,6 +26,7 @@ I2C::I2C() {
 	address = 0;
 	cmd = 0;
 	portNum=(i2c_port_t)0;
+	driverInstalled=false;
 }
 
 void I2C::beginTransaction() {
@@ -36,7 +37,8 @@ void I2C::beginTransaction() {
 
 int I2C::endTransaction() {
 	i2c_master_stop(cmd);
-	int ret=i2c_master_cmd_begin(I2C_NUM_0, cmd,1000/portTICK_PERIOD_MS);
+int ret=i2c_master_cmd_begin(I2C_NUM_0, cmd,portMAX_DELAY/portTICK_PERIOD_MS);
+//int ret=i2c_master_cmd_begin(I2C_NUM_0, cmd,1000/portTICK_PERIOD_MS);
 	i2c_cmd_link_delete(cmd);
 	return ret;
 }
@@ -104,13 +106,15 @@ void I2C::init(i2c_port_t portNum,gpio_num_t sdaPin, gpio_num_t sclPin, int spee
 	conf.scl_pullup_en = GPIO_PULLUP_ENABLE;
 	conf.master.clk_speed = speed;
 	ESP_ERROR_CHECK(i2c_param_config(I2C_NUM_0, &conf));
-	//if (!driverInstalled) {
+//	printf("I2C Init install %d\n",driverInstalled);
+	if (!driverInstalled) {
 		i2c_driver_install(portNum, I2C_MODE_MASTER, 0, 0, 0);
 		driverInstalled = true;
-		*i2cSem= xSemaphoreCreateBinary();
+		if(!*i2cSem)
+			*i2cSem= xSemaphoreCreateBinary();
 		if(*i2cSem)
 			xSemaphoreGive(*i2cSem);  //SUPER important else its born locked
 		else
 			printf("Can't allocate I2C Sem\n");
-	//}
+	}
 }

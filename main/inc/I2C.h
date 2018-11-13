@@ -24,6 +24,8 @@ private:
 
 public:
 	uint8_t address;
+	bool driverInstalled;
+
 
 	I2C();
 	void beginTransaction();

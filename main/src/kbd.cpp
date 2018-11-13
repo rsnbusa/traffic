@@ -7,18 +7,15 @@
 #include "kbd.h"
 
 extern void show_config(u8 meter, bool full);
-extern void load_from_fram(u8 meter);
 extern void write_to_flash();
 extern void write_to_flash_seq();
 extern void write_to_flash_lights();
 extern void write_to_flash_cycles();
-void write_to_fram(u8 meter,bool adding);
 extern string makeDateString(time_t t);
 extern esp_mqtt_client_config_t settings;
-extern uart_port_t uart_num;
-//typedef struct { char key[10]; int val; } t_symstruct;
-extern t_symstruct 	lookuptable[NKEYS];
-//void relay(stateType estado);
+extern void initScreen();
+extern void initI2C();
+extern void setLogo(string cual);
 
 int keyfromstring(char *key)
 {
@@ -253,6 +250,13 @@ void kbd(void *arg) {
 				if (s1!="")
 					FACTOR2=atoi(s1.c_str());
 				sysConfig.reserved2=FACTOR2;
+				printf("Show Leds(%d):",sysConfig.showLeds);
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				if (s1!="")
+				{
+					sendMsg(LEDS,EVERYBODY,atoi(s1.c_str()),0,NULL,0);
+				}
 				write_to_flash();
 				break;
 			case PORTSc:
@@ -866,6 +870,26 @@ void kbd(void *arg) {
 				}
 				printf("\n");
 				break;
+			case SCREENc:
+				displayf=false;
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+		//		if(!I2CSem)
+		//		{
+				miI2C.driverInstalled=false;
+				 i2c_driver_delete(I2C_NUM_0);
+
+					printf("No semaphore\n");
+					initI2C();
+		//		}
+				printf("Init Screen\n");
+				display.init();
+				vTaskDelay(100 / portTICK_PERIOD_MS);
+				display.flipScreenVertically();
+				display.clear();
+				displayf=true;
+				printf("After screen call\n");
+				setLogo("Scr");
+				break;
 			default:
 				printf("No cmd\n");
 				break;
@@ -875,5 +899,4 @@ void kbd(void *arg) {
 		vTaskDelay(BLINKT / portTICK_PERIOD_MS);
 	}
 }
-
 

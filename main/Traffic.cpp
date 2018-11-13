@@ -503,7 +503,7 @@ void initialize_sntp(void *args)
 	write_to_flash();
 	timef=1;
 	postLog(0,sysConfig.bootcount);
-
+	rtc.setEpoch(now);
 	if(!mdnsf)
 		xTaskCreate(&mdnstask, "mdns", 4096, NULL, 5, NULL); //Ota Interface Controller
 	//release this task
@@ -534,13 +534,15 @@ void newSSID(void *pArg)
 	temp=string(sysConfig.ssid[cual]);
 	len=temp.length();
 
+	if(displayf)
+	{
 	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 		{
 			drawString(64,42,"               ",10,TEXT_ALIGN_CENTER,DISPLAYIT,REPLACE);
 			drawString(64,42,string(sysConfig.ssid[curSSID]),10,TEXT_ALIGN_CENTER,DISPLAYIT,REPLACE);
 			xSemaphoreGive(I2CSem);
 		}
-
+	}
 	if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Try SSID =%s= %d %d\n",temp.c_str(),cual,len);
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
@@ -604,6 +606,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		get_traffic_name();
 		if(sysConfig.traceflag&(1<<BOOTD))
 			printf( "[BOOTD]Got IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
+		gpio_set_level((gpio_num_t)WIFILED, 1);
 
 		   if(blinkHandle)
 		   {
@@ -673,8 +676,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
 		connf=false;
+		gpio_set_level((gpio_num_t)RXLED, 0);
+		gpio_set_level((gpio_num_t)SENDLED, 0);
+		gpio_set_level((gpio_num_t)MQTTLED, 0);
 		gpio_set_level((gpio_num_t)WIFILED, 0);
-
 		if(runHandle)
 		{
 			vTaskDelete(runHandle);
@@ -731,7 +736,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
 		sysConfig.lastSSID=curSSID;
 		write_to_flash();
-		gpio_set_level((gpio_num_t)WIFILED, 1);
 		break;
 
 	default:
@@ -842,7 +846,8 @@ void process_cmd(cmd_struct cual)
 
 	if(((cual.towho==255) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
 	{
-		blink(RXLED);
+		if(sysConfig.showLeds)
+			blink(RXLED);
 		//rxMsg[cual.cmd]++;
 		entran++;
 	   switch (cual.cmd)
@@ -996,6 +1001,10 @@ void process_cmd(cmd_struct cual)
 			   }
 				xTaskCreate(&blinkLight,"blight",4096,(void*)sysLights.blinkLight, MGOS_TASK_PRIORITY, &blinkHandle);				//Manages all display to LCD
 				break;
+		   case LEDS:
+			   sysConfig.showLeds=cual.free1;
+			   write_to_flash();
+			   break;
 		   default:
 			   break;
 	   }
@@ -1252,7 +1261,8 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 			close(sock);
 			return;
 		}
-		blink(SENDLED);
+		if(sysConfig.showLeds)
+			blink(SENDLED);
 		close(sock);
 }
 
@@ -1387,7 +1397,8 @@ void mcast_example_task(void *pvParameters)
 				ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d", errno);
 				exit(1);
 			}
-			blink(SENDLED);
+			if(sysConfig.showLeds)
+				blink(SENDLED);
 			salen++;
 			if (!displayf)
 			{
@@ -1471,8 +1482,7 @@ void initWiFiSta()
 
 void initScreen()
 {
-	if(I2CSem)
-	{
+
 	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 	{
 		display.init();
@@ -1483,9 +1493,7 @@ void initScreen()
 		drawString(64,40,string(sysConfig.ssid[curSSID]),10,TEXT_ALIGN_CENTER,DISPLAYIT,NOREP);
 		xSemaphoreGive(I2CSem);
 	}
-	}
-	else
-		printf("Failed to InitScreen\n");
+
 }
 
 
@@ -1509,6 +1517,7 @@ void initVars()
 		FACTOR2=10;
 	runHandle=NULL;
 	cycleHandle=NULL;
+	blinkHandle=NULL;
 	semaphoresOff=false;
 	for (int a=0;a<20;a++){
 		activeNodes.lastTime[a]=0;
@@ -1629,6 +1638,7 @@ void initVars()
 	strcpy(kbdTable[33],"Alive");
 	strcpy(kbdTable[34],"Streets");
 	strcpy(kbdTable[35],"Help");
+	strcpy(kbdTable[36],"Screen");
 
 	//Set up Mqtt Variables
 	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/MSG";
@@ -1701,6 +1711,47 @@ void initVars()
 	logText[17]="Heap Guard";
 
 }
+
+void initRtc()
+{
+	DateTime algo;
+
+	rtc.begin(i2cp.i2cport);		// RTC
+	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
+	{
+		algo=rtc.now();
+		xSemaphoreGive(I2CSem);
+	}
+//#ifdef DEBUGMQQT
+	if(sysConfig.traceflag & (1<<BOOTD))
+		printf("[BOOTD]RTC Year %d Month %d Day %d Hora %d Min %d Sec %d Week %d\n",algo.year(),algo.month(),algo.date(),algo.hour(),algo.minute(),algo.second(),algo.dayOfWeek());
+//#endif
+	mesg=oldMesg=algo.month()-1;                       // Global Month
+	diag=oldDiag=algo.date()-1;                         // Global Day
+	horag=oldHorag=algo.hour()-1-5;                      // Global Hour - 5 UIO
+	yearg=algo.year();
+	if(oldMesg>12 || oldDiag>31 || oldHorag>23) //Sanity check
+		oldMesg=oldDiag=1;
+//	rtcf=true;
+
+	//Now load system time for internal use
+
+	u32 now=algo.getEpoch()-(5*3600);
+	struct timeval tm;
+	tm.tv_sec=now;
+	tm.tv_usec=0;
+	settimeofday(&tm,0); //Now local time is set. It could be changed from the SNTP if we get a connections else we use this date
+
+	struct tm timeinfo;
+	time_t tt;
+	time(&tt);
+	localtime_r(&tt, &timeinfo);
+	if(sysConfig.traceflag & (1<<BOOTD))
+		printf("[BOOTD]RTC->UNIX Date %s yDay %d\n",asctime(&timeinfo),timeinfo.tm_yday);
+
+
+}
+
 
 int init_log()
 {
@@ -1904,6 +1955,8 @@ void cycleManager(void * pArg)
 		sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,NULL,0);
 		xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+2)*1000,0,0);
 
+		if(displayf)
+		{
 		if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 		{
 			gCycleTime=intersections.timeval[voy];
@@ -1913,6 +1966,7 @@ void cycleManager(void * pArg)
 			drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
 			drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 			xSemaphoreGive(I2CSem);
+		}
 		}
 
 		u32 st=millis();
@@ -2090,7 +2144,7 @@ void heapWD(void *pArg)
 
 void app_main(void)
 {
-//	esp_log_level_set("*", ESP_LOG_ERROR); //shut up
+	esp_log_level_set("*", ESP_LOG_ERROR); //shut up
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         // NVS partition was truncated and needs to be erased
@@ -2145,6 +2199,7 @@ if(sysConfig.mode)  //Scheduler only in Controller Mode
     init_temp();			// Temperature sensors
 	init_log();				// Log file management
 	initSensors();
+	initRtc();
 
 	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 

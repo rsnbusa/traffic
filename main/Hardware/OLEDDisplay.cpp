@@ -38,6 +38,8 @@ bool OLEDDisplay::init() {
     ESP_LOGI("RSN","[OLEDDISPLAY][init] Can't establish connection to display");
     return false;
   }
+  if (this->buffer)
+	  free(buffer);
   this->buffer = (uint8_t*) malloc(sizeof(uint8_t) * DISPLAY_BUFFER_SIZE);
   if(!this->buffer) {
 	  ESP_LOGI("RSN","[OLEDDISPLAY][init] Not enough memory to create display\n");
@@ -45,6 +47,9 @@ bool OLEDDisplay::init() {
   }
 
   #ifdef OLEDDISPLAY_DOUBLE_BUFFER
+  if(this->buffer_back)
+	  free(buffer_back);
+
   this->buffer_back = (uint8_t*) malloc(sizeof(uint8_t) * DISPLAY_BUFFER_SIZE);
   if(!this->buffer_back) {
 	  ESP_LOGI("RSN","[OLEDDISPLAY][init] Not enough memory to create back buffer\n");
@@ -52,10 +57,10 @@ bool OLEDDisplay::init() {
     return false;
   }
   #endif
-//  printf("Screensend\n");
+ //printf("Screensend\n");
 
   sendInitCommands();
-//  printf("Screenreset\n");
+ // printf("Screenreset\n");
 
   resetDisplay();
 //  printf("Screendone\n");
@@ -676,9 +681,9 @@ size_t OLEDDisplay::write(const char* str) {
 
 // Private functions
 void OLEDDisplay::sendInitCommands(void) {
-	//ESP_LOGI("RSN","Sending commands");
+	ESP_LOGI("RSN","Sending commands");
   sendCommand(DISPLAYOFF);
-	//ESP_LOGI("RSN","Sending 2");
+	ESP_LOGI("RSN","Sending 2");
 
   sendCommand(SETDISPLAYCLOCKDIV);
   sendCommand(0xF0); // Increase speed of the display max ~96Hz

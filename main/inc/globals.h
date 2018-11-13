@@ -37,7 +37,6 @@ using namespace std;
 
  EXTERN char                			ipaddr[16];
 
- EXTERN Nodo							esteNodo;
 // Devices and Services
  EXTERN	I2C								miI2C;
 #ifdef GLOBAL

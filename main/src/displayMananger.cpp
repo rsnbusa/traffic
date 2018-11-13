@@ -18,7 +18,9 @@ extern uint32_t millis();
 
 void drawString(int x, int y, string que, int fsize, int align,displayType showit,overType erase)
 {
-//	return;
+ if (!displayf)
+	 return;
+
 	if(fsize!=lastFont)
 	{
 		lastFont=fsize;
@@ -154,7 +156,9 @@ void timerManager(void *arg) {
 				rxtxf=true;
 		}
 
-		if (displayf)
+		//if (true)
+			if (displayf)
+
 		{
 			if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 			{
@@ -201,6 +205,8 @@ void displayManager(void *arg) {
 				diff*=-1.0;
 			if (diff>0.3 && temp<130.0)
 			{
+				if(displayf)
+				{
 				if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 				{
 					sprintf(textl,"%.02fC\n",temp);
@@ -208,6 +214,7 @@ void displayManager(void *arg) {
 					drawString(50, 0, string(textl), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 					oldtemp=temp;
 					xSemaphoreGive(I2CSem);
+				}
 				}
 			}
 			tempwhen=millis();

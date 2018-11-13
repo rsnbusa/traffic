@@ -7,6 +7,7 @@
 #include "I2C.h"
 #include "SSD1306.h"
 #include "time.h"
+#include "Sodaq_DS3231.h"
 
 extern "C"{
 #include "Nodo.h"
