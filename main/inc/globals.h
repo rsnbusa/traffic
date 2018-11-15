@@ -32,7 +32,7 @@ using namespace std;
 
  EXTERN	i2ctype 						i2cp;
 
- EXTERN struct rst_info   				*rtc_info; //Restart System variable. States Reason for reboot. Look first line for reasons
+ EXTERN struct rst_info   				*rtc_info;
  EXTERN debugflags						traceflag;
 
  EXTERN ip4_addr_t 						localIp;
@@ -60,19 +60,18 @@ using namespace std;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
  EXTERN esp_adc_cal_characteristics_t 	*adc_chars;
  EXTERN adc1_channel_t 					adcchannel;     //GPIO34 if ADC1, GPIO14 if ADC2
- EXTERN adc_atten_t 					atten;
  EXTERN cmd_struct 						answer;
  EXTERN scheduler_struct				scheduler;
  EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle;
  EXTERN sta_status						activeNodes;
  EXTERN cmdRecord 						cmds[MAXCMDS];
 
- EXTERN string							logText[17],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
+ EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
- EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,curSSID;
- EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration;
+ EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid;
+ EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID;
  EXTERN int								RSSI,gCycleTime,theSock,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
  EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[10];
  EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10];

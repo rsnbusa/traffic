@@ -309,7 +309,7 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withH
 	struct mg_connection *nc=(struct mg_connection*)comm;
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<PUBSUBD))
-		PRINT_MSG("[PUBSUBD]Type %d Sending response %s len=%d\n",msgTipo,que.c_str(),que.length());
+		printf("[PUBSUBD]Type %d Sending response %s len=%d\n",msgTipo,que.c_str(),que.length());
 #endif
 	if(msgTipo==1)
 	{ // MQTT Response
@@ -333,7 +333,7 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withH
 				spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/"+montonUid[a]+"/MSG";
 #ifdef DEBUGSYS
 				if(sysConfig.traceflag & (1<<PUBSUBD))
-					PRINT_MSG("[PUBSUBD]Publish %s Msg %s\n",spublishTopic.c_str(),final.c_str());
+					printf("[PUBSUBD]Publish %s Msg %s\n",spublishTopic.c_str(),final.c_str());
 #endif
 				esp_mqtt_client_publish(mcomm, (char*)spublishTopic.c_str(), (char*)final.c_str(),final.length(), 0, 0);
 				spublishTopic="";
@@ -1662,7 +1662,6 @@ void initWiFi()
 	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t 					configap;
 	u8 mac[6];
-
 	tcpip_adapter_init();
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -1671,7 +1670,6 @@ void initWiFi()
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	esp_wifi_get_mac(ESP_IF_WIFI_AP, (uint8_t*)&mac);
-//	printf("Mac %02x:%02x:%02x:%02x:%02x:%02x\n",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	memset(&configap,0,sizeof(configap));
 	strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
 	strcpy((char *)configap.sta.password, sysConfig.pass[1]);
@@ -1686,7 +1684,6 @@ void initWiFi()
 	ESP_LOGI(TAG,"AP %s",sysConfig.ssid[0]);
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
 	ESP_ERROR_CHECK(esp_wifi_start());
-
 }
 
 void initWiFiSta()
@@ -1810,6 +1807,15 @@ void initVars()
 	strcpy(lookuptable[9].key,"ALIVED");
 	strcpy(lookuptable[10].key,"MQTTT");
 	strcpy(lookuptable[11].key,"HEAPD");
+
+//	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
+//		{
+//			strcpy(lookuptable[i].key,"-");
+//			strcat(lookuptable[i].key,lookuptable[i-NKEYS/2].key);
+//			printf("Look %d=%s\n",i,lookuptable[i].key);
+//			lookuptable[i].val=i*-1;
+//			lookuptable[i-NKEYS/2].val=i-NKEYS/2;
+//		}
 
 	strcpy(lookuptable[12].key,"-BOOTD");
 	strcpy(lookuptable[13].key,"-WIFID");
@@ -2455,21 +2461,6 @@ void heartBeat(void *pArg)
 	}
 }
 
-
-void heapWD(void *pArg)
-{
-	while(FOREVER)
-	{
-		delay(60000); //every minute
-		if(xPortGetFreeHeapSize()<MINHEAP)
-		{
-			postLog(17,xPortGetFreeHeapSize());
-			esp_restart();
-		}
-	}
-}
-
-
 void app_main(void)
 {
 	//esp_log_level_set("*", ESP_LOG_ERROR); //shut up
@@ -2494,12 +2485,6 @@ void app_main(void)
 
 	traceflag=(debugflags)sysConfig.traceflag;
 
-	if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
-	{
-		printf("Read centinel %x",sysConfig.centinel);
-		erase_config();
-	}
-
 	err = nvs_open("lights", NVS_READWRITE, &lighthandle);
 	if(err!=ESP_OK)
 		printf("Error opening Lights File\n");
@@ -2518,6 +2503,17 @@ if(sysConfig.mode)  //Scheduler only in Controller Mode
 	}
 }
 
+if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
+{
+	printf("Erase Configuration\n");
+//	nvs_erase_all(nvshandle);
+//	nvs_erase_all(seqhandle);
+//	nvs_erase_all(lighthandle);
+//	nvs_commit(seqhandle);
+//	nvs_commit(lighthandle);
+//	nvs_commit(nvshandle);
+	erase_config();
+}
 	printf("VersionEsp32-1.0.1\n");
 
 	curSSID=sysConfig.lastSSID;
@@ -2542,13 +2538,11 @@ if(sysConfig.mode)  //Scheduler only in Controller Mode
 
 	memset(&answer,0,sizeof(answer));
 	// Start Main Tasks
-
 	xTaskCreate(&displayManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
 	xTaskCreate(&kbd,"kbd",8192,NULL, MGOS_TASK_PRIORITY, NULL);								// User interface while in development. Erased in RELEASE
-	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
-//	xTaskCreate(&heapWD,"heapWD",1024,NULL, MGOS_TASK_PRIORITY, NULL);
+//	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
 
-	ESP_LOGI(TAG, "Node Mode %s", sysConfig.mode?"Server":"Client");
+//	ESP_LOGI(TAG, "Node Mode %s", sysConfig.mode?"Server":"Client");
 
 	if(sysConfig.mode==0)
 	    initWiFiSta();
