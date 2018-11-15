@@ -917,7 +917,6 @@ u8 lastAddr(string que)
 {
 	  char * pch;
 	  u8 res=0;
-//	  printf ("Splitting string \"%s\" into tokens:\n",que.c_str());
 	  pch = strtok ((char*)que.c_str(),".");
 	  while (pch != NULL){
 		  res=atoi(pch);
