@@ -1656,56 +1656,13 @@ void mcast_example_task(void *pvParameters)
     }
 
 }
-/*
-u8 mac[8];
-	char textl[20];
-	string temp;
-	int len;
-	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
-	wifi_config_t 					sta_config,configap;
-	tcpip_adapter_init();
-	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
-	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 
-
-
-	if (aqui.ssid[curSSID][0]!=0)
-	{
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-		temp=string(aqui.ssid[curSSID]);
-		len=temp.length();
-		memcpy(sta_config.sta.ssid,temp.c_str(),len+1);
-		temp=string(aqui.pass[curSSID]);
-		len=temp.length();
-		memcpy(sta_config.sta.password,temp.c_str(),len+1);
-		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &sta_config));
-	}
-
-	else
-	{
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-		esp_wifi_get_mac(ESP_IF_WIFI_STA, (u8*)&mac);
-		sprintf(textl,"MeterIoT%02x%02x",mac[6],mac[7]);
-		memcpy(configap.ap.ssid,textl,12);
-		memcpy(configap.ap.password,"csttpstt\0",9);
-		configap.ap.ssid[12]=0;
-		configap.ap.password[9]=0;
-		configap.ap.ssid_len=0;
-		configap.ap.authmode=WIFI_AUTH_WPA_PSK;
-		configap.ap.ssid_hidden=false;
-		configap.ap.max_connection=4;
-		configap.ap.beacon_interval=100;
-		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &configap));
-	}
-
-	*/
-
-void initWiFi()
+/*void initWiFi()
 {
 	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t 					configap;
 	char mac[8],textl[20];
+
 	tcpip_adapter_init();
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
@@ -1716,20 +1673,24 @@ void initWiFi()
 	{
 		printf("Start config puro\n");
 		memset(&configap,0,sizeof(configap));
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-		esp_wifi_get_mac(ESP_IF_WIFI_STA, (u8*)&mac);
-		sprintf(textl,"LightIoT%02x%02x",mac[6],mac[7]);
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
+		esp_wifi_get_mac(ESP_IF_WIFI_AP, (u8*)&mac);
+		int fueron=sprintf(textl,"LightIoT%02x%02x",mac[5],mac[6]);
 		printf("APName %s\n",textl);
-		memcpy(&configap.ap.ssid,textl,12);
-		memcpy(&configap.ap.password,textl,12);
-		configap.ap.ssid[12]=0;
-		configap.ap.password[12]=0;
-		configap.ap.ssid_len=12;
+		strcpy(configap.ap.ssid,textl);
+		strcpy(configap.ap.password,textl);
+	//	memcpy(&configap.ap.ssid,textl,8);
+	//	memcpy(&configap.ap.password,textl,8);
+		configap.ap.ssid[fueron]=0;
+		configap.ap.password[fueron]=0;
+		configap.ap.ssid_len=fueron;
 		configap.ap.authmode=WIFI_AUTH_WPA_PSK;
 		configap.ap.ssid_hidden=false;
 		configap.ap.max_connection=4;
 		configap.ap.beacon_interval=100;
+		printf("setconfig ap[%s]pass[%s]\n",configap.ap.ssid,configap.ap.password);
 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &configap));
+		printf("Start\n");
 		ESP_ERROR_CHECK(esp_wifi_start());
 		printf("Fin\n");
 		return;
@@ -1794,7 +1755,7 @@ void initWiFiSta()
 	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
 }
-
+*/
 void initScreen()
 {
 
@@ -2618,7 +2579,10 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 //	ESP_LOGI(TAG, "Node Mode %s", sysConfig.mode?"Server":"Client");
 
 	if(sysConfig.mode==0)
-	    initWiFiSta();
+//		if(string(sysConfig.ssid[0])=="")
+//			initWiFi();
+//		else
+			initWiFiSta();
 	else
 	    initWiFi();
 
