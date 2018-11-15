@@ -163,13 +163,12 @@ void initWiFiFw(void*pArg)
 	firmware_type *firmware=(firmware_type *)pArg;
 	char app[40],ppp[10];
 	wifi_config_t sta_config;
-	system_event_cb_t elcb;
+//	system_event_cb_t elcb=NULL;
 
 	strcpy(app,firmware->ap);
 	strcpy(ppp,firmware->pass);
 
-//	printf("APPP %s PPPP %s\n",app,ppp);
-	elcb=esp_event_loop_set_cb(wifi_event_handler_local,firmware);
+	esp_event_loop_set_cb(wifi_event_handler_local,firmware);
 
 	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
 	cfg.event_handler = &esp_event_send;
@@ -177,8 +176,8 @@ void initWiFiFw(void*pArg)
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE);
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-	strcpy(sta_config.sta.ssid,app);
-	strcpy(sta_config.sta.password,ppp);
+	strcpy((char*)sta_config.sta.ssid,app);
+	strcpy((char*)sta_config.sta.password,ppp);
 	sta_config.sta.bssid_set=0;
 	sta_config.sta.channel=6;
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
@@ -189,7 +188,7 @@ void initWiFiFw(void*pArg)
 
 void set_FirmUpdateCmd(void *pArg)
 {
-	firmware_type *firmware=(firmware_type*)pArg;
+	//firmware_type *firmware=(firmware_type*)pArg;
 	string algo;
 	string ap,passw;
 	firmware_type lfw;

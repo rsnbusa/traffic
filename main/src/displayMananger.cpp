@@ -186,7 +186,7 @@ void displayManager(void *arg) {
 	char textl[20];
 //	stateType oldState,moldState=CLOSED;
 	string local;
-	uint32_t tempwhen=0,t1,oldt1=0,lasttime=0;
+	uint32_t tempwhen=0;
 	float temp,diff;
 //	oldState=stateVM;
 	oldtemp=0.0;

@@ -38,7 +38,7 @@ string parseCycle(string cual)
 
 	  char * pch;
 	//  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
-	  pch = strtok (cual.c_str(),"-");
+	  pch = strtok ((char*)cual.c_str(),"-");
 	  while (pch != NULL)
 	  {
 		  cualn=atoi(pch);
@@ -86,11 +86,11 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			printf("%s",mmac.c_str());
 			mmac="";
 			printf("[AP Name:%s] Mongoose%d\n",AP_NameString.c_str(),mongf);
-			printf("Meter Name:%s Working:%s\n",sysConfig.meterName,sysConfig.working?"On":"Off");
+			printf("Meter Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
 			printf("MQTT Server:[%s:%d] Connected:%s User:[%s] Passw:[%s]\n",sysConfig.mqtt,sysConfig.mqttport,mqttf?"Yes":"No",sysConfig.mqttUser,sysConfig.mqttPass);
 			printf("Cmd Queue:%s\n",cmdTopic.c_str());
 			printf("Answer Queue:%s\n",spublishTopic.c_str());
-			printf("Alert Queue:%s\n",alertTopic.c_str());
+		//	printf("Alert Queue:%s\n",alertTopic.c_str());
 			printf("Update Server:%s\n",sysConfig.domain);
 			nameStr=string(APP)+".bin";
 			printf("[Version OTA-Updater %s] ",sysConfig.actualVersion);
@@ -175,7 +175,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			printf("Num Schedules %d\n",sysSequence.numSequences);
 			for (int a=0;a<sysSequence.numSequences;a++)
 			{
-				   ts = *localtime(&sysSequence.sequences[a].startSeq);
+				   ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
 				    strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 					char diass[8]="-------";
 							char diaSemana[8]="SMTWTFS";
@@ -188,7 +188,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 							diass[7]=0;
 							string nada=string(diass);
 				    printf("Schedule[%d] (%d)->%s-%s-%s ",a,sysSequence.sequences[a].cycleId,parseCycle(allCycles.nodeSeq[sysSequence.sequences[a].cycleId]).c_str(),diass,textl);
-				   ts = *localtime(&sysSequence.sequences[a].stopSeq);
+				   ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
 				    strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 				    printf("%s=%d\n",textl,sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
 
@@ -214,15 +214,15 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			else
 				printf("%d Connected TLights\n",wifi_sta_list.num);
 			for (int i=0; i<wifi_sta_list.num; i++)
-				printf("TLight[%d]->MAC["MACSTR"]-IP{"IPSTR"}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
+				printf("TLight[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
 
 			printf("\nGeneral Status\n");
 			int este=scheduler.seqNum[scheduler.voy];
-			ts = *localtime(&sysSequence.sequences[este].startSeq);
+			ts = *localtime((const time_t*)&sysSequence.sequences[este].startSeq);
 			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 			int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
 			printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
-			ts = *localtime(&sysSequence.sequences[este].stopSeq);
+			ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
 			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 			printf("%s\n",textl);
 

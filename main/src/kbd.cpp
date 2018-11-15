@@ -84,7 +84,7 @@ uint32_t strbitsConfirm(string cual)
 
 	  char * pch;
 	//  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
-	  pch = strtok (cual.c_str(),",");
+	  pch = strtok ((char*)cual.c_str(),",");
 	  while (pch != NULL)
 	  {
 		  if(confirmPort(atoi(pch)))
@@ -106,7 +106,7 @@ uint16_t getNodeTime(string cual)
 
 	  char * pch;
 	//  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
-	  pch = strtok (cual.c_str(),"-");
+	  pch = strtok ((char*)cual.c_str(),"-");
 	  while (pch != NULL)
 	  {
 		 // printf("Node %s-",pch);
@@ -127,7 +127,7 @@ uint32_t strbits(string cual,bool savep)
 
 	  char * pch;
 	//  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
-	  pch = strtok (cual.c_str(),",");
+	  pch = strtok ((char*)cual.c_str(),",");
 	  while (pch != NULL)
 	  {
 		  if(atoi(pch)>31)
@@ -407,7 +407,7 @@ void kbd(void *arg) {
 						else
 							weekd=sysSequence.sequences[pos].weekDay;
 
-						ts = *localtime(&sysSequence.sequences[pos].startSeq);
+						ts = *localtime((const time_t*)&sysSequence.sequences[pos].startSeq);
 						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 
 						printf("Start Time(HH:MM:SS)(%s):",textl);
@@ -429,7 +429,7 @@ void kbd(void *arg) {
 							epoch=sysSequence.sequences[pos].startSeq;
 
 						memset(&tm, 0, sizeof(struct tm));
-						ts = *localtime(&sysSequence.sequences[pos].stopSeq);
+						ts = *localtime((const time_t*)&sysSequence.sequences[pos].stopSeq);
 						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 						printf("Stop Time(HH:MM:SS)(%s):",textl);
 						fflush(stdout);
@@ -474,7 +474,7 @@ void kbd(void *arg) {
 				if(wifi_sta_list.num==0)
 					printf("NO Stations connected\n");
 				for (int i=0; i<wifi_sta_list.num; i++)
-				    printf("Connected Nodes[%d]->MAC["MACSTR"]-IP{"IPSTR"}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
+				    printf("Connected Nodes[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
 					break;
 			case IDc:
 				printf("Station Whoami(%d)",sysConfig.whoami);
@@ -715,7 +715,21 @@ void kbd(void *arg) {
 				s1=get_string((uart_port_t)uart_num,10);
 				for (auto & c: s1) c = toupper(c);
 				if (s1=="S")
+				{
 					sysConfig.mode=1;
+					printf("Light Name(%s)",sysConfig.lightName);
+					fflush(stdout);
+					s1=get_string((uart_port_t)uart_num,10);
+					if (s1!="")
+						strcpy(sysConfig.lightName,s1.c_str());
+					printf("Group Name(%s)",sysConfig.groupName);
+					fflush(stdout);
+					s1=get_string((uart_port_t)uart_num,10);
+					if (s1!="")
+						strcpy(sysConfig.groupName,s1.c_str());
+					if(string(sysConfig.groupName)=="")
+						strcpy(sysConfig.groupName,sysConfig.lightName);
+				}
 				else
 					if (s1=="C")
 						sysConfig.mode=0;

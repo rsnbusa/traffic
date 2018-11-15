@@ -17,7 +17,6 @@ extern "C"{
 #include "esp_log.h"
 #include "esp_wifi.h"
 #include "esp_system.h"
-//#include "esp_heap_alloc_caps.h"
 #include "esp_heap_caps.h"
 #include "esp_event.h"
 #include "esp_event_loop.h"
@@ -27,7 +26,6 @@ extern "C"{
 #include "esp_adc_cal.h"
 #include "math.h"
 #include "driver/spi_master.h"
-//#include "esp_spi_flash.h"
 #include "mongoose.h"
 #include "sdkconfig.h"
 #include "ds18b20.h"
@@ -58,14 +56,14 @@ extern "C"{
 #include "lwip/netdb.h"
 #include "lwip/dns.h"
 #include "esp_request.h"
-//#include "esp_vfs.h"
 #include "esp_vfs_fat.h"
 #include "esp_system.h"
 #include "mqtt_client.h"
 #include "freertos/timers.h"
 #include "driver/adc.h"
 #include "esp_log.h"
+#include "errno.h"
+#include "port/arpa/inet.h"
 void app_main();
 }
-//#include <algorithm>
 #endif

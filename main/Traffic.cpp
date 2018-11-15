@@ -9,11 +9,10 @@
 #include "cmds.h"
 #include "freertos/timers.h"
 #include "driver/adc.h"
+#include <port/arpa/inet.h>
 
-const char 						*TAG = "TFF";
+const char *TAG = "TFF";
 extern void postLog(int code,int code1);
-extern void startDownload(void* pArg);
-
 
 void processCmds(void * nc,cJSON * comands);
 void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
@@ -190,7 +189,7 @@ void get_traffic_name()
 	for(int i = 0; i < macID.length(); i++)
 		macID[i] = toupper(macID[i]);
 
-	appn=string(sysConfig.meterName);//meter name will be used as SSID if available else [APP]IoT-XXXX
+	appn=string(sysConfig.lightName);//meter name will be used as SSID if available else [APP]IoT-XXXX
 
 	if (appn.length()<2)
 	{
@@ -331,7 +330,7 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withH
 		{
 			for (int a=0;a<sonUid;a++)
 			{
-				spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/"+montonUid[a]+"/MSG";
+				spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/"+montonUid[a]+"/MSG";
 #ifdef DEBUGSYS
 				if(sysConfig.traceflag & (1<<PUBSUBD))
 					PRINT_MSG("[PUBSUBD]Publish %s Msg %s\n",spublishTopic.c_str(),final.c_str());
@@ -343,7 +342,7 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withH
 		}
 		else
 		{
-				spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/"+uidStr+"/MSG";
+				spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/"+uidStr+"/MSG";
 #ifdef DEBUGSYS
 				if(sysConfig.traceflag & (1<<PUBSUBD))
 					printf("[PUBSUBD]DirectPublish %s Msg %s\n",spublishTopic.c_str(),final.c_str());
@@ -371,8 +370,6 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withH
 
 void initSensors()
 {
-	cuentaRelay=0;
-
 	gpio_config_t io_conf;
 	uint64_t mask=1;  //If we are going to use Pins >=32 needs to shift left more than 32 bits which the compilers associates with a const 1<<x. Stupid
 
@@ -628,14 +625,14 @@ void newSSIDfirm(string ap, string pass)
 
 esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	system_event_ap_staconnected_t *conap;
-	system_event_sta_got_ip_t *ipgave;
+	//system_event_sta_got_ip_t *ipgave;
 	system_event_sta_disconnected_t *disco;
 	conap=(system_event_ap_staconnected_t*)&event->event_info;
-	ipgave=(system_event_sta_got_ip_t*)&event->event_info;
+	//ipgave=(system_event_sta_got_ip_t*)&event->event_info;
 	disco=(system_event_sta_disconnected_t*)&event->event_info;
 	esp_err_t err;
 	string local="Closed",temp;
-	system_event_ap_staconnected_t *staconnected;
+//	system_event_ap_staconnected_t *staconnected;
 	wifi_sta_list_t station_list;
 	wifi_sta_info_t *stations ;
 	ip4_addr_t addr;
@@ -644,7 +641,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<WIFID))
 		printf("[WIFID]Wifi Handler %d Reason %d\n",event->event_id,disco->reason);
-  //  mdns_handle_system_event(ctx, event);
 #endif
 	switch(event->event_id)
 	{
@@ -680,10 +676,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	   {
 		   vTaskDelete(blinkHandle);
 		   blinkHandle=NULL;
-		   gpio_set_level(sysLights.defaultLight,1);
+		   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
 	   }
 
-		if(sysConfig.mode)
+		if(sysConfig.mode) //Server Mode Only
 		{
 			if(!mqttf)
 			{
@@ -696,8 +692,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 				clientCloud = esp_mqtt_client_init(&settings);
 				 if(clientCloud)
 					esp_mqtt_client_start(clientCloud);
-				 else
+				 else{
 					 printf("Fail mqtt initCloud\n");
+					 vTaskDelete(mqttHandle);
+				 }
 			}
 
 			if(!mongf)
@@ -751,7 +749,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		break;
 
 	case SYSTEM_EVENT_AP_STACONNECTED:
-		staconnected = &event->event_info.sta_connected;
+	//	staconnected = &event->event_info.sta_connected;
 	//	printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
 		//		staconnected->mac[4],staconnected->mac[5]);
 		break;
@@ -780,13 +778,13 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			blinkHandle=NULL;
 		//	printf("Launch Red blink %d\n",sysLights.defaultLight);
 			//put the Light in Danger Mode  Blink Red light. lost host and sync
-			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, 3, &blinkHandle); //will get date
+			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
 		}
 		else
 		{
 			//printf("Direct Launch Red blink %d\n",sysLights.defaultLight);
 					//put the Light in Danger Mode  Blink Red light. lost host and sync
-					xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, 3, &blinkHandle); //will get date
+					xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
 		}
 
 		if(cycleHandle)
@@ -920,7 +918,7 @@ u8 lastAddr(string que)
 	  char * pch;
 	  u8 res=0;
 //	  printf ("Splitting string \"%s\" into tokens:\n",que.c_str());
-	  pch = strtok (que.c_str(),".");
+	  pch = strtok ((char*)que.c_str(),".");
 	  while (pch != NULL){
 		  res=atoi(pch);
 	    pch = strtok (NULL, ".");
@@ -933,9 +931,9 @@ void blinkLight(void *pArg)
 	int cual=(int)pArg;
 	while(true)
 	{
-		gpio_set_level(cual,1);
+		gpio_set_level((gpio_num_t)cual,1);
 		delay(interval);
-		gpio_set_level(cual,0);
+		gpio_set_level((gpio_num_t)cual,0);
 		delay(interval);
 	}
 }
@@ -945,7 +943,6 @@ void process_cmd(cmd_struct cual)
 	time_t now;
 	struct tm timeinfo;
     string algo;
-    char textl[50];
     firmware_type elfw;
 
 #ifdef DEBUGSYS
@@ -1360,7 +1357,7 @@ static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if)
 		{
 			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
 			close(sock);
-			return;
+			return 1;
 		  }
 
 //    if (assign_source_if) {
@@ -1800,7 +1797,7 @@ void initVars()
 	settings.buffer_size=2048;
 	settings.disable_clean_session=true;
 
-	strcpy(APP,"TrafficIoT\0");
+	strcpy(APP,"TrafficIoT");
 
 	strcpy(lookuptable[0].key,"BOOTD");
 	strcpy(lookuptable[1].key,"WIFID");
@@ -1901,10 +1898,9 @@ void initVars()
 	strcpy(kbdTable[35],"Help");
 	strcpy(kbdTable[36],"Quiet");
 	//Set up Mqtt Variables
-	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/MSG";
-	cmdTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.meterName)+"/CMD";
+	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/MSG";
+	cmdTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/CMD";
 
-	strcpy(WHOAMI,"rsimpsonbusa@gmail.com");
 	strcpy(MQTTSERVER,"m13.cloudmqtt.com");
 
 	strcpy(meses[0],"Ene");
@@ -1949,7 +1945,6 @@ void initVars()
 	displayf=true;
 	mongf=false;
 	//compile_date[] = __DATE__ " " __TIME__;
-	usertime=lastGuard=millis();
 
 	logText[0]="System booted";
 	logText[1]="Log CLeared";
@@ -2170,7 +2165,7 @@ void makeNodeTime(string cual, node_struct* losnodos)
 
 	  char * pch;
 //	  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
-	  pch = strtok (cual.c_str(),"-");
+	  pch = strtok ((char*)cual.c_str(),"-");
 	  losnodos->nodeid[res]=atoi(pch);
 	  while (pch != NULL)
 	  {
@@ -2416,7 +2411,6 @@ struct tm timeinfo ;
 		printf("[TRAFFICD]Start in timer %d\n",scheduler.voy);
 #endif
 	este=scheduler.seqNum[scheduler.voy];
-	ackSem=xSemaphoreCreateBinary();
 
 	int sq= scheduler.seqNum[este];
 	int cyc=sysSequence.sequences[sq].cycleId;

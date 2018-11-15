@@ -251,7 +251,7 @@ DateTime Sodaq_DS3231::now() {
     i2c_master_write_byte(cmd, DS3231_ADDRESS << 1 | WRITE_BIT, ACK_CHECK_EN);
     i2c_master_write_byte(cmd, 0, ACK_CHECK_EN);
     i2c_master_stop(cmd);
-   i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
+    i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);
 
     cmd = i2c_cmd_link_create();
@@ -259,9 +259,9 @@ DateTime Sodaq_DS3231::now() {
     i2c_master_write_byte(cmd, DS3231_ADDRESS << 1 |  READ_BIT, ACK_CHECK_EN);
     for(int a=0;a<7;a++)
         if(a<6)
-        i2c_master_read_byte(cmd, &data[a], ACK_VAL);
+        i2c_master_read_byte(cmd, &data[a],(i2c_ack_type_t) ACK_VAL);
     else
-        i2c_master_read_byte(cmd, &data[a], NACK_VAL);
+        i2c_master_read_byte(cmd, &data[a],(i2c_ack_type_t) NACK_VAL);
     i2c_master_stop(cmd);
     i2c_master_cmd_begin(i2c_num, cmd, 1000 / portTICK_RATE_MS);
     i2c_cmd_link_delete(cmd);

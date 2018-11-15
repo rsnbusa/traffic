@@ -95,7 +95,7 @@ typedef struct{
 
 typedef struct  {
     u32 centinel;
-    char ssid[2][MAXCHARS],pass[2][10],meterName[MAXCHARS];
+    char ssid[2][MAXCHARS],pass[2][10],lightName[MAXCHARS];
     u8 working;
     time_t lastUpload;
     char mqtt[MAXCHARS];
