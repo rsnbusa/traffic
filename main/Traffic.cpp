@@ -1656,17 +1656,85 @@ void mcast_example_task(void *pvParameters)
     }
 
 }
+/*
+u8 mac[8];
+	char textl[20];
+	string temp;
+	int len;
+	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
+	wifi_config_t 					sta_config,configap;
+	tcpip_adapter_init();
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+
+
+
+	if (aqui.ssid[curSSID][0]!=0)
+	{
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+		temp=string(aqui.ssid[curSSID]);
+		len=temp.length();
+		memcpy(sta_config.sta.ssid,temp.c_str(),len+1);
+		temp=string(aqui.pass[curSSID]);
+		len=temp.length();
+		memcpy(sta_config.sta.password,temp.c_str(),len+1);
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &sta_config));
+	}
+
+	else
+	{
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+		esp_wifi_get_mac(ESP_IF_WIFI_STA, (u8*)&mac);
+		sprintf(textl,"MeterIoT%02x%02x",mac[6],mac[7]);
+		memcpy(configap.ap.ssid,textl,12);
+		memcpy(configap.ap.password,"csttpstt\0",9);
+		configap.ap.ssid[12]=0;
+		configap.ap.password[9]=0;
+		configap.ap.ssid_len=0;
+		configap.ap.authmode=WIFI_AUTH_WPA_PSK;
+		configap.ap.ssid_hidden=false;
+		configap.ap.max_connection=4;
+		configap.ap.beacon_interval=100;
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &configap));
+	}
+
+	*/
 
 void initWiFi()
 {
 	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t 					configap;
-	u8 mac[6];
+	char mac[8],textl[20];
 	tcpip_adapter_init();
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
+
+	if (string(sysConfig.ssid[0])=="")
+	{
+		printf("Start config puro\n");
+		memset(&configap,0,sizeof(configap));
+		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+		esp_wifi_get_mac(ESP_IF_WIFI_STA, (u8*)&mac);
+		sprintf(textl,"LightIoT%02x%02x",mac[6],mac[7]);
+		printf("APName %s\n",textl);
+		memcpy(&configap.ap.ssid,textl,12);
+		memcpy(&configap.ap.password,textl,12);
+		configap.ap.ssid[12]=0;
+		configap.ap.password[12]=0;
+		configap.ap.ssid_len=12;
+		configap.ap.authmode=WIFI_AUTH_WPA_PSK;
+		configap.ap.ssid_hidden=false;
+		configap.ap.max_connection=4;
+		configap.ap.beacon_interval=100;
+		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &configap));
+		ESP_ERROR_CHECK(esp_wifi_start());
+		printf("Fin\n");
+		return;
+	}
+	else
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	esp_wifi_get_mac(ESP_IF_WIFI_AP, (uint8_t*)&mac);
@@ -1689,16 +1757,17 @@ void initWiFi()
 void initWiFiSta()
 {
 	wifi_config_t sta_config;
-	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	cfg.event_handler = &esp_event_send;
-	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	esp_wifi_set_ps(WIFI_PS_NONE);
 
 	if (string(sysConfig.ssid[0])!="")
 	{
+		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
+
+		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+		cfg.event_handler = &esp_event_send;
+		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+		esp_wifi_set_ps(WIFI_PS_NONE);
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 
 		int len;
@@ -1712,10 +1781,14 @@ void initWiFiSta()
 		sta_config.sta.bssid_set=0;
 		sta_config.sta.password[len]=0;
 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+		ESP_ERROR_CHECK(esp_wifi_start());
 		temp="";
 	}
-
-	ESP_ERROR_CHECK(esp_wifi_start());
+	else
+	{
+		printf("System not Configured\n");
+		initWiFi();
+	}
 
 	// WiFi led
 	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
@@ -2506,12 +2579,12 @@ if(sysConfig.mode)  //Scheduler only in Controller Mode
 if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 {
 	printf("Erase Configuration\n");
-//	nvs_erase_all(nvshandle);
-//	nvs_erase_all(seqhandle);
-//	nvs_erase_all(lighthandle);
-//	nvs_commit(seqhandle);
-//	nvs_commit(lighthandle);
-//	nvs_commit(nvshandle);
+	nvs_erase_all(nvshandle);
+	nvs_erase_all(seqhandle);
+	nvs_erase_all(lighthandle);
+	nvs_commit(seqhandle);
+	nvs_commit(lighthandle);
+	nvs_commit(nvshandle);
 	erase_config();
 }
 	printf("VersionEsp32-1.0.1\n");
