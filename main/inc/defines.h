@@ -1,5 +1,6 @@
 #ifndef defines_h
 #define defines_h
+#define DEBUGSYS
 
 #define EXAMPLE_WIFI_SSID 					"taller"
 #define EXAMPLE_WIFI_PASS 					"csttpstt"
@@ -18,6 +19,8 @@
 #define MINHEAP								20000
 #define NKEYS 								24
 #define KCMDS								37
+
+#define UIO									5  //GMT local time
 
 #define MG_LISTEN_ADDR						"80"
 #define MG_TASK_STACK_SIZE 					4096 /* bytes */

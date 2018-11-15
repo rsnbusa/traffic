@@ -35,8 +35,10 @@ void set_eraseConfig(void * pArg){
 	algo="Erased Configuration";
 	postLog(DRESET,0);
 	sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),MINFO,false,false);            // send to someones browser when asked
+#ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
 		printf("[CMDD]Erase\n");                  // A general status condition for display. See routine for numbers.
+#endif
 	exit:
 	algo="";
 //	free(pArg);

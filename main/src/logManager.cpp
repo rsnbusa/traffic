@@ -55,9 +55,10 @@ void logManager(void *pArg)
 					printf("Failedw log code1\n");
 
 
+#ifdef DEBUGSYS
 				if(sysConfig.traceflag & (1<<CMDD))
 					printf("[CMDD]To write date %s code %d code1 %d\n",makeDateString(t).c_str(),mensaje.code,mensaje.code1);
-
+#endif
 				fclose(bitacora);
 				if(errno!=ENOMEM)
 					bitacora = fopen("/spiflash/log.txt", "r+");

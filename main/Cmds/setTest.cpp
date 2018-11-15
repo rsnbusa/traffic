@@ -36,8 +36,10 @@ void set_test(void * pArg){
 	sprintf(textl,"Test response %d",millis());
 	algo=string(textl);
 	sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),MINFO,false,false);            // send to someones browser when asked
+#ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
 		printf("[CMDD]Test\n");                  // A general status condition for display. See routine for numbers.
+#endif
 	exit:
 	algo="";
 

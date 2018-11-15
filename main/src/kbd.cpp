@@ -5,6 +5,7 @@
  *      Author: RSN
  */
 #include "kbd.h"
+using namespace std;
 
 extern void show_config(u8 meter, bool full);
 extern void write_to_flash();
@@ -12,10 +13,7 @@ extern void write_to_flash_seq();
 extern void write_to_flash_lights();
 extern void write_to_flash_cycles();
 extern string makeDateString(time_t t);
-extern esp_mqtt_client_config_t settings;
-extern void initScreen();
-extern void initI2C();
-extern void setLogo(string cual);
+extern void cycleManager(void *pArg);
 
 int keyfromstring(char *key)
 {
@@ -38,9 +36,10 @@ int cmdfromstring(string key)
     {
     	string s1=string(kbdTable[i]);
 		for (auto & c: s1) c = toupper(c);
-    	if(strstr(s1.c_str(),key.c_str())!=NULL)
-       // if (strcmp(kbdTable[i], key.c_str()) == 0)
+    	if(strstr(s1.c_str(),key.c_str())!=NULL){
+    //		printf("Found key %s in pos %d = %s\n",key.c_str(),i,s1.c_str());
             return i;
+    	}
     }
     return -1;
 }
@@ -81,8 +80,6 @@ bool confirmPort(int cual)
 uint32_t strbitsConfirm(string cual)
 {
 	string s;
-	u8 llevo=0;
-
 	uint32_t res=0;
 
 	  char * pch;
@@ -172,6 +169,7 @@ const char *byte_to_binary(uint32_t x)
 
 void kbd(void *arg) {
 	int len;
+	firmware_type elfw;
 	uart_port_t uart_num = UART_NUM_0 ;
 	uint32_t add,epoch=0,epoch1=0;
 	u8 pos,weekd,nodeseq;
@@ -182,7 +180,7 @@ void kbd(void *arg) {
 	time_t t;
 	uint16_t errorcode,code1;
 	int cualf,whom;
-	char textl[30];
+	char textl[40];
 	char sermod[]="Only in Server Mode\n";
 	wifi_sta_list_t wifi_sta_list;
     tcpip_adapter_sta_list_t tcpip_adapter_sta_list;
@@ -191,6 +189,7 @@ void kbd(void *arg) {
 	struct tm  ts;
 	char temp[20];
 	char local[KCMDS][20];
+
 
 	uart_config_t uart_config = {
 			.baud_rate = 115200,
@@ -224,7 +223,9 @@ void kbd(void *arg) {
 		for (auto & c: cmds) c = toupper(c);
 		if(cmds!="")
 			lastcmd=cmdfromstring(cmds);
+		if(lastcmd>=0)
 		{
+
 			switch(lastcmd)
 			{
 			case BLINKc:
@@ -250,12 +251,13 @@ void kbd(void *arg) {
 				if (s1!="")
 					FACTOR2=atoi(s1.c_str());
 				sysConfig.reserved2=FACTOR2;
-				printf("Show Leds(%d):",sysConfig.showLeds);
+				printf("Show Leds(%s):",sysConfig.showLeds?"Y":"N");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				if (s1!="")
+				for (auto & c: s1) c = toupper(c);
+				if (s1=="Y")
 				{
-					sendMsg(LEDS,EVERYBODY,atoi(s1.c_str()),0,NULL,0);
+					sendMsg(LEDS,EVERYBODY,1,0,NULL,0);
 				}
 				write_to_flash();
 				break;
@@ -342,7 +344,7 @@ void kbd(void *arg) {
 					printf(sermod);
 					break;//Only server mode
 				}
-				printf("Total Tlights(%d):",sysConfig.totalLights);
+				printf("Total TLights(%d):",sysConfig.totalLights);
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if(s1!=""){
@@ -488,8 +490,13 @@ void kbd(void *arg) {
 				printf("Clone Id(%s):",sysConfig.clone?"Y":"N");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				if (s1!="")
-					sysConfig.clone=atoi(s1.c_str());
+				if(s1=="")
+					break;
+				for (auto & c: s1) c = toupper(c);
+				if(s1=="Y")
+					sysConfig.clone=1;
+				else
+					sysConfig.clone=0;
 				write_to_flash();
 				break;
 			case FIRMWAREc:
@@ -501,16 +508,30 @@ void kbd(void *arg) {
 				printf("Launch Firmware update:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				if (s1=="y")
+				for (auto & c: s1) c = toupper(c);
+				if (s1=="Y")
 				{
-					printf("Firmware update was launched\n");
-					xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);
+					strcpy(elfw.ap,sysConfig.ssid[0]);
+					strcpy(elfw.pass,sysConfig.pass[0]);
+					memcpy(textl,sysConfig.ssid[1],strlen(sysConfig.ssid[1])+1);
+					memcpy(temp,sysConfig.pass[1],strlen(sysConfig.pass[1])+1);
+					memcpy(&textl[strlen(sysConfig.ssid[1])+1],temp,strlen(temp)+1);
+					pos=strlen(sysConfig.ssid[1])+strlen(sysConfig.pass[1])+2;
+					sendMsg(FWARE,EVERYBODY,strlen(sysConfig.ssid[0])+strlen(sysConfig.pass[0])+2,0,textl,pos);
 				}
 				break;
 			case LOGCLEARc:
-				fclose(bitacora);
-				bitacora = fopen("/spiflash/log.txt", "w");//truncate to 0 len
-				fclose(bitacora);
+				printf("Clear Log File?");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				for (auto & c: s1) c = toupper(c);
+				if (s1=="Y")
+				{
+					fclose(bitacora);
+					bitacora = fopen("/spiflash/log.txt", "w");//truncate to 0 len
+					fclose(bitacora);
+					printf("Log File cleared\n");
+				}
 				break;
 			case LOGc:
 				printf("Log:\n");
@@ -567,12 +588,17 @@ void kbd(void *arg) {
 				fflush(stdout);
 
 				s1=get_string((uart_port_t)uart_num,10);
-				memset(textl,0,10);
-				memcpy(textl,s1.c_str(),s1.length());
-				for (int a=0;a<s1.length();a++)
-					textl[a]=toupper(textl[a]);
-				printf("Debug %s\n",textl);
-				s1=string(textl);
+				if(s1=="")
+					break;
+				for (auto & c: s1) c = toupper(c);
+
+//				memset(textl,0,10);
+//				memcpy(textl,s1.c_str(),s1.length());
+//				for (int a=0;a<s1.length();a++)
+//					textl[a]=toupper(textl[a]);
+//				printf("Debug %s\n",textl);
+//				s1=string(textl);
+
 				if(strcmp(s1.c_str(),"NONE")==0)
 				{
 					sysConfig.traceflag=0;
@@ -684,15 +710,20 @@ void kbd(void *arg) {
 				sendMsg(INTERVAL,whom,interval,0,NULL,0);
 				break;
 			case MODEc:
-				printf("Mode Server=1 Client=0(%d)",sysConfig.mode);
+				printf("Mode Server=S Client=C(%s)",sysConfig.mode?"S":"C");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				if (s1!=""){
-					sysConfig.mode=atol(s1.c_str());
-					write_to_flash();
-				}
+				for (auto & c: s1) c = toupper(c);
+				if (s1=="S")
+					sysConfig.mode=1;
+				else
+					if (s1=="C")
+						sysConfig.mode=0;
+					else
+						printf("Invalid Option\n");
+				write_to_flash();
 				break;
-				case STARTc: //send a Start Message. ONLY Controller can send this command
+			case STARTc: //send a Start Message. ONLY Controller can send this command
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -709,6 +740,24 @@ void kbd(void *arg) {
 					printf(sermod);
 					break;//Only server mode
 				}
+				printf("%s:",rxtxf?"Running-->Stop?":"Stopped-->Run?");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				for (auto & c: s1) c = toupper(c);
+				if (s1!="Y")
+					break;
+				rxtxf=!rxtxf;
+				if(rxtxf)
+				{
+					if(!cycleHandle)
+						xTaskCreate(&cycleManager,"cycle",4096,(void*)0, MGOS_TASK_PRIORITY, &cycleHandle);
+				}
+				else
+				{
+					vTaskDelete(cycleHandle);
+					cycleHandle=NULL;
+				}
+				break;
 				printf("Stop Who:");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
@@ -828,7 +877,7 @@ void kbd(void *arg) {
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
 				if (s1!=""){
-					sysConfig.keepAlive=atoi(s1.c_str());
+					sysConfig.keepAlive=atol(s1.c_str());
 					write_to_flash();
 				}
 				break;
@@ -870,25 +919,13 @@ void kbd(void *arg) {
 				}
 				printf("\n");
 				break;
-			case SCREENc:
-				displayf=false;
-				vTaskDelay(100 / portTICK_PERIOD_MS);
-		//		if(!I2CSem)
-		//		{
-				miI2C.driverInstalled=false;
-				 i2c_driver_delete(I2C_NUM_0);
-
-					printf("No semaphore\n");
-					initI2C();
-		//		}
-				printf("Init Screen\n");
-				display.init();
-				vTaskDelay(100 / portTICK_PERIOD_MS);
-				display.flipScreenVertically();
-				display.clear();
-				displayf=true;
-				printf("After screen call\n");
-				setLogo("Scr");
+			case KALIVE:
+				printf("%s Heartbeat:",kalive?"Stop":"Resume");
+				fflush(stdout);
+				s1=get_string((uart_port_t)uart_num,10);
+				for (auto & c: s1) c = toupper(c);
+				if(s1=="Y")
+					kalive=!kalive;
 				break;
 			default:
 				printf("No cmd\n");

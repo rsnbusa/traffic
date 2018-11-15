@@ -25,8 +25,8 @@ using namespace std;
  EXTERN char 							MQTTSERVER[18];
  EXTERN	char                   	 		meses[12][4];
  EXTERN u8                       	  	daysInMonth [12] ;
-
- EXTERN  cmdRecord 						cmds[MAXCMDS];
+ EXTERN QueueHandle_t 					cola;
+ EXTERN cmdRecord 						cmds[MAXCMDS];
 
 // Critical Variables
 
@@ -53,7 +53,7 @@ using namespace std;
  EXTERN u8                				barX[3],barH[3],userNum;
  EXTERN u16								yearg,daysg;
  EXTERN bool                			mqttf,tracef,showVoltage;
- EXTERN bool                			verbose,timef;
+ EXTERN bool                			verbose,timef,firmwf;
  EXTERN debugflags						traceflag;
 
  EXTERN string              			spublishTopic,cmdTopic,alertTopic;
@@ -80,7 +80,7 @@ using namespace std;
  EXTERN uint8_t 						recontimes;
 
  EXTERN bool 							llogf,timerF,reconf,connf,mongf,mdnsf,timerf,sntpf,guardf,displayf,breakf,errorf,gMotorMonitor,guardfopen,mqttThingf;
- EXTERN bool							gGuard,rxtxf,semaphoresOff;
+ EXTERN bool							gGuard,rxtxf,semaphoresOff,kalive;
  EXTERN ip4_addr_t 						localIp;
  EXTERN struct 							timeval tvStart;
  EXTERN cJSON 							*root;
@@ -133,9 +133,9 @@ EXTERN uint32_t 						connectedToAp[10];
 EXTERN cmd_struct 						answer;
 EXTERN scheduler_struct					scheduler;
 EXTERN u8								nextSchedule,totalConnected;
-EXTERN u8								TODAY;
-EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle;
-EXTERN u16								FACTOR,FACTOR2;
+EXTERN u8								TODAY,globalNode,globalLuz;
+EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle;
+EXTERN u16								FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration;
 EXTERN sta_status						activeNodes;
 EXTERN char								tcmds[30][10];
 EXTERN string							calles[6];

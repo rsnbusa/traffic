@@ -98,7 +98,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			printf("Station Id:%d NodeId:%d Clone:%s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No");
 		}
 
-		printf("[DispMgrTimer %d] Factor %d\n",sysConfig.DISPTIME,FACTOR);
+		printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 //Trace Flags
 		if(sysConfig.traceflag>0)
 			{
@@ -230,8 +230,10 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 				if(sysConfig.calles[a][0]!=0)
 					printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
 		}
-		sprintf(textl,"with duration %d msecs\n",cuantoDura);
+		sprintf(textl,"with total duration %d in Light %d %d ms\n",cuantoDura,globalLuz,globalLuzDuration);
 		printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
+		if(sysConfig.mode)
+			printf("Controller is in Street %s duration %d ms\n",sysConfig.calles[globalNode],globalDuration);
 
 }
 

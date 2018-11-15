@@ -6,24 +6,13 @@
  */
 
 #include "firmware.h"
-#define TAG "RSN"
 using namespace std;
-extern bool set_commonCmd(arg* pArg,bool check);
-extern string getParameter(arg* argument,string cual);
-extern void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
-extern void ConfigSystem(void *pArg);
-extern uint32_t IRAM_ATTR millis();
-//string getParameter(arg* argument,string cual);
-extern void postLog(int code,int code1);
 
-void  task_fatal_error(arg *argument)
-								{
-	printf("Exiting task due to fatal error...");
-	close(socket_id);
-	string algo="Not authorized";
-	sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),ERRORAUTH,false,false);
-	(void)vTaskDelete(NULL);
-								}
+extern void postLog(int code,int code1);
+extern void delay(uint16_t a);
+
+void startDownload(void *pArg);
+void initWiFiFw(void*pArg);
 
 /*read buffer by byte still delim ,return read bytes counts*/
 static int read_until(char *buffer, char delim, int len)
@@ -100,27 +89,130 @@ static bool connect_to_http_server()
 	return false;
 }
 
+esp_err_t wifi_event_handler_local(void *ctx, system_event_t *event) {
+
+	firmware_type *fww;
+	fww=(firmware_type *)ctx;
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<WIFID))
+		printf("[WIFID]Wifi Handler %d\n",event->event_id);
+#endif
+
+	switch(event->event_id)
+	{
+	case SYSTEM_EVENT_STA_GOT_IP:
+		localIp=event->event_info.got_ip.ip_info.ip;
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<BOOTD))
+			printf( "[BOOTD]fwGot IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
+#endif
+		xTaskCreate(&startDownload,"download",8192,NULL, MGOS_TASK_PRIORITY, NULL);
+		break;
+	case SYSTEM_EVENT_STA_START:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Firmware Connect firmware %s\n",firmwf?"Y":"N");
+#endif
+		esp_wifi_connect();
+		break;
+	case SYSTEM_EVENT_STA_STOP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("FW Stopping\n");
+#endif
+		break;
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+	case SYSTEM_EVENT_ETH_DISCONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("Disconnect Fw\n");
+#endif
+		vanconnect++;
+		if(vanconnect>10)
+		{
+			printf("Exhausted retries connect\n");
+			break;
+		}
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("Relauch FW Wifi ap [%s] pass[%s]\n",fww->ap,fww->pass);
+#endif
+		xTaskCreate(&initWiFiFw,"download",8192,fww, MGOS_TASK_PRIORITY, NULL);
+		break;
+
+	case SYSTEM_EVENT_STA_CONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]fwConnected \n");
+#endif
+		break;
+
+	default:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]FW default WiFi %d\n",event->event_id);
+#endif
+		break;
+	}
+	return ESP_OK;
+} // wifi_event_handler
+
+void initWiFiFw(void*pArg)
+{
+	firmware_type *firmware=(firmware_type *)pArg;
+	char app[40],ppp[10];
+	wifi_config_t sta_config;
+	system_event_cb_t elcb;
+
+	strcpy(app,firmware->ap);
+	strcpy(ppp,firmware->pass);
+
+//	printf("APPP %s PPPP %s\n",app,ppp);
+	elcb=esp_event_loop_set_cb(wifi_event_handler_local,firmware);
+
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	cfg.event_handler = &esp_event_send;
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+	esp_wifi_set_ps(WIFI_PS_NONE);
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+	strcpy(sta_config.sta.ssid,app);
+	strcpy(sta_config.sta.password,ppp);
+	sta_config.sta.bssid_set=0;
+	sta_config.sta.channel=6;
+	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+	ESP_ERROR_CHECK(esp_wifi_start());
+//	printf("Wifi Start\n");
+	vTaskDelete(NULL);
+}
+
 void set_FirmUpdateCmd(void *pArg)
 {
-	arg *argument=(arg*)pArg;
+	firmware_type *firmware=(firmware_type*)pArg;
+	string algo;
+	string ap,passw;
+	firmware_type lfw;
+	memcpy(&lfw,pArg,sizeof(lfw));
+	vanconnect=0;
+//	printf("First FW ap [%s] pass [%s]\n",lfw.ap,lfw.pass);
+	xTaskCreate(&initWiFiFw,"download",8192,&lfw, MGOS_TASK_PRIORITY, NULL);
+	while(1)
+		delay(1000);
+}
+
+void startDownload(void* pArg)
+{
 	esp_err_t err;
 	string algo;
 	uint8_t como=1;
 
-/*
-	algo=getParameter(argument,"password");
-	if(algo!="zipo")
-	{
-		algo="Not authorized";
-		sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),NOERROR,false,false);            // send to someones browser when asked
-		free(pArg);
-		vTaskDelete(NULL);
-	}
-*/
 	esp_ota_handle_t update_handle = 0 ;
 	const esp_partition_t *update_partition = NULL;
 
-	printf("Starting OTA...\n");
+	printf("Starting FWOTA...\n");
+	vTaskDelay(3000 /  portTICK_RATE_MS);
+	esp_restart();
 
 	const esp_partition_t *configured = esp_ota_get_boot_partition();
 	const esp_partition_t *running = esp_ota_get_running_partition();
@@ -134,7 +226,7 @@ void set_FirmUpdateCmd(void *pArg)
 		printf( "Connected to http server\n");
 	} else {
 		printf( "Connect to http server failed!\n");
-		task_fatal_error(argument);
+		exit(1);
 	}
 
 	int res = -1;
@@ -142,7 +234,7 @@ void set_FirmUpdateCmd(void *pArg)
 	res = send(socket_id, http_request, strlen(http_request), 0);
 	if (res == -1) {
 		printf("Send GET request to server failed\n");
-		task_fatal_error(argument);
+		exit(1);
 	} else {
 		printf("Send GET request to server succeeded\n");
 	}
@@ -154,7 +246,7 @@ void set_FirmUpdateCmd(void *pArg)
 	err = esp_ota_begin(update_partition, OTA_SIZE_UNKNOWN, &update_handle);
 	if (err != ESP_OK) {
 		printf( "esp_ota_begin failed, error=%d\n", err);
-		task_fatal_error(argument);
+		exit(1);
 	}
 	printf("rsnesp_ota_begin succeeded\n");
 //	xTaskCreate(&ConfigSystem, "cfg", 512, (void*)20, 3, NULL);
@@ -169,7 +261,7 @@ void set_FirmUpdateCmd(void *pArg)
 	//	printf("From recv\n");
 		if (buff_len < 0) { /*receive error*/
 			printf("Error: receive data error! errno=%d\n", errno);
-			task_fatal_error(argument);
+			exit(1);
 		} else
 			if (buff_len > 0 && !resp_body_start) { /*deal with response header*/
 				memcpy(ota_write_data, text, buff_len);
@@ -181,7 +273,7 @@ void set_FirmUpdateCmd(void *pArg)
 					err = esp_ota_write( update_handle, (const void *)ota_write_data, buff_len);
 					if (err != ESP_OK) {
 						printf( "Error: esp_ota_write failed! err=0x%x\n", err);
-						task_fatal_error(argument);
+						exit(1);
 					}
 					binary_file_length += buff_len;
 					//   printf("Have written image length %d\n", binary_file_length);
@@ -213,17 +305,16 @@ void set_FirmUpdateCmd(void *pArg)
 
 	if (esp_ota_end(update_handle) != ESP_OK) {
 		printf( "esp_ota_end failed!\n");
-		task_fatal_error(argument);
+		exit(1);
 	}
 	err = esp_ota_set_boot_partition(update_partition);
 	if (err != ESP_OK) {
 		printf( "esp_ota_set_boot_partition failed! err=0x%x\n", err);
-		task_fatal_error(argument);
+		exit(1);
 	}
 	postLog(FWUPDATE,0);
 	printf("Prepare to restart system!\n");
 	algo="OTA Loaded. Rebooting...";
-	sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),MINFO,false,false);            // send to someones browser when asked
 	algo="";
 	vTaskDelay(3000 /  portTICK_RATE_MS);
 	esp_restart();

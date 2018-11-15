@@ -43,7 +43,7 @@ extern "C"{
 #include "esp_types.h"
 #include "driver/periph_ctrl.h"
 #include "driver/timer.h"
-#include "cjson.h"
+#include "cJSON.h"
 #include "sys/time.h"
 #include "tcpip_adapter.h"
 #include "apps/sntp/sntp.h"

@@ -681,9 +681,9 @@ size_t OLEDDisplay::write(const char* str) {
 
 // Private functions
 void OLEDDisplay::sendInitCommands(void) {
-	ESP_LOGI("RSN","Sending commands");
+//	ESP_LOGI("RSN","Sending commands");
   sendCommand(DISPLAYOFF);
-	ESP_LOGI("RSN","Sending 2");
+//	ESP_LOGI("RSN","Sending 2");
 
   sendCommand(SETDISPLAYCLOCKDIV);
   sendCommand(0xF0); // Increase speed of the display max ~96Hz

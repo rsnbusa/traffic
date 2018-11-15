@@ -142,8 +142,10 @@ void timerManager(void *arg) {
 	{
 		nheap=xPortGetFreeHeapSize();
 
+#ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<HEAPD))
 			printf("[HEAPD]Heap %d\n",nheap);
+#endif
 
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 		time(&t);
