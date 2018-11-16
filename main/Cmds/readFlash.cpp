@@ -7,6 +7,8 @@
 
 #include "readFlash.h"
 extern const char *byte_to_binary(uint32_t x);
+extern string byte_to_binarytxt(uint32_t x);
+extern string byte_to_binary_porttxt(uint32_t x);
 
 string makeDateString(time_t t)
 {
@@ -129,28 +131,30 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 
 		//Station Stuff
 
-			printf("Lights %d Default %d Blink %d\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight);
-			algo="Ports:";
+		algo="Ports:";
 
-			for(int a=0;a<sysLights.numLuces;a++)
+		for(int a=0;a<sysLights.numLuces;a++)
+		{
+			if (sysLights.thePorts[a]>=0)
 			{
-				if (sysLights.thePorts[a]>=0)
-				{
-					if(a<sysLights.numLuces-1)
-						sprintf(textl,"%d-",sysLights.thePorts[a]);
-					else
-						sprintf(textl,"%d",sysLights.thePorts[a]);
+				if(a<sysLights.numLuces-1)
+					sprintf(textl,"%d(%s)-",sysLights.thePorts[a],sysLights.theNames[a]);
+				else
+					sprintf(textl,"%d(%s)",sysLights.thePorts[a],sysLights.theNames[a]);
 
-					algo+=string(textl);
-				}
+				algo+=string(textl);
 			}
-			printf("%s\n",algo.c_str());
+		}
+		printf("%s\n",algo.c_str());
+
+			printf("Lights %d Default %d Blink %d\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight);
+
 
 // Lights sequence
 			for(int a=0;a<sysLights.numLuces;a++)
 			{
-				printf("Seq # %d Ports %s Option %d Type %d Time %d\n",a,byte_to_binary(sysLights.lasLuces[a].ioports),
-						sysLights.lasLuces[a].opt,sysLights.lasLuces[a].typ,sysLights.lasLuces[a].valor);
+				printf("LightSeq #%d Ports %s (%s-%s) Time %d secs\n",a,byte_to_binary_porttxt(sysLights.lasLuces[a].ioports).c_str(),
+						sysLights.lasLuces[a].opt?"Blk":"On ",sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
 			}
 
 		if(sysConfig.mode==1)
@@ -186,10 +190,10 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 							}
 							diass[7]=0;
 							string nada=string(diass);
-				    printf("Schedule[%d] (%d)->%s-%s-%s ",a,sysSequence.sequences[a].cycleId,parseCycle(allCycles.nodeSeq[sysSequence.sequences[a].cycleId]).c_str(),diass,textl);
+				    printf("Schedule[%d] (%d)->[%s] %s [%s ",a,sysSequence.sequences[a].cycleId,parseCycle(allCycles.nodeSeq[sysSequence.sequences[a].cycleId]).c_str(),diass,textl);
 				   ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
 				    strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-				    printf("%s=%d\n",textl,sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
+				    printf("%s]=>%dms\n",textl,sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
 
 			}
 			time_t local;
