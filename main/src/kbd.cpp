@@ -490,13 +490,14 @@ void kbd(void *arg) {
 				printf("Clone Id(%s):",sysConfig.clone?"Y":"N");
 				fflush(stdout);
 				s1=get_string((uart_port_t)uart_num,10);
-				if(s1=="")
-					break;
-				for (auto & c: s1) c = toupper(c);
-				if(s1=="Y")
-					sysConfig.clone=1;
-				else
-					sysConfig.clone=0;
+				if(s1!="")
+				{
+					for (auto & c: s1) c = toupper(c);
+					if(s1=="Y")
+						sysConfig.clone=1;
+					else
+						sysConfig.clone=0;
+				}
 				write_to_flash();
 				break;
 			case FIRMWAREc:

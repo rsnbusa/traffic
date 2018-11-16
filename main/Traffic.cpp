@@ -510,7 +510,10 @@ void initialize_sntp(void *args)
 		localtime_r(&now, &timeinfo);
 	}
 	if(retry_count==0)  //Failed.Use RTC date
+	{
+		timef=true;
 		vTaskDelete(NULL);
+	}
 
 	now=now-UIO*3600;
 	   timeval tm;
@@ -537,9 +540,6 @@ void initialize_sntp(void *args)
 	timef=1;
 	postLog(0,sysConfig.bootcount);
 	rtc.setEpoch(now);
-//	if(!mdnsf)
-	//	xTaskCreate(&mdnstask, "mdns", 4096, NULL, 5, &mdnsHandle); //Ota Interface Controller
-	//release this task
 	vTaskDelete(NULL);
 }
 
@@ -715,20 +715,16 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
-	//	tcpip_adapter_ip_info_t ip_info;
-	//	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-	//	printf("System not Configured. Use local AP and IP:" IPSTR "\n", IP2STR(&ip_info.ip));
-        err=esp_wifi_connect();
-        if(err)
-        	printf("Error Connect AP %d\n",err);
-//        else
-//		if(!mongf)
-//		{
-//			printf("Mongoose Start AP\n");
-//			xTaskCreate(&mongooseTask, "mongooseTask", 10240, NULL, 5, NULL);
-//			xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL);
-//			xTaskCreate(&ConfigSystem, "cfg", 1024, (void*)100, 3, NULL);
-//		}
+		tcpip_adapter_ip_info_t ip_info;
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+//		printf("System not Configured. Use local AP and IP:" IPSTR "\n", IP2STR(&ip_info.ip));
+		localIp=ip_info.ip;
+		if(!mongf)
+		{
+			printf("Mongoose Start AP\n");
+			xTaskCreate(&mongooseTask, "mongooseTask", 10240, NULL, 5, NULL);
+			xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
+		}
 		break;
 
 	case SYSTEM_EVENT_STA_START:
@@ -1657,11 +1653,12 @@ void mcast_example_task(void *pvParameters)
 
 }
 
-/*void initWiFi()
+void initWiFi()
 {
 	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t 					configap;
-	char mac[8],textl[20];
+	u8 mac[6];
+	char textl[20];
 
 	tcpip_adapter_init();
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
@@ -1669,42 +1666,26 @@ void mcast_example_task(void *pvParameters)
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
 
-	if (string(sysConfig.ssid[0])=="")
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	esp_wifi_get_mac(ESP_IF_WIFI_STA, (uint8_t*)&mac);
+	memset(&configap,0,sizeof(configap));
+	if(string(sysConfig.ssid[1])!="")
 	{
-		printf("Start config puro\n");
-		memset(&configap,0,sizeof(configap));
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
-		esp_wifi_get_mac(ESP_IF_WIFI_AP, (u8*)&mac);
-		int fueron=sprintf(textl,"LightIoT%02x%02x",mac[5],mac[6]);
-		printf("APName %s\n",textl);
-		strcpy(configap.ap.ssid,textl);
-		strcpy(configap.ap.password,textl);
-	//	memcpy(&configap.ap.ssid,textl,8);
-	//	memcpy(&configap.ap.password,textl,8);
-		configap.ap.ssid[fueron]=0;
-		configap.ap.password[fueron]=0;
-		configap.ap.ssid_len=fueron;
-		configap.ap.authmode=WIFI_AUTH_WPA_PSK;
-		configap.ap.ssid_hidden=false;
-		configap.ap.max_connection=4;
-		configap.ap.beacon_interval=100;
-		printf("setconfig ap[%s]pass[%s]\n",configap.ap.ssid,configap.ap.password);
-		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &configap));
-		printf("Start\n");
-		ESP_ERROR_CHECK(esp_wifi_start());
-		printf("Fin\n");
-		return;
+		strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
+		strcpy((char *)configap.sta.password, sysConfig.pass[1]);
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
+	}
+	if(string(sysConfig.ssid[0])!="")
+	{
+		strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
+		strcpy((char *)configap.ap.password,sysConfig.pass[0]);
 	}
 	else
-
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
-	esp_wifi_get_mac(ESP_IF_WIFI_AP, (uint8_t*)&mac);
-	memset(&configap,0,sizeof(configap));
-	strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
-	strcpy((char *)configap.sta.password, sysConfig.pass[1]);
-	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
-	strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
-	strcpy((char *)configap.ap.password,sysConfig.pass[0]);
+	{
+		sprintf(textl,"LightIoT%02x%02x",mac[4],mac[5]);
+		strcpy((char*)configap.ap.ssid,textl);
+		strcpy((char*)configap.ap.password,textl);
+	}
 	configap.ap.ssid_len=strlen((char *)configap.ap.ssid);
 	configap.ap.authmode=WIFI_AUTH_WPA_PSK;
 	configap.ap.ssid_hidden=false;
@@ -1718,44 +1699,43 @@ void mcast_example_task(void *pvParameters)
 void initWiFiSta()
 {
 	wifi_config_t sta_config;
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 
+	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
+	cfg.event_handler = &esp_event_send;
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+	esp_wifi_set_ps(WIFI_PS_NONE);
 
 	if (string(sysConfig.ssid[0])!="")
 	{
-		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
-
-		wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-		cfg.event_handler = &esp_event_send;
-		ESP_ERROR_CHECK(esp_wifi_init(&cfg));
-		ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-		esp_wifi_set_ps(WIFI_PS_NONE);
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-
-		int len;
-		string temp=string(sysConfig.ssid[0]);
-		len=temp.length();
-		memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
-		sta_config.sta.ssid[len]=0;
-		temp=string(sysConfig.pass[0]);
-		len=temp.length();
-		memcpy((void*)sta_config.sta.password,temp.c_str(),len);
+		strcpy((char*)sta_config.sta.ssid,sysConfig.ssid[0]);
+		strcpy((char*)sta_config.sta.password,sysConfig.pass[0]);
+//		int len;
+//		string temp=string(sysConfig.ssid[0]);
+//		len=temp.length();
+//		memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
+//		sta_config.sta.ssid[len]=0;
+//		temp=string(sysConfig.pass[0]);
+//		len=temp.length();
+//		memcpy((void*)sta_config.sta.password,temp.c_str(),len);
 		sta_config.sta.bssid_set=0;
-		sta_config.sta.password[len]=0;
+	//	sta_config.sta.password[len]=0;
 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+	//	temp="";
 		ESP_ERROR_CHECK(esp_wifi_start());
-		temp="";
 	}
 	else
-	{
-		printf("System not Configured\n");
-		initWiFi();
-	}
+		printf("Station has no Controller configured\n");
+
 
 	// WiFi led
 	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
 }
-*/
+
+
 void initScreen()
 {
 
@@ -1842,30 +1822,14 @@ void initVars()
 	strcpy(lookuptable[10].key,"MQTTT");
 	strcpy(lookuptable[11].key,"HEAPD");
 
-//	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
-//		{
-//			strcpy(lookuptable[i].key,"-");
-//			strcat(lookuptable[i].key,lookuptable[i-NKEYS/2].key);
-//			printf("Look %d=%s\n",i,lookuptable[i].key);
-//			lookuptable[i].val=i*-1;
-//			lookuptable[i-NKEYS/2].val=i-NKEYS/2;
-//		}
-
-	strcpy(lookuptable[12].key,"-BOOTD");
-	strcpy(lookuptable[13].key,"-WIFID");
-	strcpy(lookuptable[14].key,"-MQTTD");
-	strcpy(lookuptable[15].key,"-PUBSUBD");
-	strcpy(lookuptable[16].key,"-MONGOOSED");
-	strcpy(lookuptable[17].key,"-CMDD");
-	strcpy(lookuptable[18].key,"-WEBD");
-	strcpy(lookuptable[19].key,"-GEND");
-	strcpy(lookuptable[20].key,"-TRAFFICD");
-	strcpy(lookuptable[21].key,"-ALIVED");
-	strcpy(lookuptable[22].key,"-MQTTT");
-	strcpy(lookuptable[23].key,"-HEAPD");
-
-	//enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL};
-
+	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
+	{
+		strcpy(lookuptable[i].key,"-");
+		strcat(lookuptable[i].key,lookuptable[i-NKEYS/2].key);
+//		printf("Look %d=%s\n",i,lookuptable[i].key);
+		lookuptable[i].val=i*-1;
+		lookuptable[i-NKEYS/2].val=i-NKEYS/2;
+	}
 
 	strcpy(tcmds[0],"START");
 	strcpy(tcmds[1],"STOP");
@@ -1892,12 +1856,6 @@ void initVars()
 	strcpy(tcmds[22],"BLINK");
 	strcpy(tcmds[23],"LEDS");
 	strcpy(tcmds[24],"FIRMW");
-
-	for (int a=0;a<NKEYS;a++)
-		if(a<(NKEYS/2))
-			lookuptable[a].val=a;
-		else
-			lookuptable[a].val=a*-1;
 
 	strcpy(kbdTable[0],"Blink");
 	strcpy(kbdTable[1],"Factor");
@@ -2554,7 +2512,8 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	initVars(); 			// used like this instead of var init to be able to have independent file per routine(s)
 	initI2C();  			// for Screen
 	initScreen();			// Screen
-    init_temp();			// Temperature sensors
+	if(sysConfig.mode)
+		init_temp();		// Temperature sensors
 	init_log();				// Log file management
 	initSensors();
 	initRtc();
@@ -2574,14 +2533,12 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	// Start Main Tasks
 	xTaskCreate(&displayManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
 	xTaskCreate(&kbd,"kbd",8192,NULL, MGOS_TASK_PRIORITY, NULL);								// User interface while in development. Erased in RELEASE
-//	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
-
-//	ESP_LOGI(TAG, "Node Mode %s", sysConfig.mode?"Server":"Client");
+	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
 
 	if(sysConfig.mode==0)
-//		if(string(sysConfig.ssid[0])=="")
-//			initWiFi();
-//		else
+		if(string(sysConfig.ssid[0])=="")
+			initWiFi();
+		else
 			initWiFiSta();
 	else
 	    initWiFi();

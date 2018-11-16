@@ -65,8 +65,8 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 		{
 			printf ("Last Compile %s-%s\n",__DATE__,__TIME__);
 
-			if(sysConfig.centinel==CENTINEL)
-				printf("Valid Centinel SNTP:%s Temp %.02f\n",timef?"Y":"N",DS_get_temp(&sensors[0][0]));
+			if(sysConfig.mode)
+				printf("Temp %.02f\n",DS_get_temp(&sensors[0][0]));
 			u32 diffd=now-sysConfig.lastTime;
 			u16 horas=diffd/3600;
 			u16 min=(diffd-(horas*3600))/60;
@@ -76,7 +76,6 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			for(int a=0;a<2;a++)
 				if(sysConfig.ssid[a][0]!=0)
 					printf("[SSID[%d]:%s-%s %s\n",a,sysConfig.ssid[a],sysConfig.pass[a],curSSID==a ?"*":" ");
-			//      printf("Image w:%d h:%d\n",sysConfig.imw,sysConfig.imh);
 			printf( "[IP:" IPSTR "] ", IP2STR(&localIp));
 
 			u8 mac[6];
@@ -201,7 +200,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 				{
 					local=activeNodes.lastTime[a]-5*3600;
 					localtime_r(&local, &ts);
-					printf("Node[%d] reported at %s\n",a,asctime(&ts));
+					printf("Node[%d] reported at %s",a,asctime(&ts));
 				}
 			}
 
