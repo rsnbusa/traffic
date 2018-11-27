@@ -67,7 +67,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 		{
 			printf ("Last Compile %s-%s\n",__DATE__,__TIME__);
 
-			if(sysConfig.mode)
+			if(sysConfig.mode && numsensors>0)
 				printf("Temp %.02f\n",DS_get_temp(&sensors[0][0]));
 			u32 diffd=now-sysConfig.lastTime;
 			u16 horas=diffd/3600;
@@ -88,17 +88,19 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			mmac="";
 			printf("[AP Name:%s] Mongoose%d\n",AP_NameString.c_str(),mongf);
 			printf("Meter Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
-			printf("MQTT Server:[%s:%d] Connected:%s User:[%s] Passw:[%s]\n",sysConfig.mqtt,sysConfig.mqttport,mqttf?"Yes":"No",sysConfig.mqttUser,sysConfig.mqttPass);
-			printf("Cmd Queue:%s\n",cmdTopic.c_str());
-			printf("Answer Queue:%s\n",spublishTopic.c_str());
+			if(sysConfig.mode)
+			{
+				printf("MQTT Server:[%s:%d] Connected:%s User:[%s] Passw:[%s]\n",sysConfig.mqtt,sysConfig.mqttport,mqttf?"Yes":"No",sysConfig.mqttUser,sysConfig.mqttPass);
+				printf("Cmd Queue:%s\n",cmdTopic.c_str());
+				printf("Answer Queue:%s\n",spublishTopic.c_str());
 		//	printf("Alert Queue:%s\n",alertTopic.c_str());
-			printf("Update Server:%s\n",sysConfig.domain);
-			nameStr=string(APP)+".bin";
+				printf("Update Server:%s\n",sysConfig.domain);
+				nameStr=string(APP)+".bin";
+			}
 			printf("[Version OTA-Updater %s] ",sysConfig.actualVersion);
 			printf("[Firmware %s @ %s]\n",nameStr.c_str(),makeDateString(sysConfig.lastUpload).c_str());
-			printf("Station Id:%d NodeId:%d Clone:%s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No");
 		}
-
+		printf("Station Id:%d NodeId:%d Clone:%s Name %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",sysConfig.stationName);
 		printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 //Trace Flags
 		if(sysConfig.traceflag>0)
@@ -135,26 +137,27 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 
 		for(int a=0;a<sysLights.numLuces;a++)
 		{
-			if (sysLights.thePorts[a]>=0)
+			if (sysLights.outPorts[a]>=0)
 			{
 				if(a<sysLights.numLuces-1)
-					sprintf(textl,"%d(%s)-",sysLights.thePorts[a],sysLights.theNames[a]);
+					sprintf(textl,"%d/%d(%s)-",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
 				else
-					sprintf(textl,"%d(%s)",sysLights.thePorts[a],sysLights.theNames[a]);
+					sprintf(textl,"%d/%d(%s)",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
 
 				algo+=string(textl);
 			}
 		}
 		printf("%s\n",algo.c_str());
 
-			printf("Lights %d Default %d Blink %d\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight);
+			printf("Lights %d Default %d Blink %d Walk %s Failed %x\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight,globalWalk?"Y":"N",sysLights.failed);
 
 
 // Lights sequence
 			for(int a=0;a<sysLights.numLuces;a++)
 			{
-				printf("LightSeq #%d Ports %s (%s-%s) Time %d secs\n",a,byte_to_binary_porttxt(sysLights.lasLuces[a].ioports).c_str(),
-						sysLights.lasLuces[a].opt?"Blk":"On ",sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
+				printf("LightSeq #%d Ports %s (%d-%s) Time %d secs\n",a,byte_to_binary_porttxt(sysLights.lasLuces[a].ioports).c_str(),
+					//	sysLights.lasLuces[a].opt?"Blk":"On ",sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
+				sysLights.lasLuces[a].opt,sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
 			}
 
 		if(sysConfig.mode==1)
@@ -204,7 +207,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 				{
 					local=activeNodes.lastTime[a]-5*3600;
 					localtime_r(&local, &ts);
-					printf("Node[%d] reported at %s",a,asctime(&ts));
+					printf("Node[%d] reported %s at %s",a,activeNodes.dead[a]?"dead":"alive",asctime(&ts));
 				}
 			}
 
@@ -215,9 +218,13 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			if(wifi_sta_list.num==0)
 				printf("NO Stations connected\n");
 			else
-				printf("%d Connected TLights\n",wifi_sta_list.num);
+				printf("%d Connected Devices\n",wifi_sta_list.num);
 			for (int i=0; i<wifi_sta_list.num; i++)
 				printf("TLight[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
+
+			printf("Logins %d\n",numLogins);
+			for (int a=0;a<numLogins;a++)
+				printf("Street %d Station %d %s\n",logins[a].nodel,logins[a].stationl,logins[a].namel);
 
 			printf("\nGeneral Status\n");
 			int este=scheduler.seqNum[scheduler.voy];

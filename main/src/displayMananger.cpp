@@ -7,14 +7,10 @@
 
 #include "displayManager.h"
 using namespace std;
-extern  string makeDateString(time_t t);
-extern void write_to_flash();
-extern void loadDayBPK(u16 hoy);
 extern uint32_t IRAM_ATTR millis();
-extern void eraseMainScreen();
-extern uint32_t readADC();
 extern void delay(uint16_t a);
-extern uint32_t millis();
+void sendAlert(string que, int len);
+
 
 void drawString(int x, int y, string que, int fsize, int align,displayType showit,overType erase)
 {
@@ -62,16 +58,25 @@ void drawString(int x, int y, string que, int fsize, int align,displayType showi
 	if(erase==REPLACE)
 	{
 		int w=display.getStringWidth((char*)que.c_str());
+		if(w<=0)
+			return;
 		int xx=0;
 		switch (lastalign) {
 		case TEXT_ALIGN_LEFT:
 			xx=x;
+			if (xx<0)
+				xx=0;
 			break;
 		case TEXT_ALIGN_CENTER:
 			xx=x-w/2;
+			if(xx<0)
+				xx=0;
 			break;
 		case TEXT_ALIGN_RIGHT:
 			xx=x-w;
+			if(xx<0)
+				xx=0;
+			break;
 		default:
 			break;
 		}
@@ -121,7 +126,7 @@ void setLogo(string cual)
 		display.setColor(WHITE);
 		display.drawLine(0,18,127,18);
 		display.drawLine(0,50,127,50);
-		drawString(64, 20, cual.c_str(),24, TEXT_ALIGN_CENTER,DISPLAYIT, NOREP);
+		drawString(64, 20, cual.c_str(),24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
 		xSemaphoreGive(I2CSem);
 	}
 		drawBars();
@@ -131,21 +136,47 @@ void setLogo(string cual)
 		oldtemp=0.0;
 }
 
+void checkAlive(void *pArg)
+{
+	struct tm  ts;
+	time_t now;
+	char textl[60];
+
+	while(true) //forever
+	{
+		delay(sysConfig.keepAlive+1000); //one second more than the current keepAlive. Give him change to log he is alive
+		time(&now);
+		for (int a=1;a<=numLogins;a++)
+		{
+			if((now-activeNodes.lastTime[a])>(sysConfig.keepAlive/1000) && !activeNodes.dead[a])
+			{
+				localtime_r(&activeNodes.lastTime[a], &ts);
+				sprintf(textl,"Light[%d] %s is dead,last seen alive %s",a,logins[a].namel,asctime(&ts));
+				activeNodes.dead[a]=true;
+				sendAlert(string(textl), strlen(textl));
+			}
+
+		}
+	}
+}
 void timerManager(void *arg) {
 	time_t t = 0;
 	struct tm timeinfo ;
-	char textd[20],textt[20];
-	u32 nheap;
-	wifi_sta_list_t station_list;
+	char textd[20],textt[20],textl[50];
+//	u32 nheap;
+	u8 countLoginTime=0;
+	bool sentLogin=false;
+	u16 tryMqtt=20;
+	float temp=200.0,diff;
 
 	while(true)
 	{
-		nheap=xPortGetFreeHeapSize();
+//		nheap=xPortGetFreeHeapSize();
 
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<HEAPD))
-			printf("[HEAPD]Heap %d\n",nheap);
-#endif
+//#ifdef DEBUGSYS
+//		if(sysConfig.traceflag & (1<<HEAPD))
+//			printf("[HEAPD]Heap %d\n",nheap);
+//#endif
 
 		vTaskDelay(1000/portTICK_PERIOD_MS);
 		time(&t);
@@ -153,15 +184,56 @@ void timerManager(void *arg) {
 
 		if(!rxtxf)
 		{
-			esp_wifi_ap_get_sta_list(&station_list);
-			if(station_list.num>=(sysConfig.totalLights-1))
+			countLoginTime++;
+
+			if(numLogins>=(sysConfig.totalLights-1))
+			{
+				delay(1000);
 				rxtxf=true;
+				sendMsg(SENDCLONE,EVERYBODY,0,0,NULL,0);
+				xTaskCreate(&checkAlive,"alive",4096,NULL, 5, NULL);
+				time(&t);
+				localtime_r(&t, &timeinfo);
+				sprintf(textl,"Boot Complete for %s at %s %d stations joined",sysConfig.lightName,asctime(&timeinfo),sysConfig.totalLights-1);
+				while(!mqttf && tryMqtt)
+				{
+					tryMqtt--;
+					delay(500);
+				}
+				if(mqttf)
+					sendAlert(string(textl), strlen(textl));
+			}
+			else
+			{
+				if(countLoginTime>MAXLOGINTIME && !sentLogin)
+				{
+					time(&t);
+					localtime_r(&t, &timeinfo);
+					sprintf(textl,"Login Timeout for %s at %s",sysConfig.lightName,asctime(&timeinfo));
+					sentLogin=true;
+					sendAlert(string(textl), strlen(textl));
+				}
+			}
 		}
 
-		//if (true)
-			if (displayf)
-
+		if (displayf)
 		{
+			temp=DS_get_temp(&sensors[0][0]);
+			diff=temp-oldtemp;
+			if(diff<0.0)
+				diff*=-1.0;
+			if (diff>0.3 && temp<130.0)
+			{
+				if(xSemaphoreTake(I2CSem, portMAX_DELAY))
+				{
+					sprintf(textl,"%.02fC\n",temp);
+					drawString(50, 0, "     ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+					drawString(50, 0, string(textl), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+					oldtemp=temp;
+					xSemaphoreGive(I2CSem);
+				}
+			}
+
 			if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 			{
 				sprintf(textd,"%02d/%02d/%04d",timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
@@ -180,49 +252,3 @@ void timerManager(void *arg) {
 		}
 	}
 }
-void displayManager(void *arg) {
-	//   gpio_set_direction(GPIO_NUM_4, GPIO_MODE_OUTPUT);
-	//	int level = 0;
-	char textl[20];
-//	stateType oldState,moldState=CLOSED;
-	string local;
-	uint32_t tempwhen=0;
-	float temp,diff;
-//	oldState=stateVM;
-	oldtemp=0.0;
-
-	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
-
-	xTaskCreate(&timerManager,"timeMgr",4096,NULL, MGOS_TASK_PRIORITY, NULL);
-
-	if (sysConfig.DISPTIME==0)
-		sysConfig.DISPTIME=DISPMNGR;
-	while (true) {
-
-		if(millis()-tempwhen>1000 && numsensors>0)
-		{
-			temp=DS_get_temp(&sensors[0][0]);
-			diff=temp-oldtemp;
-			if(diff<0.0)
-				diff*=-1.0;
-			if (diff>0.3 && temp<130.0)
-			{
-				if(displayf)
-				{
-				if(xSemaphoreTake(I2CSem, portMAX_DELAY))
-				{
-					sprintf(textl,"%.02fC\n",temp);
-					drawString(50, 0, "     ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-					drawString(50, 0, string(textl), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-					oldtemp=temp;
-					xSemaphoreGive(I2CSem);
-				}
-				}
-			}
-			tempwhen=millis();
-		}
-
-		vTaskDelay(sysConfig.DISPTIME/portTICK_PERIOD_MS);
-	}
-}
-

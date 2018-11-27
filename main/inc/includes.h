@@ -10,7 +10,6 @@
 #include "Sodaq_DS3231.h"
 
 extern "C"{
-#include "Nodo.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/timers.h"
@@ -63,7 +62,6 @@ extern "C"{
 #include "driver/adc.h"
 #include "esp_log.h"
 #include "errno.h"
-#include "port/arpa/inet.h"
 void app_main();
 }
 #endif

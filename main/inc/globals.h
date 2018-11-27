@@ -53,9 +53,10 @@ using namespace std;
  EXTERN FILE 							*bitacora;
  EXTERN TimerHandle_t 					scheduleTimer,doneTimer;
  EXTERN QueueHandle_t 					mqttQ;
- EXTERN void*							mqttCon;
+ //EXTERN void*							mqttCon;
  EXTERN t_symstruct 					lookuptable[NKEYS];
  EXTERN esp_mqtt_client_config_t  		settings;
+ EXTERN esp_mqtt_client_handle_t		gClient;
  EXTERN nvs_handle 						nvshandle,seqhandle,lighthandle;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
  EXTERN esp_adc_cal_characteristics_t 	*adc_chars;
@@ -65,15 +66,16 @@ using namespace std;
  EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle;
  EXTERN sta_status						activeNodes;
  EXTERN cmdRecord 						cmds[MAXCMDS];
+ EXTERN login_struct					logins[20];
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
- EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf;
+ EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,globalWalk;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
- EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid;
+ EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins;
  EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID;
  EXTERN int								RSSI,gCycleTime,theSock,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
- EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[10];
- EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10];
+ EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[20];
+ EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[40][10];
 
 #endif /* MAIN_GLOBALS_H_ */

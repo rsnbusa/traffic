@@ -29,9 +29,11 @@ typedef struct {
 } firmware_type;
 
 
-enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,LEDS,FWARE};
+enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,
+	LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
 enum {BLINKc,FACTORc,PORTSc,LIGHTSc,CYCLEc,SCHEDULEc,CONNECTEDc,IDc,FIRMWAREc,LOGCLEARc,LOGc,QUIETc,TRACEc,TEMPc,STATUSc,MQTTIDc,APc,DELAYc,INTERVALc,
-	MODEc,STARTc,STOPc,PINGc,COUNTERc,RESETCOUNTc,RESETc,NEWIDc,STATSc,ZEROc,DISPLAYc,SETTINGSc,RUALIVEc,STOPCYCLEc,ALIVEc,STREETc,HELPc,KALIVEc};
+	MODEc,STARTc,STOPc,PINGc,COUNTERc,RESETCOUNTc,RESETc,NEWIDc,STATSc,ZEROc,DISPLAYc,SETTINGSc,RUALIVEc,STOPCYCLEc,ALIVEc,STREETc,HELPc,KALIVEc,
+	BULBT,DATEc,COREc};
 typedef enum {NOREP,REPLACE} overType;
 typedef enum {NODISPLAY,DISPLAYIT} displayType;
 typedef enum {SYSBOOT,DLOGCLEAR,FWUPDATE,GERROR,OPENCLOSE,LOGM,DRESET,APSET,LINTERNAL,DCONTROL,DBORN,OPENABORT,DSTUCK,SLEEPMODE,ACTIVEMODE,BREAKMODE,GUARDISCO} nnada;
@@ -66,6 +68,7 @@ typedef struct {
 	u8 opt;
 	u8 typ;
 	u32 valor;
+	u32 inports;
 } TrafficCompStruct;
 
 typedef struct {
@@ -90,7 +93,14 @@ typedef struct{
 	u8 reported;
 	int8_t nodesReported[20];
 	time_t lastTime[20];
+	bool dead[20];
 } sta_status;
+
+typedef struct {
+	u8 nodel;
+	u8 stationl;
+	char namel[20];
+} login_struct;
 
 typedef struct  {
     u32 centinel;
@@ -119,6 +129,8 @@ typedef struct  {
     u8 totalLights;
     u8 showLeds;
     u32 keepAlive;
+    u8 stationid;
+    char stationName[20];
 } config_flash;
 
 typedef struct {
@@ -135,11 +147,14 @@ typedef struct {
 typedef struct {
     // Lights for Nodes
 	u8 numLuces;
-    u32 allbitsPort,lastGivenTime;
-    int8_t thePorts[6];
+    u32 outbitsPorts,lastGivenTime;
+    int8_t outPorts[6];
     char theNames[6][4];
     TrafficCompStruct lasLuces[6];
 	u8 defaultLight,blinkLight;
+	u32 inbitsPorts;
+	int8_t inPorts[6];
+	u32 failed;
 } lights_struct;
 
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,

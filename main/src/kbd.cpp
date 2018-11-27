@@ -14,6 +14,9 @@ extern void write_to_flash_lights();
 extern void write_to_flash_cycles();
 extern string makeDateString(time_t t);
 extern void cycleManager(void *pArg);
+extern void delay(uint16_t cuanto);
+
+string byte_to_binarytxt(uint32_t x,bool outp);
 
 int keyfromstring(char *key)
 {
@@ -37,7 +40,10 @@ int cmdfromstring(string key)
     	string s1=string(kbdTable[i]);
 		for (auto & c: s1) c = toupper(c);
     	if(strstr(s1.c_str(),key.c_str())!=NULL){
-    //		printf("Found key %s in pos %d = %s\n",key.c_str(),i,s1.c_str());
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		printf("[CMDD]Found key %s in pos %d = %s\n",key.c_str(),i,s1.c_str());
+#endif
             return i;
     	}
     }
@@ -48,14 +54,15 @@ int cmdfromstring(string key)
 string get_string(uart_port_t uart_num,u8 cual)
 {
 	uint8_t ch;
-	char dijo[50];
+	char dijo[100];
 	int son=0,len;
-	memset(&dijo,0,20);
+	memset(&dijo,0,sizeof(dijo));
 	while(1)
 	{
 		len = uart_read_bytes(uart_num, (uint8_t*)&ch, 1,4);
 		if(len>0)
 		{
+		//	printf("%d ",ch);
 			if(ch==cual)
 				return string(dijo);
 
@@ -64,18 +71,56 @@ string get_string(uart_port_t uart_num,u8 cual)
 			if (son>sizeof(dijo)-1)
 				son=sizeof(dijo)-1;
 		}
+	//	else
+		//	printf("len %d\n",len);
 
-		vTaskDelay(100/portTICK_PERIOD_MS);
+		vTaskDelay(30/portTICK_PERIOD_MS);
 	}
+}
+
+int8_t findPort(int cual)
+{
+	for (int a=0;a<6;a++)
+		if(cual==sysLights.outPorts[a])
+			return a;
+	return -1;
 }
 
 bool confirmPort(int cual)
 {
-	for (int a=0;a<6;a++)
-		if(cual==sysLights.thePorts[a])
+	if(findPort(cual)>=0)
 			return true;
-	return false;
+	else
+		return false;
 }
+
+u32 makeInPorts(string cual)
+{
+	string s;
+	uint32_t res=0;
+	int8_t donde;
+
+		  char * pch;
+		  printf ("For INPUT Splitting string \"%s\" into tokens:\n",cual.c_str());
+		  pch = strtok ((char*)cual.c_str(),",");
+		  while (pch != NULL)
+		  {
+			  donde=findPort(atoi(pch));
+			  if(donde>=0)
+			  {
+				  res = res | (1<<sysLights.inPorts[donde]);
+			//	  printf("Input donde %d shift %d\n",donde,sysLights.inPorts[donde]);
+			  }
+			  else
+			  {
+				  printf("Port %d not found. Exit\n",atoi(pch));
+			  }
+			  pch = strtok (NULL, ",");
+		  }
+		//  printf("Input %x %s\n",res,byte_to_binarytxt(res,false).c_str());
+		  return res;
+}
+
 
 uint32_t strbitsConfirm(string cual)
 {
@@ -89,14 +134,16 @@ uint32_t strbitsConfirm(string cual)
 	  {
 		  if(confirmPort(atoi(pch)))
 		  {
-		  res = res | (1<<(atoi(pch)));
+			  res = res | (1<<(atoi(pch)));
 	//    printf ("%s res %d\n",pch,res);
-	    pch = strtok (NULL, ",");
+			  pch = strtok (NULL, ",");
 		  }
-		  else return 0;
+		  else
+			  return 0;
 	  }
 	  return res;
 	}
+
 
 
 uint16_t getNodeTime(string cual)
@@ -118,7 +165,7 @@ uint16_t getNodeTime(string cual)
 	  return res;
 	}
 
-uint32_t strbits(string cual,bool savep)
+uint32_t strbits(string cual,bool savep, bool outp)
 {
 	string s;
 	u8 llevo=0;
@@ -130,12 +177,16 @@ uint32_t strbits(string cual,bool savep)
 	  pch = strtok ((char*)cual.c_str(),",");
 	  while (pch != NULL)
 	  {
-		  if(atoi(pch)>31)
-			  return 0;
+//		  if(atoi(pch)>31)
+//			  return 0;
 		  res = res | (1<<(atoi(pch)));
 		  if(savep)
 		  {
-			  sysLights.thePorts[llevo++]=atoi(pch);
+			  if(outp)
+				  sysLights.outPorts[llevo++]=atoi(pch);
+			  else
+				  sysLights.inPorts[llevo++]=atoi(pch);
+
 			  sysLights.numLuces=llevo;
 		  }
 	//    printf ("%s res %d\n",pch,res);
@@ -167,7 +218,7 @@ const char *byte_to_binary(uint32_t x)
     return b;
 }
 
-string byte_to_binarytxt(uint32_t x)
+string byte_to_binarytxt(uint32_t x,bool outp)
 {
 
     uint32_t c;
@@ -176,7 +227,11 @@ string byte_to_binarytxt(uint32_t x)
 
     for (int a=0;a<sysLights.numLuces;a++)
     {
-    	c=(1<<sysLights.thePorts[a]);
+    	if(outp)
+    		c=(1<<sysLights.outPorts[a]);
+    	else
+    		c=(1<<sysLights.inPorts[a]);
+
     	if (x&c)
     	{
     		if(van>0)
@@ -199,13 +254,13 @@ string byte_to_binary_porttxt(uint32_t x)
 
     for (int a=0;a<sysLights.numLuces;a++)
     {
-    	c=(1<<sysLights.thePorts[a]);
+    	c=(1<<sysLights.outPorts[a]);
     	if (x&c)
     	{
     		if(van>0)
     			resp+="+";
     		van++;
-    		sprintf(textl,"%d(",sysLights.thePorts[a]);
+    		sprintf(textl,"%d(",sysLights.outPorts[a]);
     		resp+=string(textl)+sysLights.theNames[a];
     		resp+=")";
     	}
@@ -218,50 +273,73 @@ void kbd_blink(uart_port_t uart_num)
 {
 	for (int b=0;b<10;b++)
 		{
-			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.allbitsPort);//clear all set bits
+			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 			vTaskDelay(200/portTICK_PERIOD_MS);
-			REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.allbitsPort);//clear all set bits
+			REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.outbitsPorts);//clear all set bits
 			vTaskDelay(200/portTICK_PERIOD_MS);
 		}
-		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.allbitsPort);//clear all set bits
+		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 }
 
 void kbd_ports(uart_port_t uart_num)
 {
-	string s1;
+	string s1,outb,inb;
 	s1="";
+	char textl[50];
+
 	for (int a=0;a<sysLights.numLuces;a++)
+	{
+		if(a<sysLights.numLuces-1)
+			sprintf(textl,"%02d-",sysLights.outPorts[a]);
+		else
+			sprintf(textl,"%02d",sysLights.outPorts[a]);
+		outb+=string(textl);
+		if(a<sysLights.numLuces-1)
+			sprintf(textl,"%02d-",sysLights.inPorts[a]);
+		else
+			sprintf(textl,"%02d",sysLights.inPorts[a]);
+		inb+=string(textl);
+
 		if(a<sysLights.numLuces-1)
 			s1+=string(sysLights.theNames[a])+"-";
 		else
 			s1+=string(sysLights.theNames[a]);
-
-	printf("Ports(%s)[%s]:",byte_to_binary(sysLights.allbitsPort),s1.c_str());
+	}
+	printf("Ports Definitions(out-in-name,...)\n");
+	printf("Ports(Out:%s In:%s)[%s]:",outb.c_str(),inb.c_str(),s1.c_str());
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10); //format is port#-name,port#-name,etc
 	if (s1!=""){
 		sysLights.numLuces=0;
 		for(int a=0;a<6;a++){
-			sysLights.thePorts[a]=-1;
+			sysLights.outPorts[a]=-1;
+			sysLights.inPorts[a]=-1;
 			sysLights.theNames[a][0]=0;
 		}
 		string s2="";
+		string s3="";
 		int van=0;
 		char * pch;
-		//  printf ("Splitting string \"%s\" into tokens:\n",cual.c_str());
+		//Format is, output port-input port-name,...  Ex: 14-31-RED,13-32-YLW,etc
+	//	 printf ("Splitting string \"%s\" into tokens:\n",s1.c_str());
 		  pch = strtok ((char*)s1.c_str(),"-");
 		  while (pch != NULL)
 		  {
-			//  printf("Port %s-",pch);
-			  s2=s2+string(pch)+",";
+	//		  printf("Out [%s]-",pch);
+			  s2=s2+string(pch)+",";//Light Output Port
+			  pch = strtok (NULL,"-");
+	//		  printf("In [%s]-",pch);
+			  s3=s3+string(pch)+",";//Light Detection Port
 			  pch = strtok (NULL,",");
 			  strcpy(sysLights.theNames[van],pch);
-			//  printf("Name %s\n",pch);
+	//		  printf("Name [%s]\n",pch);
 			  pch = strtok (NULL, "-");
 			  van++;
 		  }
 		sysLights.numLuces=van;
-		sysLights.allbitsPort=strbits(s2,true);
+		sysLights.outbitsPorts=strbits(s2,true,true);
+		sysLights.inbitsPorts=strbits(s3,true,false);
+		printf("Ok\n");
 		write_to_flash_lights();
 	}
 }
@@ -298,12 +376,12 @@ void kbd_light_sequence(uart_port_t uart_num)
 
 	algo="";
 	for (int a=0;a<sysLights.numLuces;a++)
-		if(sysLights.thePorts[a]>=0)
+		if(sysLights.outPorts[a]>=0)
 		{
 			if(a<sysLights.numLuces-1)
-				sprintf(textl,"%d/%s,",sysLights.thePorts[a],sysLights.theNames[a]);
+				sprintf(textl,"%d/%s,",sysLights.outPorts[a],sysLights.theNames[a]);
 			else
-				sprintf(textl,"%d/%s",sysLights.thePorts[a],sysLights.theNames[a]);
+				sprintf(textl,"%d/%s",sysLights.outPorts[a],sysLights.theNames[a]);
 			algo+=string(textl);
 		}
 
@@ -327,13 +405,16 @@ void kbd_light_sequence(uart_port_t uart_num)
 		if(atoi(s1.c_str())<sysLights.numLuces)
 		{
 			pos=atoi(s1.c_str());
-			printf("IOPorts(%s)(%s):",byte_to_binarytxt(sysLights.lasLuces[pos].ioports).c_str(),algo.c_str());
+			printf("IOPorts(%s/%s)(%s):",byte_to_binarytxt(sysLights.lasLuces[pos].ioports,true).c_str(),byte_to_binarytxt(sysLights.lasLuces[pos].inports,false).c_str(),algo.c_str());
 			fflush(stdout);
 			s1=get_string((uart_port_t)uart_num,10);
 			if(s1!=""){
 				add=strbitsConfirm(s1);
 				if(add>0)
+				{
 					sysLights.lasLuces[pos].ioports=add;
+					sysLights.lasLuces[pos].inports=makeInPorts(s1);
+				}
 				else
 				{
 					printf("Invalid Port...exiting\n");
@@ -413,7 +494,7 @@ void kbd_schedule(uart_port_t uart_num)
 	char * resul;
 	time_t epoch, epoch1;
 
-			printf("Controller Sequence#:");
+			printf("Schedule Seq#:");
 			fflush(stdout);
 			s1=get_string((uart_port_t)uart_num,10);
 			if(s1!="")
@@ -512,7 +593,7 @@ void kbd_connected(uart_port_t uart_num)
 void kbd_id(uart_port_t uart_num)
 {
 	string s1;
-	printf("Station Whoami(%d)",sysConfig.whoami);
+	printf("Street Id(%d)",sysConfig.whoami);
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10);
 	if (s1!="")
@@ -522,6 +603,16 @@ void kbd_id(uart_port_t uart_num)
 	s1=get_string((uart_port_t)uart_num,10);
 	if (s1!="")
 		sysConfig.nodeid=atoi(s1.c_str());
+	printf("Station Id(%d):",sysConfig.stationid);
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1!="")
+		sysConfig.stationid=atoi(s1.c_str());
+	printf("Station Name(%s):",sysConfig.stationName);
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1!="")
+		strcpy(sysConfig.stationName,s1.c_str());
 	printf("Clone Id(%s):",sysConfig.clone?"Y":"N");
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10);
@@ -697,9 +788,14 @@ void kbd_accessPoint(uart_port_t uart_num)
 	string s1;
 	int len;
 
+	if(sysConfig.mode)
+	{
 	printf("Which AP:");
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10);
+	}
+	else
+		s1="0"; //for Clients
 	if(s1!="")
 	{
 		len=atoi(s1.c_str());
@@ -940,6 +1036,94 @@ void kbd_ping(uart_port_t uart_num)
 		sendMsg(PING,atoi(s1.c_str()),0,0,NULL,0);
 }
 
+void kbd_bulbTest(uart_port_t uart_num)
+{
+	string s1;
+	int cual=0;
+	printf("Bulb Seq to Test:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1!=""){
+		cual=atoi(s1.c_str());
+		for (int a=0;a<5;a++){
+		REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[cual].ioports);//clear all set bits
+		delay(100);
+		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.lasLuces[cual].ioports);//clear all set bits
+		delay(100);
+		}
+	}
+}
+
+void kbd_date(uart_port_t uart_num)
+{
+	string s1;
+	DateTime algo;
+
+	int dyear,dmonth,dday,dhour,dmin,dsecs;
+
+	printf("Set date. Year:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid year\n");
+		return;
+	}
+	dyear=atoi(s1.c_str());
+
+	printf("Month:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid month\n");
+		return;
+	}
+	dmonth=atoi(s1.c_str());
+
+	printf("Day:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid day\n");
+		return;
+	}
+	dday=atoi(s1.c_str());
+
+	printf("Hour:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid hour\n");
+		return;
+	}
+	dhour=atoi(s1.c_str());
+
+	printf("Minutes:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid minutes\n");
+		return;
+	}
+	dmin=atoi(s1.c_str());
+
+	printf("Seconds:");
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10);
+	if (s1==""){
+		printf("Invalid seconds\n");
+		return;
+	}
+	dsecs=atoi(s1.c_str());
+	algo=DateTime(dyear,dmonth,dday,dhour,dmin,dsecs,0);
+	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
+		{
+			rtc.setDateTime(algo);
+			algo=rtc.now();
+			xSemaphoreGive(I2CSem);
+		}
+	printf("RTC Year %d Month %d Day %d Hora %d Min %d Sec %d Week %d\n",algo.year(),
+			algo.month(),algo.date(),algo.hour(),algo.minute(),algo.second(),algo.dayOfWeek());
+}
 
 void kbd(void *arg) {
 	uart_port_t uart_num = UART_NUM_0 ;
@@ -950,7 +1134,8 @@ void kbd(void *arg) {
 	char temp[20];
 	char local[KCMDS][20];
 	int pos=0;
-
+	u32 ledStatus=0;
+	int *p=0;
 
 	uart_config_t uart_config = {
 			.baud_rate = 115200,
@@ -989,7 +1174,16 @@ void kbd(void *arg) {
 			switch(lastcmd)
 			{
 			case BLINKc:
-				kbd_blink(uart_num);
+				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+				vTaskDelay(200/portTICK_PERIOD_MS);
+				REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.outbitsPorts);//clear all set bits
+//				kbd_blink(uart_num);
+				ledStatus=REG_READ(GPIO_IN_REG );//read bits
+				printf("ON Read GPIO %x\n",ledStatus);
+				get_string((uart_port_t)uart_num,10);
+				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+				ledStatus=REG_READ(GPIO_IN_REG );//read bits
+				printf("OFF Read GPIO %x\n",ledStatus);
 				break;
 
 			case FACTORc:
@@ -1066,7 +1260,7 @@ void kbd(void *arg) {
 				printf("Current Temp: %0.1fC\n",DS_get_temp(&sensors[0][0]));
 				break;
 
-			case STATUSc:
+			case STATUSc://14
 				show_config(0, true) ;
 				break;
 
@@ -1123,7 +1317,7 @@ void kbd(void *arg) {
 				}
 				break;
 
-			case PINGc:
+			case PINGc://22
 				if(!sysConfig.mode){
 					printf(sermod);
 					break;//Only server mode
@@ -1177,7 +1371,7 @@ void kbd(void *arg) {
 				printf("Display %s\n",displayf?"On":"Off");
 				break;
 
-			case SETTINGSc:
+			case SETTINGSc://30
 				printf("Host %s Port %d Client %s User %s Pass %s\n",settings.host,settings.port,settings.client_id,settings.username,settings .password );
 				break;
 
@@ -1234,14 +1428,27 @@ void kbd(void *arg) {
 				break;
 
 			case KALIVEc:
-				kbd_alive(uart_num);
+				kbd_kalive(uart_num);
 				break;
-
+			case BULBT:
+				kbd_bulbTest(uart_num);
+				break;
+			case DATEc:
+				kbd_date(uart_num);
+				break;
+			case COREc:
+				printf("Ready to Dump\n");
+				delay(3000);
+				*p=0;
+				printf("Should not read this\n");
+				break;
 			default:
 				printf("No cmd\n");
 				break;
 			}
 		}
+		else
+			printf("Unknown command\n");
 		vTaskDelay(BLINKT / portTICK_PERIOD_MS);
 	}
 }
