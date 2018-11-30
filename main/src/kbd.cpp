@@ -8,10 +8,10 @@
 using namespace std;
 
 extern void show_config(u8 como);
-extern void write_to_flash();
-extern void write_to_flash_seq();
-extern void write_to_flash_lights();
-extern void write_to_flash_cycles();
+extern void write_to_flash(bool andRecovery);
+extern void write_to_flash_seq(bool andRecovery);
+extern void write_to_flash_lights(bool andRecovery);
+extern void write_to_flash_cycles(bool andRecovery);
 extern string makeDateString(time_t t);
 extern void cycleManager(void *pArg);
 extern void delay(uint16_t cuanto);
@@ -278,7 +278,7 @@ void kbd_blink(uart_port_t uart_num)
 			REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.outbitsPorts);//clear all set bits
 			vTaskDelay(200/portTICK_PERIOD_MS);
 		}
-		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+		REG_WRITE(GPIO_OUT_W1TC_REG,sysLights.outbitsPorts);//clear all set bits
 }
 
 void kbd_ports(uart_port_t uart_num)
@@ -340,7 +340,7 @@ void kbd_ports(uart_port_t uart_num)
 		sysLights.outbitsPorts=strbits(s2,true,true);
 		sysLights.inbitsPorts=strbits(s3,true,false);
 		printf("Ok\n");
-		write_to_flash_lights();
+		write_to_flash_lights(true);
 	}
 }
 void kbd_factor(uart_port_t uart_num)
@@ -366,7 +366,7 @@ void kbd_factor(uart_port_t uart_num)
 	{
 		sendMsg(LEDS,EVERYBODY,1,0,NULL,0);
 	}
-	write_to_flash();
+	write_to_flash(true);
 }
 void kbd_light_sequence(uart_port_t uart_num)
 {
@@ -438,7 +438,7 @@ void kbd_light_sequence(uart_port_t uart_num)
 				sysLights.lasLuces[pos].valor=atol(s1.c_str());
 		}
 		}
-	write_to_flash_lights();
+	write_to_flash_lights(true);
 
 }
 
@@ -452,7 +452,7 @@ void kbd_cycle(uart_port_t uart_num)
 	s1=get_string((uart_port_t)uart_num,10);
 	if(s1!=""){
 		sysConfig.totalLights=atoi(s1.c_str());
-		write_to_flash();
+		write_to_flash(true);
 	}
 	printf("Cycle#:");
 	fflush(stdout);
@@ -478,7 +478,7 @@ void kbd_cycle(uart_port_t uart_num)
 			strcpy(allCycles.nodeSeq[pos],s1.c_str());
 			printf("Cycle %s\n",allCycles.nodeSeq[pos]);
 			allCycles.nodeSeq[pos][s1.length()]=0;
-			write_to_flash_cycles();
+			write_to_flash_cycles(true);
 		}
 	};
 }
@@ -569,7 +569,7 @@ void kbd_schedule(uart_port_t uart_num)
 					sysSequence.sequences[pos].stopSeq=epoch1;
 					if(pos+1>sysSequence.numSequences)
 						sysSequence.numSequences=pos+1;
-					write_to_flash_seq();
+					write_to_flash_seq(true);
 				}
 			}
 
@@ -624,7 +624,7 @@ void kbd_id(uart_port_t uart_num)
 		else
 			sysConfig.clone=0;
 	}
-	write_to_flash();
+	write_to_flash(true);
 
 }
 
@@ -749,13 +749,13 @@ void kbd_trace(uart_port_t uart_num)
 	if(strcmp(s1.c_str(),"NONE")==0)
 	{
 		sysConfig.traceflag=0;
-		write_to_flash();
+		write_to_flash(true);
 		return;
 	}
 	if(strcmp(s1.c_str(),"ALL")==0)
 	{
 		sysConfig.traceflag=0xFFFF;
-		write_to_flash();
+		write_to_flash(true);
 		return;
 	}
 	int cualf=keyfromstring((char*)s1.c_str());
@@ -768,7 +768,7 @@ void kbd_trace(uart_port_t uart_num)
 	{
 		printf("Debug Key Pos %d %s added\n",cualf,s1.c_str());
 		sysConfig.traceflag |= 1<<cualf;
-		write_to_flash();
+		write_to_flash(true);
 		return;
 	}
 	else
@@ -776,7 +776,7 @@ void kbd_trace(uart_port_t uart_num)
 		cualf=cualf*-1;
 		printf("Debug Key Pos %d %s removed\n",cualf-(NKEYS/2),s1.c_str());
 		sysConfig.traceflag ^= 1<<(cualf-(NKEYS/2));
-		write_to_flash();
+		write_to_flash(true);
 		return;
 	}
 }
@@ -816,7 +816,7 @@ void kbd_accessPoint(uart_port_t uart_num)
 			memcpy((void*)&sysConfig.pass[len][0],(void*)s1.c_str(),s1.length());//without the newline char
 		}
 		curSSID=sysConfig.lastSSID=0;
-		write_to_flash();
+		write_to_flash(true);
 	}
 
 }
@@ -885,7 +885,7 @@ void kbd_mode(uart_port_t uart_num)
 			sysConfig.mode=0;
 		else
 			printf("Invalid Option\n");
-	write_to_flash();
+	write_to_flash(true);
 }
 
 void kbd_start(uart_port_t uart_num)
@@ -959,7 +959,7 @@ void kbd_street(uart_port_t uart_num)
 	if(s1=="")
 		return;
 	strcpy(sysConfig.calles[len],s1.c_str());
-	write_to_flash();
+	write_to_flash(true);
 }
 
 void kbd_kalive(uart_port_t uart_num)
@@ -983,7 +983,7 @@ void kbd_alive(uart_port_t uart_num)
 	s1=get_string((uart_port_t)uart_num,10);
 	if (s1!=""){
 		sysConfig.keepAlive=atol(s1.c_str());
-		write_to_flash();
+		write_to_flash(true);
 	}
 }
 
@@ -1270,7 +1270,7 @@ void kbd(void *arg) {
 			case MQTTIDc:
 				sysConfig.sendMqtt=!sysConfig.sendMqtt;
 				printf("SendMqtt is %s\n",sysConfig.sendMqtt?"On":"Off");
-				write_to_flash();
+				write_to_flash(true);
 				break;
 
 			case APc:

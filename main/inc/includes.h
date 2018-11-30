@@ -62,6 +62,7 @@ extern "C"{
 #include "driver/adc.h"
 #include "esp_log.h"
 #include "errno.h"
+#include "mbedtls/md.h"
 void app_main();
 }
 #endif

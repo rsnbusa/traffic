@@ -6,8 +6,9 @@
  */
 
 #include "eraseMeter.h"
-extern void write_to_flash();
+extern void write_to_flash(bool andRecovery);
 extern void postLog(int code, string mensaje);
+extern int write_backup_config();
 
 void erase_config() //do the dirty work
 {
@@ -25,7 +26,9 @@ void erase_config() //do the dirty work
 	sysConfig.working=true;
 	sysConfig.keepAlive=60000;
 	sysConfig.reserved=sysConfig.reserved2=1000;
-	write_to_flash();
+	write_to_flash(true);
+//	if(write_backup_config())
+//		printf("Failed to write recover\n");
 }
 
 

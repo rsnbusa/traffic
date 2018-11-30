@@ -49,6 +49,7 @@
 									<listOptionValue builtIn="false" value="&quot;${IDF_PATH}/components/fatfs/src&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${IDF_PATH}/components/espmqtt/include&quot;"/>
 									<listOptionValue builtIn="false" value="&quot;${IDF_PATH}/components/soc/esp32/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${IDF_PATH}/components/mbedtls/mbedtls/include&quot;"/>
 								</option>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.1627454588" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
