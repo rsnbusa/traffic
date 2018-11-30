@@ -52,18 +52,54 @@ string parseCycle(string cual)
 	  return s;
 	}
 
+string theTime(time_t eltime)
+{
+	char strftime_buf[60];
+	struct tm timeinfo;
 
-void show_config( u8 meter, bool full) // read flash and if HOW display Status message for terminal
+	localtime_r(&eltime, &timeinfo);
+	strftime(strftime_buf, sizeof(strftime_buf), "%c", &timeinfo);
+	return(string(strftime_buf));
+
+}
+
+void show_config( u8 full) // read flash and if HOW display Status message for terminal
 {
 	char textl[100];
 	time_t now = 0;
 	string algo;
 	struct tm  ts;
+	time_t local;
 
+
+
+	switch(full)
+	{
+		case 0:
+			strcpy(textl,"Show Full");
+			break;
+		case 1:
+			strcpy(textl,"Show Configuration");
+			break;
+		case 2:
+			strcpy(textl,"Show Statistics");
+			break;
+		case 3:
+			strcpy(textl,"Show Network");
+			break;
+		case 4:
+			strcpy(textl,"Show LightStuff");
+			break;
+		case 5:
+			strcpy(textl,"Show General");
+			break;
+		default:
+			strcpy(textl,"Unknown");
+	}
 
 		time(&now);
-		print_date_time(string("Flash Read Garage"),now );
-		if(full)
+		print_date_time(string(textl),now );
+		if(full==0 || full==2 )
 		{
 			printf ("Last Compile %s-%s\n",__DATE__,__TIME__);
 
@@ -77,7 +113,7 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 					makeDateString(sysConfig.preLastTime).c_str(),sysConfig.bootcount,sysConfig.lastResetCode);
 			for(int a=0;a<2;a++)
 				if(sysConfig.ssid[a][0]!=0)
-					printf("[SSID[%d]:%s-%s %s\n",a,sysConfig.ssid[a],sysConfig.pass[a],curSSID==a ?"*":" ");
+					printf("[SSID[%d]:[%s]-[%s] %s\n",a,sysConfig.ssid[a],sysConfig.pass[a],curSSID==a ?"*":" ");
 			printf( "[IP:" IPSTR "] ", IP2STR(&localIp));
 
 			u8 mac[6];
@@ -99,151 +135,192 @@ void show_config( u8 meter, bool full) // read flash and if HOW display Status m
 			}
 			printf("[Version OTA-Updater %s] ",sysConfig.actualVersion);
 			printf("[Firmware %s @ %s]\n",nameStr.c_str(),makeDateString(sysConfig.lastUpload).c_str());
+			if(sysConfig.traceflag>0)
+				{
+				printf("Trace Flags ");
+
+							for (int a=0;a<NKEYS;a++)
+								if (sysConfig.traceflag & (1<<a))
+								{
+									if(a<NKEYS-1)
+										printf("%s-",lookuptable[a].key);
+									else
+										printf("%s",lookuptable[a].key);
+								}
+							printf("\n");
+				}
+			else
+				printf("No trace flags\n");
 		}
 		printf("Station Id:%d NodeId:%d Clone:%s Name %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",sysConfig.stationName);
 		printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 //Trace Flags
-		if(sysConfig.traceflag>0)
-			{
-			printf("Trace Flags ");
 
-						for (int a=0;a<NKEYS;a++)
-							if (sysConfig.traceflag & (1<<a))
-							{
-								if(a<NKEYS-1)
-									printf("%s-",lookuptable[a].key);
-								else
-									printf("%s",lookuptable[a].key);
-							}
-						printf("\n");
-			}
-		else
-			printf("No trace flags\n");
 
 		//Connected Users
-
-		if(sonUid>0)
+		if(full==0 || full==3)
 		{
-			printf("Connected Users %d\n",sonUid);
-			for (int a=0;a<sonUid;a++){
-				printf("Uid %s ",montonUid[a].c_str());
-				print_date_time(string("LogIn"),uidLogin[a] );
-			}
-		}
 
-		//Station Stuff
-
-		algo="Ports:";
-
-		for(int a=0;a<sysLights.numLuces;a++)
-		{
-			if (sysLights.outPorts[a]>=0)
+			if(sonUid>0)
 			{
-				if(a<sysLights.numLuces-1)
-					sprintf(textl,"%d/%d(%s)-",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
-				else
-					sprintf(textl,"%d/%d(%s)",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
-
-				algo+=string(textl);
+				printf("Connected Users %d\n",sonUid);
+				for (int a=0;a<sonUid;a++){
+					printf("Uid %s ",montonUid[a].c_str());
+					print_date_time(string("LogIn"),uidLogin[a] );
+				}
 			}
 		}
-		printf("%s\n",algo.c_str());
+		//Station Stuff
+		if(full==0 || full==4 ||full==1)
+		{
+			algo="Ports:";
 
-			printf("Lights %d Default %d Blink %d Walk %s Failed %x\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight,globalWalk?"Y":"N",sysLights.failed);
-
-
-// Lights sequence
 			for(int a=0;a<sysLights.numLuces;a++)
 			{
-				printf("LightSeq #%d Ports %s (%d-%s) Time %d secs\n",a,byte_to_binary_porttxt(sysLights.lasLuces[a].ioports).c_str(),
-					//	sysLights.lasLuces[a].opt?"Blk":"On ",sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
-				sysLights.lasLuces[a].opt,sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
-			}
-
-		if(sysConfig.mode==1)
-		{
-			//Cycles
-			printf("Total TLights %d\n",sysConfig.totalLights);
-
-			printf("Num Cycles %4d\n",allCycles.numcycles);
-			for (int a=0;a<allCycles.numcycles;a++){
-				if(allCycles.totalTime[a]>3)
-					sprintf(textl,"%5d",allCycles.totalTime[a]);
-				if(allCycles.totalTime[a]==3)
-					strcpy(textl,"Blink");
-				if(allCycles.totalTime[a]==0)
-					strcpy(textl,"  Off");
-
-				printf("Cycle %d Total Time %s ->%s\n",a,textl,parseCycle(allCycles.nodeSeq[a]).c_str());
-			}
-
-			//Nodes sequences
-			printf("Num Schedules %d\n",sysSequence.numSequences);
-			for (int a=0;a<sysSequence.numSequences;a++)
-			{
-				   ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
-				    strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-					char diass[8]="-------";
-							char diaSemana[8]="SMTWTFS";
-							//printf("Dias %x\n",lticket->days);
-							for (int b=0;b<7;b++)
-							{
-								if(sysSequence.sequences[a].weekDay & (1<<b))
-									diass[b]=diaSemana[b] ;
-							}
-							diass[7]=0;
-							string nada=string(diass);
-				    printf("Schedule[%d] (%d)->[%s] %s [%s ",a,sysSequence.sequences[a].cycleId,parseCycle(allCycles.nodeSeq[sysSequence.sequences[a].cycleId]).c_str(),diass,textl);
-				   ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
-				    strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-				    printf("%s]=>%dms\n",textl,sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
-
-			}
-			time_t local;
-			printf("Active Nodes\n");
-			for (int a=0;a<20;a++)
-			{
-				if(activeNodes.nodesReported[a]!=-1)
+				if (sysLights.outPorts[a]>=0)
 				{
-					local=activeNodes.lastTime[a]-5*3600;
-					localtime_r(&local, &ts);
-					printf("Node[%d] reported %s at %s",a,activeNodes.dead[a]?"dead":"alive",asctime(&ts));
+					if(a<sysLights.numLuces-1)
+						sprintf(textl,"%d/%d(%s)-",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
+					else
+						sprintf(textl,"%d/%d(%s)",sysLights.outPorts[a],sysLights.inPorts[a],sysLights.theNames[a]);
+
+					algo+=string(textl);
+				}
+			}
+			printf("%s\n",algo.c_str());
+
+				printf("Lights %d Default %d Blink %d Walk %s Failed %x\n",sysLights.numLuces,sysLights.defaultLight,sysLights.blinkLight,globalWalk?"Y":"N",sysLights.failed);
+
+
+	// Lights sequence
+				for(int a=0;a<sysLights.numLuces;a++)
+				{
+					printf("LightSeq #%d Ports %s (%d-%s) Time %d secs\n",a,byte_to_binary_porttxt(sysLights.lasLuces[a].ioports).c_str(),
+						//	sysLights.lasLuces[a].opt?"Blk":"On ",sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
+					sysLights.lasLuces[a].opt,sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
+				}
+
+			if(sysConfig.mode==1)
+			{
+				//Cycles
+				printf("Total TLights %d\n",sysConfig.totalLights);
+
+				printf("Num Cycles %4d\n",allCycles.numcycles);
+				for (int a=0;a<allCycles.numcycles;a++){
+					if(allCycles.totalTime[a]>3)
+						sprintf(textl,"%5d",allCycles.totalTime[a]);
+					if(allCycles.totalTime[a]==3)
+						strcpy(textl,"Blink");
+					if(allCycles.totalTime[a]==0)
+						strcpy(textl,"  Off");
+
+					printf("Cycle %d Total Time %s ->%s\n",a,textl,parseCycle(allCycles.nodeSeq[a]).c_str());
+				}
+
+				//Nodes sequences
+				printf("Num Schedules %d\n",sysSequence.numSequences);
+				for (int a=0;a<sysSequence.numSequences;a++)
+				{
+					   ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
+						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+						char diass[8]="-------";
+								char diaSemana[8]="SMTWTFS";
+								//printf("Dias %x\n",lticket->days);
+								for (int b=0;b<7;b++)
+								{
+									if(sysSequence.sequences[a].weekDay & (1<<b))
+										diass[b]=diaSemana[b] ;
+								}
+								diass[7]=0;
+								string nada=string(diass);
+						printf("Schedule[%d] (%d)->[%s] %s [%s ",a,sysSequence.sequences[a].cycleId,parseCycle(allCycles.nodeSeq[sysSequence.sequences[a].cycleId]).c_str(),diass,textl);
+					   ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
+						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+						printf("%s]=>%dms\n",textl,sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
+
+				}
+			}
+		}
+			if(full==0 || full==3)
+			{
+				printf("Active Nodes\n");
+				for (int a=0;a<20;a++)
+				{
+					if(activeNodes.nodesReported[a]!=-1)
+					{
+						local=activeNodes.lastTime[a];
+						localtime_r(&local, &ts);
+						printf("Node[%d] reported %s at %s",a,activeNodes.dead[a]?"dead":"alive",asctime(&ts));
+					}
+				}
+
+				tcpip_adapter_sta_list_t tcpip_adapter_sta_list;
+				wifi_sta_list_t wifi_sta_list;
+				esp_wifi_ap_get_sta_list(&wifi_sta_list);
+				tcpip_adapter_get_sta_list(&wifi_sta_list, &tcpip_adapter_sta_list);
+				if(wifi_sta_list.num==0)
+					printf("NO Stations connected\n");
+				else
+					printf("%d Connected Devices\n",wifi_sta_list.num);
+				for (int i=0; i<wifi_sta_list.num; i++)
+					printf("TLight[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
+
+				printf("Logins %d\n",numLogins);
+				printf("Controller Street %d Station %d %s\n",sysConfig.whoami,sysConfig.stationid,sysConfig.stationName);
+				for (int a=0;a<numLogins;a++)
+					printf("Street %d Station %d %s\n",logins[a].nodel,logins[a].stationl,logins[a].namel);
+
+			}
+
+			if(full==0 || full==5)
+			{
+				printf("\nGeneral Status\n");
+				int este=scheduler.seqNum[scheduler.voy];
+				ts = *localtime((const time_t*)&sysSequence.sequences[este].startSeq);
+				strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+				int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
+				printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
+				ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
+				strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+				printf("%s\n",textl);
+
+				for (int a=0;a<6;a++)
+					if(sysConfig.calles[a][0]!=0)
+						printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
+			}
+
+			if(full==0 || full==2)
+			{
+				printf("Statistics\n");
+				local=internal_stats.startTime-5*3600;
+				localtime_r(&local, &ts);
+				printf("System with %d schedules completed started at %s",internal_stats.schedule_changes,asctime(&ts));
+
+				for (int a=0;a<10;a++)
+				{
+					if(internal_stats.started[a][0]>0)
+					{
+						ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
+						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+						printf("Schedule(%d) From %s to ",a,textl);
+						ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
+						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+						printf("%s\n",textl);
+
+						for (int b=0;b<6;b++)
+							if(internal_stats.started[a][b]>0)
+								printf("Node %d Started %d Confirmed %d Timeout %d\n",b,internal_stats.started[a][b],internal_stats.confimed[a][b],internal_stats.started[a][b]-internal_stats.confimed[a][b]);
+					}
 				}
 			}
 
-		    tcpip_adapter_sta_list_t tcpip_adapter_sta_list;
-			wifi_sta_list_t wifi_sta_list;
-			esp_wifi_ap_get_sta_list(&wifi_sta_list);
-			tcpip_adapter_get_sta_list(&wifi_sta_list, &tcpip_adapter_sta_list);
-			if(wifi_sta_list.num==0)
-				printf("NO Stations connected\n");
-			else
-				printf("%d Connected Devices\n",wifi_sta_list.num);
-			for (int i=0; i<wifi_sta_list.num; i++)
-				printf("TLight[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
-
-			printf("Logins %d\n",numLogins);
-			for (int a=0;a<numLogins;a++)
-				printf("Street %d Station %d %s\n",logins[a].nodel,logins[a].stationl,logins[a].namel);
-
-			printf("\nGeneral Status\n");
-			int este=scheduler.seqNum[scheduler.voy];
-			ts = *localtime((const time_t*)&sysSequence.sequences[este].startSeq);
-			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-			int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
-			printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
-			ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
-			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-			printf("%s\n",textl);
-
-			for (int a=0;a<6;a++)
-				if(sysConfig.calles[a][0]!=0)
-					printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
+		if(full==0 || full==4)
+		{
+			sprintf(textl,"with total duration %d in Light %d %d ms\n",cuantoDura,globalLuz,globalLuzDuration);
+			printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
+			if(sysConfig.mode)
+				printf("Controller is in Street %s duration %d ms\n",sysConfig.calles[globalNode],globalDuration);
 		}
-		sprintf(textl,"with total duration %d in Light %d %d ms\n",cuantoDura,globalLuz,globalLuzDuration);
-		printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
-		if(sysConfig.mode)
-			printf("Controller is in Street %s duration %d ms\n",sysConfig.calles[globalNode],globalDuration);
 
 }
 

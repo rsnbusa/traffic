@@ -241,7 +241,7 @@ void timerManager(void *arg) {
 				drawString(16, 5, mqttf?string("m"):string("   "), 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				drawString(0, 51, string(textd), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				drawString(86, 51, string(textt), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-				drawString(61, 51, sysConfig.working?"On  ":"Off", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+			//	drawString(61, 51, sysConfig.working?"On  ":"Off", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				if(gCycleTime>0)
 				{
 					sprintf(textd,"   %3ds   ",gCycleTime--);

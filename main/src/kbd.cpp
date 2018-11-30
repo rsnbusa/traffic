@@ -7,7 +7,7 @@
 #include "kbd.h"
 using namespace std;
 
-extern void show_config(u8 meter, bool full);
+extern void show_config(u8 como);
 extern void write_to_flash();
 extern void write_to_flash_seq();
 extern void write_to_flash_lights();
@@ -1261,7 +1261,10 @@ void kbd(void *arg) {
 				break;
 
 			case STATUSc://14
-				show_config(0, true) ;
+				printf("How(0:Full,1:Config,2:Statistics,3:Network,4:LightSuff,5:General):");
+				fflush(stdout),
+				s1=get_string((uart_port_t)uart_num,10);
+				show_config(atoi(s1.c_str()));
 				break;
 
 			case MQTTIDc:
