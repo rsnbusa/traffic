@@ -115,7 +115,7 @@ void mqttmanager(void * parg)
 	}
 }
 
-void write_to_flash_lights() //save our configuration
+void write_to_flash_lights(bool rec) //save our configuration
 {
 	esp_err_t q ;
 	q=nvs_set_blob(lighthandle,"lights",(void*)&sysLights,sizeof(sysLights));
@@ -130,7 +130,7 @@ void write_to_flash_lights() //save our configuration
 	 	printf("Commit Error Light %d\n",q);
 }
 
-void write_to_flash_seq() //save our configuration
+void write_to_flash_seq(bool rec) //save our configuration
 {
 	esp_err_t q ;
 	q=nvs_set_blob(seqhandle,"seq",(void*)&sysSequence,sizeof(sysSequence));
@@ -145,7 +145,7 @@ void write_to_flash_seq() //save our configuration
 	 	printf("Commit Error Seq %d\n",q);
 }
 
-void write_to_flash_cycles() //save our configuration
+void write_to_flash_cycles(bool rec) //save our configuration
 {
 	esp_err_t q ;
 	q=nvs_set_blob(seqhandle,"cycles",(void*)&allCycles,sizeof(allCycles));
@@ -160,7 +160,7 @@ void write_to_flash_cycles() //save our configuration
 	 	printf("Commit Error Cycles %d\n",q);
 }
 
-void write_to_flash() //save our configuration
+void write_to_flash(bool rec) //save our configuration
 {
 	esp_err_t q ;
 	q=nvs_set_blob(nvshandle,"config",(void*)&sysConfig,sizeof(sysConfig));
@@ -553,7 +553,7 @@ void initialize_sntp(void *args)
 
 	sysConfig.preLastTime=sysConfig.lastTime;
 	time(&sysConfig.lastTime);
-	write_to_flash();
+	write_to_flash(true);
 	timef=1;
 	postLog(0,sysConfig.bootcount);
 	rtc.setEpoch(now);
@@ -847,7 +847,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
 #endif
 		sysConfig.lastSSID=curSSID;
-		write_to_flash();
+		write_to_flash(true);
 		break;
 
 	default:
@@ -1131,7 +1131,7 @@ void cmd_newid(cmd_struct cual)
 				   printf("[TRAFFICD][%d-%d]NewId from %d to %d \n",cual.towho,sysConfig.whoami,sysConfig.whoami,cual.free1);
 #endif
 			   sysConfig.whoami=cual.free1;
-			   write_to_flash();
+			   write_to_flash(true);
 				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 }
 
@@ -1259,7 +1259,7 @@ void cmd_blink(cmd_struct cual)
 void cmd_leds(cmd_struct cual)
 {
 	   sysConfig.showLeds=cual.free1;
-	   write_to_flash();
+	   write_to_flash(true);
 }
 
 void cmd_firmware(cmd_struct cual)
@@ -1348,7 +1348,7 @@ void cmd_clone(cmd_struct cual)
 						   printf("[WIFID]New Lights Configuration via Clone\n");
 #endif
 					   memcpy(&sysLights,&cual.buff,sizeof(sysLights));
-					   write_to_flash_lights();
+					   write_to_flash_lights(true);
 				   }
 			   }
 }
@@ -2598,7 +2598,7 @@ void doneCallback( TimerHandle_t xTimer )
 void cycleManager(void * pArg)
 {
 	char theNodes[50];
-	int voy=10,cual,este;
+	int voy=0,cual,este;
 	node_struct intersections;
 	char textl[20];
 	time_t now;
@@ -2929,7 +2929,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	sysConfig.lastResetCode=reboot;
 //	sysLights.failed=0;
 //	write_to_flash_lights();
-	write_to_flash();
+	write_to_flash(true);
 
 	rxtxf=false; //default stop
 	memset(&answer,0,sizeof(answer));

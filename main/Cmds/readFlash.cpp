@@ -289,30 +289,30 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 						printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
 			}
 
-			if(full==0 || full==2)
-			{
-				printf("Statistics\n");
-				local=internal_stats.startTime-5*3600;
-				localtime_r(&local, &ts);
-				printf("System with %d schedules completed started at %s",internal_stats.schedule_changes,asctime(&ts));
-
-				for (int a=0;a<10;a++)
-				{
-					if(internal_stats.started[a][0]>0)
-					{
-						ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
-						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-						printf("Schedule(%d) From %s to ",a,textl);
-						ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
-						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-						printf("%s\n",textl);
-
-						for (int b=0;b<6;b++)
-							if(internal_stats.started[a][b]>0)
-								printf("Node %d Started %d Confirmed %d Timeout %d\n",b,internal_stats.started[a][b],internal_stats.confimed[a][b],internal_stats.started[a][b]-internal_stats.confimed[a][b]);
-					}
-				}
-			}
+//			if(full==0 || full==2)
+//			{
+//				printf("Statistics\n");
+//				local=internal_stats.startTime-5*3600;
+//				localtime_r(&local, &ts);
+//				printf("System with %d schedules completed started at %s",internal_stats.schedule_changes,asctime(&ts));
+//
+//				for (int a=0;a<10;a++)
+//				{
+//					if(internal_stats.started[a][0]>0)
+//					{
+//						ts = *localtime((const time_t*)&sysSequence.sequences[a].startSeq);
+//						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+//						printf("Schedule(%d) From %s to ",a,textl);
+//						ts = *localtime((const time_t*)&sysSequence.sequences[a].stopSeq);
+//						strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+//						printf("%s\n",textl);
+//
+//						for (int b=0;b<6;b++)
+//							if(internal_stats.started[a][b]>0)
+//								printf("Node %d Started %d Confirmed %d Timeout %d\n",b,internal_stats.started[a][b],internal_stats.confimed[a][b],internal_stats.started[a][b]-internal_stats.confimed[a][b]);
+//					}
+//				}
+//			}
 
 		if(full==0 || full==4)
 		{
