@@ -2914,7 +2914,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 		init_temp();		// Temperature sensors
 		initRtc();			//RTC CLock
 	}
-
+//shit
 	init_log();				// Log file management
 	initPorts();			//Output and Input ports
 
