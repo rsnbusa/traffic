@@ -57,7 +57,7 @@ using namespace std;
  EXTERN t_symstruct 					lookuptable[NKEYS];
  EXTERN esp_mqtt_client_config_t  		settings;
  EXTERN esp_mqtt_client_handle_t		gClient;
- EXTERN nvs_handle 						nvshandle,seqhandle,lighthandle;
+ EXTERN nvs_handle 						nvshandle,seqhandle,lighthandle,backhandle;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
  EXTERN esp_adc_cal_characteristics_t 	*adc_chars;
  EXTERN adc1_channel_t 					adcchannel;     //GPIO34 if ADC1, GPIO14 if ADC2
@@ -67,9 +67,11 @@ using namespace std;
  EXTERN sta_status						activeNodes;
  EXTERN cmdRecord 						cmds[MAXCMDS];
  EXTERN login_struct					logins[20];
+ EXTERN mbedtls_md_context_t 			md5;
+
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
- EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,globalWalk;
+ EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,globalWalk,backupf;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
  EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins;

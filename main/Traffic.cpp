@@ -24,6 +24,13 @@ void blinkLight(void *pArg);
 
 using namespace std;
 
+void makeMd5(void *que, int len, void * donde)
+{
+	mbedtls_md_starts(&md5);
+	mbedtls_md_update(&md5, (const unsigned char *) que, len);
+	mbedtls_md_finish(&md5, (unsigned char *)donde);
+}
+
 void blink(int cual)
 {
 	gpio_set_level((gpio_num_t)cual, 1);
@@ -163,6 +170,9 @@ void write_to_flash_cycles(bool rec) //save our configuration
 void write_to_flash(bool rec) //save our configuration
 {
 	esp_err_t q ;
+	int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
+	makeMd5((void*)&sysConfig,diff,(void*)&sysConfig.md5);
+
 	q=nvs_set_blob(nvshandle,"config",(void*)&sysConfig,sizeof(sysConfig));
 
 	if (q !=ESP_OK)
@@ -173,6 +183,20 @@ void write_to_flash(bool rec) //save our configuration
 	 q = nvs_commit(nvshandle);
 	 if (q !=ESP_OK)
 	 	printf("Commit Error %d\n",q);
+	 if (rec)
+	 {
+		q=nvs_set_blob(backhandle,"config",(void*)&sysConfig,sizeof(sysConfig));
+		if(q!=ESP_OK)
+			printf("Recovery write Error config\n");
+		else
+		{
+			q=nvs_commit(backhandle);
+			if(q!=ESP_OK)
+				printf("Recovery Config Commit error %d\n",q);
+		}
+
+	 }
+
 }
 
 void get_traffic_name()
@@ -309,6 +333,9 @@ void processCmds(void * nc,cJSON * comands)
 void sendAlert(string que, int len)
 {
 
+	if(!mqttf)
+		return;
+
 	string lpublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/ALERT";
 
 	#ifdef DEBUGSYS
@@ -323,6 +350,9 @@ void sendAlert(string que, int len)
 
 void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withUid, bool retain)
 {
+	if(!mqttf)
+		return;
+
 	struct mg_connection *nc=(struct mg_connection*)comm;
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<PUBSUBD))
@@ -2457,14 +2487,26 @@ int init_log()
 	return ESP_OK;
 }
 
-void read_flash()
+int read_flash()
 {
 		esp_err_t q ;
 		size_t largo=sizeof(sysConfig);
 			q=nvs_get_blob(nvshandle,"config",(void*)&sysConfig,&largo);
 
 		if (q !=ESP_OK)
+		{
 			printf("Error read %d\n",q);
+			return -1; //try to recover
+		}
+
+		int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
+		unsigned char lkey[16];
+
+		makeMd5((void*)&sysConfig,diff,(void*)lkey);
+		int que=memcmp(&sysConfig.md5,&lkey,16);
+	//	printf("MD5 sysconfig %s\n",que?"No":"Ok");
+		return que;
+
 }
 
 void read_flash_seq()
@@ -2850,6 +2892,92 @@ void heartBeat(void *pArg)
 	}
 }
 
+void blink_lights(int lon)
+{
+	while(1)
+	{
+	gpio_set_level((gpio_num_t)WIFILED, 1);
+	gpio_set_level((gpio_num_t)SENDLED, 1);
+	gpio_set_level((gpio_num_t)RXLED, 1);
+	gpio_set_level((gpio_num_t)MQTTLED, 1);
+	delay(lon);
+	gpio_set_level((gpio_num_t)WIFILED, 0);
+	gpio_set_level((gpio_num_t)SENDLED, 0);
+	gpio_set_level((gpio_num_t)RXLED, 0);
+	gpio_set_level((gpio_num_t)MQTTLED, 0);
+	}
+}
+
+int recover(string cual, void * donde, int len, int diff)
+{
+	printf("Recovering %s len %d\n",cual.c_str(),len);
+	esp_err_t q ;
+	size_t largo=len;
+
+	q=nvs_get_blob(backhandle,cual.c_str(),donde,&largo);
+
+	if (q !=ESP_OK)
+	{
+		printf("Error read %d\n",q);
+		return -1;
+	}
+
+	unsigned char lkey[16];
+	makeMd5(donde,diff,(void*)lkey);
+	int err=memcmp(lkey,(donde+diff),16);
+	return err;
+}
+
+void open_recovery()
+{
+	backupf=false;
+	int err = nvs_open("backup", NVS_READWRITE, &backhandle);
+		if(err!=ESP_OK)
+		{
+			printf("Error opening Backup File\n");
+			return;
+		}
+	backupf=true;
+}
+
+void load_config()
+{
+	int err = nvs_open("config", NVS_READWRITE, &nvshandle);
+	if(err!=ESP_OK)
+	{
+		printf("Error opening NVS File\n");
+		blink_lights(100);
+	}
+	else
+	{
+		err=read_flash();
+		if(err!=0)
+		{
+			int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
+			err=recover("config",(void*)&sysConfig,sizeof(sysConfig),diff);
+			printf("Recovery %d\n",err);
+			if(err==0)
+				write_to_flash(false);
+		}
+	}
+}
+
+void load_others()
+{
+
+	int err = nvs_open("seq", NVS_READWRITE, &seqhandle);
+	if(err!=ESP_OK)
+	{
+		printf("Error opening Seq File\n");
+		blink_lights(500);
+	}
+	else
+	{
+		read_flash_seq();
+		read_flash_cycles();
+	}
+}
+
 void app_main(void)
 {
 	//esp_log_level_set("*", ESP_LOG_ERROR); //shut up
@@ -2861,11 +2989,14 @@ void app_main(void)
         err = nvs_flash_init();
     }
 
-	err = nvs_open("config", NVS_READWRITE, &nvshandle);
-	if(err!=ESP_OK)
-		printf("Error opening NVS File\n");
-	else
-		read_flash();
+    //md5 stuff
+    mbedtls_md_type_t md_type = MBEDTLS_MD_MD5;
+    memset(&md5,0,sizeof(md5));
+    mbedtls_md_init(&md5);
+    mbedtls_md_setup(&md5, mbedtls_md_info_from_type(md_type), 0);
+
+    open_recovery();
+    load_config();
 
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
 	delay(3000);
@@ -2875,21 +3006,18 @@ void app_main(void)
 
 	err = nvs_open("lights", NVS_READWRITE, &lighthandle);
 	if(err!=ESP_OK)
+	{
 		printf("Error opening Lights File\n");
-	else
-		read_flash_lights();
-
-if(sysConfig.mode)  //Scheduler only in Controller Mode
-{
-	err = nvs_open("seq", NVS_READWRITE, &seqhandle);
-	if(err!=ESP_OK)
-		printf("Error opening Seq File\n");
+		blink_lights(1000);
+	}
 	else
 	{
-		read_flash_seq();
-		read_flash_cycles();
+		read_flash_lights();
 	}
-}
+
+if(sysConfig.mode==1)  //Scheduler only in Controller Mode
+	load_others();
+
 
 if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 {

@@ -75,6 +75,7 @@ typedef struct {
 	u8 numcycles;
 	u16 totalTime[30];
 	char nodeSeq[30][50];
+	unsigned char md5[16];
 } cycle_struct;
 
 typedef struct {
@@ -131,6 +132,7 @@ typedef struct  {
     u32 keepAlive;
     u8 stationid;
     char stationName[20];
+    unsigned char md5[16];
 } config_flash;
 
 typedef struct {
@@ -142,6 +144,7 @@ typedef struct {
 typedef struct {
     u8 numSequences;
     Sequence sequences[30]; //repeat weekly
+    unsigned char md5[16];
 } sequence_struct;
 
 typedef struct {
@@ -155,6 +158,7 @@ typedef struct {
 	u32 inbitsPorts;
 	int8_t inPorts[6];
 	u32 failed;
+	unsigned char md5[16];
 } lights_struct;
 
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
