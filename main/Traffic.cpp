@@ -125,21 +125,48 @@ void mqttmanager(void * parg)
 void write_to_flash_lights(bool rec) //save our configuration
 {
 	esp_err_t q ;
+
+	//MD5 set
+	int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
+	makeMd5((void*)&sysLights,diff,(void*)&sysLights.md5);
+
 	q=nvs_set_blob(lighthandle,"lights",(void*)&sysLights,sizeof(sysLights));
 
 	if (q !=ESP_OK)
 	{
-		printf("Error write Light %d\n",q);
+		printf("Error write Lights %d\n",q);
 		return;
 	}
 	 q = nvs_commit(lighthandle);
 	 if (q !=ESP_OK)
-	 	printf("Commit Error Light %d\n",q);
+	 {
+	 	printf("Commit Error Lights %d\n",q);
+	 	return;
+	 }
+
+	 if (rec)
+	 {
+		q=nvs_set_blob(backhandle,"lights",(void*)&sysLights,sizeof(sysLights));
+		if(q!=ESP_OK)
+			printf("Recovery write Error Lights\n");
+		else
+		{
+			q=nvs_commit(backhandle);
+			if(q!=ESP_OK)
+				printf("Recovery Lights Commit error %d\n",q);
+		}
+	 }
+
 }
 
 void write_to_flash_seq(bool rec) //save our configuration
 {
 	esp_err_t q ;
+
+	//MD5 set
+	int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
+	makeMd5((void*)&sysSequence,diff,(void*)&sysSequence.md5);
+
 	q=nvs_set_blob(seqhandle,"seq",(void*)&sysSequence,sizeof(sysSequence));
 
 	if (q !=ESP_OK)
@@ -149,12 +176,34 @@ void write_to_flash_seq(bool rec) //save our configuration
 	}
 	 q = nvs_commit(seqhandle);
 	 if (q !=ESP_OK)
+	 {
 	 	printf("Commit Error Seq %d\n",q);
+	 	return;
+	 }
+
+	 if (rec)
+	 {
+		q=nvs_set_blob(backhandle,"seq",(void*)&sysSequence,sizeof(sysSequence));
+		if(q!=ESP_OK)
+			printf("Recovery write Error Sequence\n");
+		else
+		{
+			q=nvs_commit(backhandle);
+			if(q!=ESP_OK)
+				printf("Recovery Sequence Commit error %d\n",q);
+		}
+
+	 }
 }
 
 void write_to_flash_cycles(bool rec) //save our configuration
 {
 	esp_err_t q ;
+
+	//MD5 set
+	int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
+	makeMd5((void*)&allCycles,diff,(void*)&allCycles.md5);
+
 	q=nvs_set_blob(seqhandle,"cycles",(void*)&allCycles,sizeof(allCycles));
 
 	if (q !=ESP_OK)
@@ -164,12 +213,30 @@ void write_to_flash_cycles(bool rec) //save our configuration
 	}
 	 q = nvs_commit(seqhandle);
 	 if (q !=ESP_OK)
+	 {
 	 	printf("Commit Error Cycles %d\n",q);
+	 	return;
+	 }
+
+	 if (rec)
+	 {
+		q=nvs_set_blob(backhandle,"cycles",(void*)&allCycles,sizeof(allCycles));
+		if(q!=ESP_OK)
+			printf("Recovery write Error Cycles\n");
+		else
+		{
+			q=nvs_commit(backhandle);
+			if(q!=ESP_OK)
+				printf("Recovery Cycles Commit error %d\n",q);
+		}
+
+	 }
 }
 
 void write_to_flash(bool rec) //save our configuration
 {
 	esp_err_t q ;
+
 	int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
 	makeMd5((void*)&sysConfig,diff,(void*)&sysConfig.md5);
 
@@ -177,12 +244,16 @@ void write_to_flash(bool rec) //save our configuration
 
 	if (q !=ESP_OK)
 	{
-		printf("Error write %d\n",q);
+		printf("Error write Config %d\n",q);
 		return;
 	}
 	 q = nvs_commit(nvshandle);
 	 if (q !=ESP_OK)
-	 	printf("Commit Error %d\n",q);
+	 {
+	 	printf("Commit Error Config %d\n",q);
+	 	return;
+	 }
+
 	 if (rec)
 	 {
 		q=nvs_set_blob(backhandle,"config",(void*)&sysConfig,sizeof(sysConfig));
@@ -194,9 +265,7 @@ void write_to_flash(bool rec) //save our configuration
 			if(q!=ESP_OK)
 				printf("Recovery Config Commit error %d\n",q);
 		}
-
 	 }
-
 }
 
 void get_traffic_name()
@@ -2504,39 +2573,74 @@ int read_flash()
 
 		makeMd5((void*)&sysConfig,diff,(void*)lkey);
 		int que=memcmp(&sysConfig.md5,&lkey,16);
-	//	printf("MD5 sysconfig %s\n",que?"No":"Ok");
+		printf("MD5 sysconfig %s\n",que?"No":"Ok");
 		return que;
 
 }
 
-void read_flash_seq()
+int read_flash_seq()
 {
 		esp_err_t q ;
 		size_t largo=sizeof(sysSequence);
-			q=nvs_get_blob(seqhandle,"seq",(void*)&sysSequence,&largo);
+		q=nvs_get_blob(seqhandle,"seq",(void*)&sysSequence,&largo);
 
 		if (q !=ESP_OK)
-			printf("Error read Seq %d\n",q);
+		{
+			printf("Error read seq %d\n",q);
+			return -1; //try to recover
+		}
+
+		int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
+		unsigned char lkey[16];
+
+		makeMd5((void*)&sysSequence,diff,(void*)lkey);
+		int que=memcmp(&sysSequence.md5,&lkey,16);
+		printf("MD5 Sequence %s\n",que?"No":"Ok");
+		return que;
 }
 
-void read_flash_cycles()
+int read_flash_cycles()
 {
 		esp_err_t q ;
 		size_t largo=sizeof(allCycles);
-			q=nvs_get_blob(seqhandle,"cycles",(void*)&allCycles,&largo);
+		q=nvs_get_blob(seqhandle,"cycles",(void*)&allCycles,&largo);
 
 		if (q !=ESP_OK)
-			printf("Error read Cycles %d\n",q);
+		{
+			printf("Error read cycles %d\n",q);
+			return -1; //try to recover
+		}
+
+		int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
+		unsigned char lkey[16];
+
+		makeMd5((void*)&allCycles,diff,(void*)lkey);
+		int que=memcmp(&allCycles.md5,&lkey,16);
+		printf("MD5 Cycles %s\n",que?"No":"Ok");
+		return que;
+
 }
 
-void read_flash_lights()
+int read_flash_lights()
 {
 		esp_err_t q ;
 		size_t largo=sizeof(sysLights);
-			q=nvs_get_blob(lighthandle,"lights",(void*)&sysLights,&largo);
+
+		q=nvs_get_blob(lighthandle,"lights",(void*)&sysLights,&largo);
 
 		if (q !=ESP_OK)
-			printf("Error read Lights %d\n",q);
+		{
+			printf("Error read lights%d\n",q);
+			return -1; //try to recover
+		}
+
+		int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
+		unsigned char lkey[16];
+
+		makeMd5((void*)&sysLights,diff,(void*)lkey);
+		int que=memcmp(&sysLights.md5,&lkey,16);
+		printf("MD5 Lights %s\n",que?"No":"Ok");
+		return que;
 }
 
 void init_temp()
@@ -2973,8 +3077,46 @@ void load_others()
 	}
 	else
 	{
-		read_flash_seq();
-		read_flash_cycles();
+		err=read_flash_seq();
+		if(err!=0)
+		{
+			int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
+			err=recover("seq",(void*)&sysSequence,sizeof(sysSequence),diff);
+			printf("Recovery Sequence %d\n",err);
+			if(err==0)
+				write_to_flash_seq(false);
+		}
+		err=read_flash_cycles();
+		if(err!=0)
+		{
+			int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
+			err=recover("seq",(void*)&allCycles,sizeof(allCycles),diff);
+			printf("Recovery Cycles %d\n",err);
+			if(err==0)
+				write_to_flash_cycles(false);
+		}
+	}
+}
+
+void load_lights()
+{
+	int err = nvs_open("lights", NVS_READWRITE, &lighthandle);
+	if(err!=ESP_OK)
+	{
+		printf("Error opening Lights File\n");
+		blink_lights(1000);
+	}
+	else
+	{
+		err=read_flash_lights();
+		if(err!=0)
+		{
+			int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
+			err=recover("lights",(void*)&sysLights,sizeof(sysLights),diff);
+			printf("Recovery %d\n",err);
+			if(err==0)
+				write_to_flash_lights(false);
+		}
 	}
 }
 
@@ -2999,24 +3141,16 @@ void app_main(void)
     load_config();
 
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
+	printf("3 Secs to erase\n");
 	delay(3000);
 	reboot= rtc_get_reset_reason(1); //Reset cause for CPU 1
 
 	traceflag=(debugflags)sysConfig.traceflag;
 
-	err = nvs_open("lights", NVS_READWRITE, &lighthandle);
-	if(err!=ESP_OK)
-	{
-		printf("Error opening Lights File\n");
-		blink_lights(1000);
-	}
-	else
-	{
-		read_flash_lights();
-	}
+	load_lights();
 
-if(sysConfig.mode==1)  //Scheduler only in Controller Mode
-	load_others();
+	if(sysConfig.mode==1)  //Scheduler only in Controller Mode
+		load_others();
 
 
 if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))

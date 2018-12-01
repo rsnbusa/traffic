@@ -73,8 +73,8 @@ typedef struct {
 
 typedef struct {
 	u8 numcycles;
-	u16 totalTime[30];
-	char nodeSeq[30][50];
+	u16 totalTime[10];
+	char nodeSeq[10][50];
 	unsigned char md5[16];
 } cycle_struct;
 
