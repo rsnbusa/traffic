@@ -2196,18 +2196,8 @@ void initWiFiSta()
 		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 		strcpy((char*)sta_config.sta.ssid,sysConfig.ssid[0]);
 		strcpy((char*)sta_config.sta.password,sysConfig.pass[0]);
-//		int len;
-//		string temp=string(sysConfig.ssid[0]);
-//		len=temp.length();
-//		memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
-//		sta_config.sta.ssid[len]=0;
-//		temp=string(sysConfig.pass[0]);
-//		len=temp.length();
-//		memcpy((void*)sta_config.sta.password,temp.c_str(),len);
 		sta_config.sta.bssid_set=0;
-	//	sta_config.sta.password[len]=0;
 		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
-	//	temp="";
 		ESP_ERROR_CHECK(esp_wifi_start());
 	}
 	else
