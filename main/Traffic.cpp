@@ -2181,6 +2181,7 @@ void initWiFi()
 
 void initWiFiSta()
 {
+	tcpip_adapter_init();
 	wifi_config_t sta_config;
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 
@@ -3119,7 +3120,7 @@ void load_lights()
 		}
 	}
 }
-
+//main
 void app_main(void)
 {
 	//esp_log_level_set("*", ESP_LOG_ERROR); //shut up
