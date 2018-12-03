@@ -860,13 +860,16 @@ void kbd_interval(uart_port_t uart_num)
 void kbd_mode(uart_port_t uart_num)
 {
 	string s1;
-	printf("Mode Server=S Client=C(%s)",sysConfig.mode?"S":"C");
+	printf("Mode Server=S Client=C Repeater=R(%d)",sysConfig.mode);
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10);
 	for (auto & c: s1) c = toupper(c);
-	if (s1=="S")
+	if (s1=="S"||s1=="R")
 	{
-		sysConfig.mode=1;
+		if(s1=="S")
+			sysConfig.mode=1;
+		else
+			sysConfig.mode=2;
 		printf("Light Name(%s)",sysConfig.lightName);
 		fflush(stdout);
 		s1=get_string((uart_port_t)uart_num,10);
