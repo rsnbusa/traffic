@@ -20,6 +20,7 @@ void processCmds(void * nc,cJSON * comands);
 void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 void runLight(void * pArg);
 void rxMessage(void * pArg);
+void repeater(void * pArg);
 void blinkLight(void *pArg);
 
 using namespace std;
@@ -835,8 +836,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 		}
 		if(sysConfig.mode==2){//Repeater mode
-			printf("Launch Sta Rxmessage\n");
-			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		}
 		break;
 
@@ -862,7 +862,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			}
 		}
 		printf("Launch rxmessage AP\n");
-		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)1, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
 
 		break;
 
@@ -902,11 +902,11 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			runHandle=NULL;
 		}
 
-		if(rxHandle){
-			close(theSock);
-			vTaskDelete(rxHandle);
-			rxHandle=NULL;
-		}
+//		if(rxHandle){
+//			close(theSock);
+//			vTaskDelete(rxHandle);
+//			rxHandle=NULL;
+//		}
 
 		if(blinkHandle){
 			vTaskDelete(blinkHandle);
@@ -1169,7 +1169,7 @@ void cmd_ping(cmd_struct cual)
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
 				   printf("[TRAFFICD][%d-%d]Ping received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
 #endif
-				sendMsg(PONG,cual.fromwho,0,0,NULL,0);
+				sendMsg(PONG,0,0,0,NULL,0);
 }
 
 void cmd_pong(cmd_struct cual)
@@ -1803,6 +1803,107 @@ void runLight(void * pArg)
 	vTaskDelete(NULL);
 }
 
+
+static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool ap)
+{
+    struct ip_mreq imreq ;
+    struct in_addr iaddr;
+    memset(&imreq,0,sizeof(imreq));
+    memset(&iaddr,0,sizeof(iaddr));
+    int err = 0;
+    // Configure source interface
+
+    tcpip_adapter_ip_info_t ip_info ;
+    memset(&ip_info,0,sizeof(ip_info));
+    printf("Configuring Multicast for %s = ",ap?"AP":"STA");
+    if(!ap)
+    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+    else
+    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to get IP address info. Error 0x%x", err);
+        goto err;
+    }
+    printf("%d:%d:%d:%d\n",IP2STR(&ip_info.ip));
+
+  //  inet_addr_from_ipaddr(&iaddr, &ip_info.ip);
+
+//    uint8_t ttl = MULTICAST_TTL;
+//    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
+//    if (err < 0) {
+//        ESP_LOGE(TAG, "Failed to set IP_MULTICAST_TTL. Error %d %s", errno,strerror(errno));
+//        goto err;
+//    }
+
+	    imreq.imr_multiaddr.s_addr = inet_addr("232.10.11.12");
+//	    imreq.imr_interface.s_addr = (in_addr_t) ip_info.ip.addr;
+//	    imreq.imr_interface.s_addr = ap?inet_addr("192.168.10.1"):inet_addr("192.168.4.2");
+	    ESP_LOGI(TAG, "Multicast address %s", inet_ntoa(imreq.imr_multiaddr.s_addr));
+//	    ESP_LOGI(TAG, "Interface Multicast address %s", inet_ntoa(imreq.imr_interface.s_addr));
+	         err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
+	        if (err < 0) {
+	            ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
+	            goto err;
+	        }
+
+
+ err:
+    return err;
+}
+
+int create_multicast_ipv4_socket(int port,bool ap)
+{
+    tcpip_adapter_ip_info_t ip_info ;
+    struct sockaddr_in saddr;
+    memset(&saddr,0,sizeof(saddr));
+
+    printf("Create MultiSocket Port %d AP %d\n",port,ap);
+    int sock = -1;
+    int err = 0;
+
+    if(!ap)
+      	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+      else
+      	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+
+    sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+    if (sock < 0) {
+        ESP_LOGE(TAG, "Failed to create socket. Error %d %s", errno,strerror(errno));
+        return -1;
+    }
+    printf("Socket Address %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
+
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+        printf("setsockopt(SO_REUSEADDR) failed\n");
+    // Bind the socket to any address
+    saddr.sin_family = PF_INET;
+    saddr.sin_port = htons(port);
+    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
+ //   saddr.sin_addr.s_addr = ip_info.ip.addr;
+    err = bind(sock, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in));
+    if (err < 0) {
+        ESP_LOGE(TAG, "Failed to bind socket. Error %d %s", errno,strerror(errno));
+        goto err;
+    }
+
+    err = socket_add_ipv4_multicast_group(sock, true,ap);
+    if (err < 0) {
+    	ESP_LOGE(TAG, "Error group %d %s", errno,strerror(errno));
+        goto err;
+    }
+
+    // All set, socket is configured for sending and receiving
+    return sock;
+
+err:
+    close(sock);
+    return -1;
+}
+
+
+
+/*
 static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool ap)
 {
     struct ip_mreq imreq ;
@@ -1858,6 +1959,17 @@ static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool 
  //   if (assign_source_if) {
         // Assign the IPv4 multicast source interface, via its IP
         // (only necessary if this socket is IPV4 only)
+
+	    imreq.imr_multiaddr.s_addr = inet_addr("232.10.11.12");
+	    imreq.imr_interface.s_addr = ap?inet_addr("192.168.10.1"):inet_addr("192.168.4.1");
+	         err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
+
+	   //     err = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
+	        if (err < 0) {
+	            ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
+	            goto err;
+	        }
+
         err = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &iaddr,
                          sizeof(struct in_addr));
         if (err < 0) {
@@ -1927,45 +2039,29 @@ int create_multicast_ipv4_socket(int port,bool ap)
         goto err;
     }
 
-    err = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &iaddr,
-                           sizeof(struct in_addr));
-          if (err < 0) {
-              ESP_LOGE(TAG, "Failed to set IP_MULTICAST_IF. Error %d %s", errno,strerror(errno));
-              goto err;
-          }
-   //   }
-
-      group.imr_multiaddr.s_addr = inet_addr("232.10.11.12");
-      group.imr_interface.s_addr = ap?inet_addr("192.168.10.1"):inet_addr("192.168.4.1");
-       err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&group, sizeof(struct ip_mreq));
-
- //     err = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
-      if (err < 0) {
-          ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
-          goto err;
-      }
-
-
     // this is also a listening socket, so add it to the multicast
-    // group for listening...
-//    err = socket_add_ipv4_multicast_group(sock, true,ap);
-//    if (err < 0) {
-//    	ESP_LOGE(TAG, "Error group %d %s", errno,strerror(errno));
-//        goto err;
-//    }
-//    // All set, socket is configured for sending and receiving
+       // group for listening...
+       err = socket_add_ipv4_multicast_group(sock, true,ap);
+       if (err < 0) {
+       	ESP_LOGE(TAG, "Error group %d %s", errno,strerror(errno));
+           goto err;
+       }
+
     return sock;
 
 err:
     close(sock);
     return -1;
 }
-
+*/
 void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 {
+
+	//sending message is alway to the STA part of the interface
 	int sock,err;
     struct in_addr        localInterface;
     struct sockaddr_in    groupSock;
+    struct ip_mreq imreq ;
 
 	answer.centinel=THECENTINEL;
 	answer.cmd=cmd;
@@ -1986,8 +2082,9 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	if(que && (len>0))
 		memcpy(&answer.buff,que,len);
 
-//	tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
 	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
+    tcpip_adapter_ip_info_t ip_info ;
+    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
     ESP_LOGI(TAG,"Send Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
 	salen++;
 		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -2001,16 +2098,17 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		 memset((char *) &groupSock, 0, sizeof(groupSock));
 		 groupSock.sin_family = AF_INET;
 		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
+	//	 groupSock.sin_addr.s_addr = inet_addr("232.10.11.12");
 		 groupSock.sin_port = htons(UDP_PORT);
 
 		 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
-//		char loopch=1;
-//		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
-//		{
-//			ESP_LOGE(TAG,"Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
-//			close(sock);
-//			return;
-//		}
+		char loopch=1;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
+		{
+			ESP_LOGE(TAG,"Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
+			close(sock);
+			return;
+		}
 
 		//set the Interface we want to use.
 		tcpip_adapter_ip_info_t if_info;
@@ -2022,16 +2120,6 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 			close(sock);
 			return;
 		  }
-
-		uint8_t ttl = MULTICAST_TTL; //Time To Live max
-
-		err=setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
-		if (err < 0)
-		{
-			ESP_LOGE(TAG, "Failed to set IP_MULTICAST_TTL sockel. Error %d %s", errno,strerror(errno));
-			close (sock);
-			return;
-		}
 
 		//Send it
 		err=sendto(sock, &answer, sizeof(answer), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
@@ -2046,17 +2134,69 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		close(sock);
 }
 
+
+void sendRepeat(cmd_struct *cmd,bool ap)
+{
+	int sock,err;
+    struct in_addr        localInterface;
+    struct sockaddr_in    groupSock;
+    struct ip_mreq imreq ;
+
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		printf("[CMDD]SendMsg %s ->%s\n",tcmds[cmd->cmd],ap?"Downstream":"Upstream");
+#endif
+
+	salen++;
+		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+		if (sock < 0)
+		{
+			ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
+			return;
+		}
+
+		//SET THE MULTICAST ADDRESS AND PORT
+		 memset((char *) &groupSock, 0, sizeof(groupSock));
+		 groupSock.sin_family = AF_INET;
+		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
+		 groupSock.sin_port = htons(UDP_PORT);
+
+		//set the Interface we want to use.
+		tcpip_adapter_ip_info_t if_info;
+		tcpip_adapter_get_ip_info(ap?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &if_info);//for repeater AP and STA should be interchangeable
+		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+		{
+			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
+			close(sock);
+			return;
+		  }
+
+		//Send it
+		err=sendto(sock, cmd, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
+		if (err < 0)
+		{
+			ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
+			close(sock);
+			return;
+		}
+		if(sysConfig.showLeds)
+			blink(SENDLED);
+		close(sock);
+}
+
 void rxMessage(void *pArg)
 {
 	int que=(int)pArg;
-	bool ap=que;
 
 	cmd_struct comando;
     char raddr_name[32];
     struct sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
     u32 lastts=0;
+    int theSock;
 
-	theSock = create_multicast_ipv4_socket(UDP_PORT,ap);
+	theSock = create_multicast_ipv4_socket(UDP_PORT,false);
 	if (theSock < 0) {
 		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
 	}
@@ -2075,11 +2215,7 @@ void rxMessage(void *pArg)
 			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
 			exit(1);
 		}
-		if(sysConfig.mode==2)
-		{
-			//add to queue to sender of AP side
-		}
-		printf("RxMess for %s\n",ap?"AP":"STA");
+
 		entrats=millis()-lastts;
 		lastts=millis();
 
@@ -2102,6 +2238,156 @@ void rxMessage(void *pArg)
 			process_cmd(comando);
 		}
   }
+
+void streamTask(void *pArg)
+{
+	cmd_struct 				comand;
+	int 					sock;
+    struct sockaddr_in   	groupSock;
+    struct in_addr        	localInterface;
+	tcpip_adapter_ip_info_t if_info;
+    int 					err;
+    bool					ap=(int)pArg;
+
+    while(true)
+    {
+    	//create socket
+		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+		if (sock < 0)
+		{
+			ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
+			return;
+		}
+
+
+		//SET THE MULTICAST ADDRESS AND PORT
+		 memset((char *) &groupSock, 0, sizeof(groupSock));
+		 groupSock.sin_family = AF_INET;
+		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
+		 groupSock.sin_port = htons(UDP_PORT);
+
+		//set the Interface we want to use.
+		tcpip_adapter_get_ip_info(ap?TCPIP_ADAPTER_IF_STA:TCPIP_ADAPTER_IF_AP, &if_info);//for repeater AP and STA should be interchangeable
+		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+		{
+			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
+			close(sock);
+			return;
+		  }
+
+		while(true)
+		{
+
+			if( xQueueReceive( ap?upQ:downQ, &comand, portMAX_DELAY ))
+			{
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<TRAFFICD))
+				printf("[TRAFFICD]Sending %s\n",ap?"Up":"Down");
+#endif
+				err=sendto(sock, &comand, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
+				if (err < 0)
+				{
+					ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
+					close(sock);
+					break; //reopen socket, etc
+				}
+			}
+		}
+    }
+}
+
+void repeater(void *pArg)
+{
+	cmd_struct comando;
+    char raddr_name[32];
+    u32 upstream, downstream;
+
+    struct sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
+    u32 lastts=0;
+    int theSock;
+
+	theSock = create_multicast_ipv4_socket(UDP_PORT,true);
+	if (theSock < 0)
+		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
+
+	downstream= 0x0004a8c0<<8; //192.168.4.x
+	upstream=   0x000aa8c0<<8; //192.168.10.x
+
+	xTaskCreate(&streamTask,"upstream",4096,(void*)1, 5, NULL);									// If we are a Controller
+	xTaskCreate(&streamTask,"downstream",4096,(void*)0, 5, NULL);									// If we are a Controller
+
+	while(1)
+	{
+		memset(raddr_name,0,sizeof(raddr_name));
+
+		socklen_t socklen = sizeof(raddr);
+		int len = recvfrom(theSock, &comando, sizeof(comando), MSG_WAITALL,(struct sockaddr *)&raddr, &socklen);
+
+		if (len < 0)
+		{
+			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
+			exit(1);
+		}
+
+		entrats=millis()-lastts;
+		lastts=millis();
+
+		if (raddr.sin6_family == PF_INET)
+			inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
+
+		string algo=string(raddr_name);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<TRAFFICD))
+			printf("[TRAFFICD]In from %s seq %d msg %s\n",algo.c_str(),comando.seqnum, comando.buff);
+#endif
+
+		u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
+		u8 monton[4];
+
+		u32 mask=0x00ffffff;
+		u32 res=(este&mask)<<8;
+		memcpy(monton,&res,4);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<TRAFFICD))
+			printf("[TRAFFIC]RxMess for STA %d %d %d %d r=%x d=%x u=%x\n",monton[0],monton[1],monton[2],monton[3],res,downstream,upstream);
+#endif
+		if(res==upstream)
+		{
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<TRAFFICD))
+			printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
+#endif
+			xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+		}
+		if(res==downstream)
+		{
+	//		enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,
+	//			LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
+			switch(comando.cmd)
+			{
+			case ACK:
+			case NAK:
+			case DONE:
+			case COUNTERS:
+			case IMALIVE:
+			case WALK:
+				break; //do not send them downstream, its an answer
+			default:
+				//is it for us, Station ID
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<TRAFFICD))
+				printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+#endif
+				if(comando.towho==sysConfig.stationid )
+					process_cmd(comando);
+				//also send because you there can be clones....
+				xQueueSend( downQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+			}
+		}
+	}
+}
+
 
 
 void mcast_example_task(void *pvParameters)
@@ -2220,13 +2506,13 @@ void initWiFi()
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	esp_wifi_get_mac(ESP_IF_WIFI_STA, (uint8_t*)&mac);
 	memset(&configap,0,sizeof(configap));
-	if(string(sysConfig.ssid[1])!="")
+	if(string(sysConfig.ssid[1])!="") //1 is in Controller=MQTT server and in Repeater=Controller
 	{
 		strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
 		strcpy((char *)configap.sta.password, sysConfig.pass[1]);
 		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
 	}
-	if(string(sysConfig.ssid[0])!="")
+	if(string(sysConfig.ssid[0])!="") //in Controller and Repeater is SSID name
 	{
 		strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
 		strcpy((char *)configap.ap.password,sysConfig.pass[0]);
@@ -2244,6 +2530,7 @@ void initWiFi()
 	configap.ap.beacon_interval=100;
 	ESP_LOGI(TAG,"AP %s",sysConfig.ssid[0]);
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
+
 	ESP_ERROR_CHECK(esp_wifi_start());
 }
 
@@ -2304,6 +2591,9 @@ void initVars()
 
 
 	cola = xQueueCreate( 10, sizeof( u16 ) ); //DONE queue
+	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //DONE queue
+	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //DONE queue
+
 	sonUid=0;
 
 	//blinking stuff
