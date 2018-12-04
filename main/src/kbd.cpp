@@ -788,11 +788,11 @@ void kbd_accessPoint(uart_port_t uart_num)
 	string s1;
 	int len;
 
-	if(sysConfig.mode)
+	if(sysConfig.mode>CLIENT)
 	{
-	printf("Which AP:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+		printf("Which AP:");
+		fflush(stdout);
+		s1=get_string((uart_port_t)uart_num,10);
 	}
 	else
 		s1="0"; //for Clients
@@ -821,55 +821,25 @@ void kbd_accessPoint(uart_port_t uart_num)
 
 }
 
-
-void kbd_delay(uart_port_t uart_num)
-{
-	string s1;
-	printf("Delay To Whom:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1=="")
-		return;
-	int whom=atoi(s1.c_str());
-	printf("Delay(%d):",howmuch);
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1!="")
-		howmuch=atol(s1.c_str());
-	sendMsg(DELAY,whom,howmuch,0,NULL,0);
-}
-
-void kbd_interval(uart_port_t uart_num)
-{
-	string s1;
-	printf("Interval To Whom:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1=="")
-		return;
-	int whom=atoi(s1.c_str());
-	printf("Interval(%d):",interval);
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1!="")
-		interval=atol(s1.c_str());
-	sendMsg(INTERVAL,whom,interval,0,NULL,0);
-}
-
-
 void kbd_mode(uart_port_t uart_num)
 {
 	string s1;
-	printf("Mode Server=S Client=C Repeater=R(%d)",sysConfig.mode);
+	if(sysConfig.mode==0)
+		s1="C";
+	if(sysConfig.mode==1)
+		s1="S";
+	if(sysConfig.mode==2)
+		s1="R";
+	printf("Mode Server=S Client=C Repeater=R(%s)",s1.c_str());
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="S"||s1=="R")
 	{
 		if(s1=="S")
-			sysConfig.mode=1;
+			sysConfig.mode=SERVER;
 		else
-			sysConfig.mode=2;
+			sysConfig.mode=REPEATER;
 		printf("Light Name(%s)",sysConfig.lightName);
 		fflush(stdout);
 		s1=get_string((uart_port_t)uart_num,10);
@@ -885,44 +855,10 @@ void kbd_mode(uart_port_t uart_num)
 	}
 	else
 		if (s1=="C")
-			sysConfig.mode=0;
+			sysConfig.mode=CLIENT;
 		else
 			printf("Invalid Option\n");
 	write_to_flash(true);
-}
-
-void kbd_start(uart_port_t uart_num)
-{
-	string s1;
-	printf("Start Who:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1!=""){
-		sendMsg(START,atoi(s1.c_str()),0,0,NULL,0);
-	}
-}
-
-void kbd_stop(uart_port_t uart_num)
-{
-	string s1;
-	printf("%s:",rxtxf?"Running-->Stop?":"Stopped-->Run?");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	for (auto & c: s1) c = toupper(c);
-	if (s1!="Y")
-		return;
-	rxtxf=!rxtxf;
-	if(rxtxf)
-	{
-		if(!cycleHandle)
-			xTaskCreate(&cycleManager,"cycle",4096,(void*)0, MGOS_TASK_PRIORITY, &cycleHandle);
-	}
-	else
-	{
-		vTaskDelete(cycleHandle);
-		cycleHandle=NULL;
-	}
-
 }
 
 void kbd_newid(uart_port_t uart_num)
@@ -1005,28 +941,6 @@ void kbd_reset(uart_port_t uart_num)
 	s1=get_string((uart_port_t)uart_num,10);
 	if (s1!="")
 		sendMsg(RESET,atoi(s1.c_str()),0,0,NULL,0);
-}
-
-void kbd_resetcounter(uart_port_t uart_num)
-{
-	string s1;
-	printf("Reset Counters:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1!="")
-		sendMsg(RESETC,atoi(s1.c_str()),0,0,NULL,0);
-}
-
-
-void kbd_counter(uart_port_t uart_num)
-{
-	string s1;
-
-	printf("Counter from Who:");
-	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
-	if (s1!="")
-		sendMsg(COUNTERS,atoi(s1.c_str()),0,0,NULL,0);
 }
 
 void kbd_ping(uart_port_t uart_num)
@@ -1202,7 +1116,7 @@ void kbd(void *arg) {
 				break;
 
 			case CYCLEc:
-				if(!sysConfig.mode)
+				if(sysConfig.mode!=SERVER)
 				{
 				printf(sermod);
 					break;//Only server mode
@@ -1211,7 +1125,8 @@ void kbd(void *arg) {
 				break;
 
 			case SCHEDULEc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1219,7 +1134,8 @@ void kbd(void *arg) {
 				break;
 
 			case CONNECTEDc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1231,7 +1147,7 @@ void kbd(void *arg) {
 				break;
 
 			case FIRMWAREc:
-				if(!sysConfig.mode)
+				if(sysConfig.mode!=SERVER)
 				{
 					printf(sermod);
 					break;//Only server mode
@@ -1248,7 +1164,8 @@ void kbd(void *arg) {
 				break;
 
 			case QUIETc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1280,75 +1197,22 @@ void kbd(void *arg) {
 				kbd_accessPoint(uart_num);
 				break;
 
-			case DELAYc:
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_delay(uart_num);
-				break;
-
-			case INTERVALc:
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_interval(uart_num);
-				break;
-
 			case MODEc:
 				kbd_mode(uart_num);
 				break;
 
-			case STARTc: //send a Start Message. ONLY Controller can send this command
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_start(uart_num);
-				break;
-
-			case STOPc:
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_stop(uart_num);
-				break;
-				printf("Stop Who:");
-				fflush(stdout);
-				s1=get_string((uart_port_t)uart_num,10);
-				if (s1!=""){
-					sendMsg(STOP,atoi(s1.c_str()),0,0,NULL,0);
-				}
-				break;
-
 			case PINGc://22
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
 				kbd_ping(uart_num);
 				break;
 
-			case COUNTERc:
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_counter(uart_num);
-				break;
-
-			case RESETCOUNTc:
-				if(!sysConfig.mode){
-					printf(sermod);
-					break;//Only server mode
-				}
-				kbd_resetcounter(uart_num);
-				break;
-
 			case RESETc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1356,7 +1220,8 @@ void kbd(void *arg) {
 				break;
 
 			case NEWIDc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1382,7 +1247,8 @@ void kbd(void *arg) {
 				break;
 
 			case RUALIVEc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1390,7 +1256,8 @@ void kbd(void *arg) {
 				break;
 
 			case STOPCYCLEc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1399,7 +1266,8 @@ void kbd(void *arg) {
 				break;
 
 			case ALIVEc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}
@@ -1407,7 +1275,8 @@ void kbd(void *arg) {
 				break;
 
 			case STREETc:
-				if(!sysConfig.mode){
+				if(sysConfig.mode!=SERVER)
+				{
 					printf(sermod);
 					break;//Only server mode
 				}

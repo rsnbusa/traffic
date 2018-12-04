@@ -683,7 +683,7 @@ void newSSID(void *pArg)
 
 	temp=string(sysConfig.ssid[cual]);
 	len=temp.length();
-	if(sysConfig.mode==1)
+	if(sysConfig.mode==SERVER)
 	{
 		if(displayf)
 		{
@@ -799,7 +799,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
 	   }
 
-		if(sysConfig.mode==1) //Server Mode Only
+		if(sysConfig.mode==SERVER) //Server Mode Only
 		{
 			if(!mqttf)
 			{
@@ -831,11 +831,11 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		}
 
 		// Main routine for Commands
-		if(sysConfig.mode==0 ){
+		if(sysConfig.mode==CLIENT ){
 			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 		}
-		if(sysConfig.mode==2){//Repeater mode
+		if(sysConfig.mode==REPEATER){//Repeater mode
 			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		}
 		break;
@@ -843,16 +843,19 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
 		tcpip_adapter_ip_info_t ip_info;
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-		IP4_ADDR(&ip_info.ip,192,168,10,1);
-		IP4_ADDR(&ip_info.gw,192,168,10,1);
-		IP4_ADDR(&ip_info.netmask,255,255,255,0);
-		printf("set ip ret: %d\n", tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info)); //set static IP
+		if(sysConfig.mode==REPEATER)
+		{
+			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+			IP4_ADDR(&ip_info.ip,192,168,10,1);
+			IP4_ADDR(&ip_info.gw,192,168,10,1);
+			IP4_ADDR(&ip_info.netmask,255,255,255,0);
+			printf("set ip ret: %d\n", tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info)); //set static IP
 
-		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+		}
 //		printf("System not Configured. Use local AP and IP:" IPSTR "\n", IP2STR(&ip_info.ip));
 		localIp=ip_info.ip;
-		if(sysConfig.mode==1)
+		if(sysConfig.mode==SERVER)
 		{
 			if(!mongf)
 			{
@@ -861,8 +864,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 				xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
 			}
 		}
-		printf("Launch rxmessage AP\n");
-		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+		if(sysConfig.mode==REPEATER)
+			xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+		else
+			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 
 		break;
 
@@ -1079,20 +1084,13 @@ void blinkLight(void *pArg)
 
 void show_leds(int cual)
 {
-	if(sysConfig.mode==0)
+	if(sysConfig.mode==CLIENT)
 			{
 				   switch (cual)
 				   { //Valid Incoming Cmds related to this station
-				   	   case START:
-				   	   case STOP:
 				   	   case PING:
-				   	   case SENDC:
-				   	   case TEST:
-				   	   case DELAY:
 				   	   case QUIET:
-				   	   case INTERVAL:
 				   	   case NEWID:
-				   	   case RESETC:
 				   	   case RESET:
 				   	   case KILL:
 				   	   case RUN:
@@ -1117,24 +1115,6 @@ void show_leds(int cual)
 					blink(RXLED);
 }
 
-void cmd_start(cmd_struct cual)
-{
-	   rxtxf =true;
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<TRAFFICD))
-			printf("[TRAFFICD][%d-%d]Start\n",cual.towho,sysConfig.whoami);
-#endif
-	   xTaskCreate(&mcast_example_task, "mcast_task", 4096, NULL, 5, NULL);
-}
-void cmd_stop(cmd_struct cual)
-{
-	  rxtxf =false; //He will kill himself so close and mem be freed
-	#ifdef DEBUGSYS
-				   if(sysConfig.traceflag & (1<<TRAFFICD))
-					   printf("[TRAFFICD][%d-%d]Stop\n",cual.towho,sysConfig.whoami);
-	#endif
-}
-
 void cmd_ack(cmd_struct cual)
 {
 #ifdef DEBUGSYS
@@ -1153,7 +1133,7 @@ void cmd_nak(cmd_struct cual)
 
 void cmd_done(cmd_struct cual)
 {
-	   if(sysConfig.mode==1)
+	   if(sysConfig.mode==SERVER)
 	   {
 #ifdef DEBUGSYS
 		   if(sysConfig.traceflag & (1<<TRAFFICD))
@@ -1175,47 +1155,12 @@ void cmd_ping(cmd_struct cual)
 void cmd_pong(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.mode==1)
+			   if(sysConfig.mode==SERVER)
 			   {
 				   if(sysConfig.traceflag & (1<<TRAFFICD))
 					   printf("[TRAFFICD][%d-%d]Pong from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
 	   	   	   }
 #endif
-}
-
-void cmd_counters(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]Send Counters received\n",cual.towho,sysConfig.whoami);
-#endif
-				sendMsg(SENDC,cual.fromwho,salen,entran,NULL,0);
-}
-
-void cmd_sendcounters(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]Counters in from %d Out %d In %d\n",cual.towho,sysConfig.whoami,cual.fromwho,cual.free1,cual.free2);
-#endif
-}
-
-void cmd_test(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]Incoming from %d SeqNum %d Lapse %d\n",cual.towho,sysConfig.whoami,cual.fromwho,cual.seqnum,cual.lapse);
-#endif
-}
-
-void cmd_delay(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]Delay from %d to %d \n",cual.towho,sysConfig.whoami,cual.fromwho,cual.free1);
-#endif
-			   howmuch=cual.free1;
-			   sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 }
 
 void cmd_quiet(cmd_struct cual)
@@ -1228,16 +1173,6 @@ void cmd_quiet(cmd_struct cual)
 				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 }
 
-void cmd_interval(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]Interval from %d to %d \n",cual.towho,sysConfig.whoami,cual.fromwho,cual.free2);
-#endif
-			   interval=cual.free1;
-				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
-}
-
 void cmd_newid(cmd_struct cual)
 {
 #ifdef DEBUGSYS
@@ -1246,16 +1181,6 @@ void cmd_newid(cmd_struct cual)
 #endif
 			   sysConfig.whoami=cual.free1;
 			   write_to_flash(true);
-				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
-}
-
-void cmd_resetcounters(cmd_struct cual)
-{
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]ResetCounters from %d \n",cual.towho,sysConfig.whoami,sysConfig.whoami);
-#endif
-			   entran=salen=0;
 				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 }
 
@@ -1342,7 +1267,7 @@ void cmd_are_you_alive(cmd_struct cual)
 void cmd_i_am_alive(cmd_struct cual)
 {
 	time_t now;
-	   if(sysConfig.mode==1)
+	   if(sysConfig.mode==SERVER)
 	   {
 #ifdef DEBUGSYS
 		   if(sysConfig.traceflag & (1<<ALIVED))
@@ -1429,7 +1354,7 @@ void cmd_firmware(cmd_struct cual)
 
 void cmd_walk(cmd_struct cual)
 {
-	   if(sysConfig.mode==1){
+	   if(sysConfig.mode==SERVER){
 #ifdef DEBUGSYS
 	   if(sysConfig.traceflag & (1<<WIFID))
 		   printf("[WIFID]Walk In from %d NodeId %d Button %d\n",cual.fromwho,cual.nodeId, cual.free1);
@@ -1487,7 +1412,7 @@ bool find_station(u8 stat)
 
 void cmd_login(cmd_struct cual)
 {
-	if(sysConfig.mode==1) //Only server
+	if(sysConfig.mode==SERVER) //Only server
 	{
 #ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
@@ -1508,7 +1433,7 @@ void cmd_alarm(cmd_struct cual)
 {
 	char textl[70];
 
-	if(sysConfig.mode==1) //Only server
+	if(sysConfig.mode==SERVER) //Only server
 	{
 		strcpy(textl,cual.buff);
 
@@ -1534,14 +1459,11 @@ void process_cmd(cmd_struct cual)
 		show_leds(cual.cmd);
 
 		entran++;
+	//	enum {ACK,NAK,DONE,PING,PONG,QUIET,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
+
+
 	   switch (cual.cmd)
 	   {
-		   case START:
-			   cmd_start(cual);
-			   break;
-		   case STOP:
-			   cmd_stop(cual);
-			   break;
 		   case ACK:
 			   cmd_ack(cual);
 			   break;
@@ -1557,29 +1479,11 @@ void process_cmd(cmd_struct cual)
 		   case PONG:
 			   cmd_pong(cual);
 			   break;
-		   case COUNTERS:
-			   cmd_counters(cual);
-			   break;
-		   case SENDC:
-			   cmd_sendcounters(cual);
-			   break;
-		   case TEST:
-			   cmd_test(cual);
-			   break;
-		   case DELAY:
-			   cmd_delay(cual);
-			   break;
 		   case QUIET:
 			   cmd_quiet(cual);
 			   break;
-		   case INTERVAL:
-			   cmd_interval(cual);
-			   break;
 		   case NEWID:
 			   cmd_newid(cual);
-			   break;
-		   case RESETC:
-			   cmd_resetcounters(cual);
 			   break;
 		   case RESET:
 			   cmd_reset(cual);
@@ -1658,9 +1562,9 @@ void reportLight(u32 expected, u32 readleds)
 		//		printf("Bit %d(%s) failed\n",a,sysLights.theNames[fue]);
 				sysLights.failed = sysLights.failed|(1ul<<a);
 		//		write_to_flash_lights();
-				if(sysConfig.mode==1)
+				if(sysConfig.mode==SERVER)
 				{
-					sprintf(textl,"Intersection %s/%s Light %s failed",sysConfig.groupName,sysConfig.lightName, sysLights.theNames[fue]);
+					sprintf(textl,"Street %s/%s Light %s failed",sysConfig.groupName,sysConfig.lightName, sysLights.theNames[fue]);
 					sendAlert(string(textl),strlen(textl));
 				}
 				else
@@ -1725,7 +1629,7 @@ void runLight(void * pArg)
 				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 				REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[a].ioports);//clear all set bits
 				u32 ledStatus=REG_READ(GPIO_IN_REG );//read bits
-				delay(400);
+				delay(100);
 				ledStatus=REG_READ(GPIO_IN_REG );//read bits
 				if((sysLights.lasLuces[a].inports & ledStatus)!=sysLights.lasLuces[a].inports )
 					reportLight(sysLights.lasLuces[a].inports, ledStatus);
@@ -1740,7 +1644,7 @@ void runLight(void * pArg)
 				printf("[WEBD]Read GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
 			}
 #endif
-				delay(demora-400);
+				delay(demora-100);
 			}
 
 			if(copyOptions==1) //Blink
@@ -1796,7 +1700,7 @@ void runLight(void * pArg)
 #endif
 		}
 	}
-	if(!sysConfig.clone) // If not a clone send the DONE for the whole CLONE Group
+	if(!sysConfig.clone) // If not a clone send DONE for the whole CLONE Group
 		sendMsg(DONE,EVERYBODY,0,0,NULL,0);
 	globalWalk=false;
 	runHandle=NULL;
@@ -2082,10 +1986,14 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	if(que && (len>0))
 		memcpy(&answer.buff,que,len);
 
-	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
+	tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
     tcpip_adapter_ip_info_t ip_info ;
-    tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-    ESP_LOGI(TAG,"Send Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
+    tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &ip_info);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		ESP_LOGI(TAG,"Send Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
+#endif
+
 	salen++;
 		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 		if (sock < 0)
@@ -2112,7 +2020,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 		//set the Interface we want to use.
 		tcpip_adapter_ip_info_t if_info;
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &if_info);//for repeater AP and STA should be interchangeable
+		tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &if_info);//for repeater AP and STA should be interchangeable
 		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
 		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
 		{
@@ -2362,131 +2270,27 @@ void repeater(void *pArg)
 		}
 		if(res==downstream)
 		{
-	//		enum {START,STOP,ACK,NAK,DONE,PING,PONG,SENDC,COUNTERS,TEST,INTERVAL,DELAY,QUIET,RESETC,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,
-	//			LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
-			switch(comando.cmd)
-			{
-			case ACK:
-			case NAK:
-			case DONE:
-			case COUNTERS:
-			case IMALIVE:
-			case WALK:
-				break; //do not send them downstream, its an answer
-			default:
-				//is it for us, Station ID
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag&(1<<TRAFFICD))
-				printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
-#endif
-				if(comando.towho==sysConfig.stationid )
-					process_cmd(comando);
-				//also send because you there can be clones....
-				xQueueSend( downQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
-			}
+//			switch(comando.cmd)
+//			{
+//				case ACK:
+//				case NAK:
+//				//case DONE: //its necesarry because WALK checks if DONE for that Street
+//				case IMALIVE:
+//				case WALK:
+//					break; //do not send them downstream, its an answer
+//				default:
+//					//is it for us, Station ID
+	#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<TRAFFICD))
+					printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+	#endif
+					if(comando.towho==sysConfig.stationid )
+						process_cmd(comando);
+					//also send because you there can be clones....
+					xQueueSend( downQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+//			}
 		}
 	}
-}
-
-
-
-void mcast_example_task(void *pvParameters)
-{
-    int sock,err;
-    cmd_struct comando;
-    struct in_addr        localInterface;
-    struct sockaddr_in    groupSock;
-
-    ESP_LOGI(TAG, "RxTask started");
-
-    while (true) {
-
-        //sending thread. Get a standard socket not MC
-        sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-          if (sock < 0) {
-              ESP_LOGE(TAG, "Test Failed to create socket. Error %d", errno);
-              exit(1);
-          }
-
-
-  		//SET THE MULTICAST ADDRESS AND PORT
-  		 memset((char *) &groupSock, 0, sizeof(groupSock));
-  		 groupSock.sin_family = AF_INET;
-  		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
-  		 groupSock.sin_port = htons(UDP_PORT);
-
-  		 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
-  		char loopch=1;
-  		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
-  		{
-  			ESP_LOGE(TAG,"Test Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
-  			close(sock);
-  			return;
-  		}
-
-  		//set the Interface we want to use.
-  		tcpip_adapter_ip_info_t if_info;
-  		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &if_info);
-  		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
-  		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
-  		{
-  			ESP_LOGE(TAG,"Test Setting local interface %d %s\n",errno,strerror(errno));
-  			close(sock);
-  			return;
-  		  }
-
-  		uint8_t ttl = MULTICAST_TTL; //Time To Live max
-
-  		err=setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
-  		if (err < 0)
-  		{
-  			ESP_LOGE(TAG, "Test Failed to set IP_MULTICAST_TTL sockel. Error %d %s", errno,strerror(errno));
-  			close (sock);
-  			return;
-  		}
-
-          comando.centinel=THECENTINEL;
-          comando.cmd=TEST;
-          if (sysConfig.mode!=1)
-        	  comando.towho=0;
-          else
-        	  comando.towho=255;
-          comando.fromwho=sysConfig.whoami;
-
-        while (true) {
-
-            while(!rxtxf){
-                ESP_LOGI(TAG, "RxTask stoped");
-            //	freeaddrinfo(res);
-            	close(sock);
-            	vTaskDelete(NULL);
-            }
-
-            vTaskDelay(howmuch / portTICK_PERIOD_MS);
-            comando.seqnum++;
-            comando.lapse=millis();
-
-            //send it
-    		err=sendto(sock, &comando, sizeof(comando), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
-
-//			err = sendto(sock, &comando, sizeof(comando), 0, res->ai_addr, res->ai_addrlen);
-			if (err < 0) {
-				ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d", errno);
-				exit(1);
-			}
-			if(sysConfig.showLeds)
-				blink(SENDLED);
-			salen++;
-			if (!displayf)
-			{
-				printf("!");
-				fflush(stdout);
-			}
-			else
-				ESP_LOGI(TAG, "MCOut from %d to %d seqnum %d", comando.fromwho,comando.towho,comando.seqnum);
-        }
-    }
-
 }
 
 void initWiFi()
@@ -2634,7 +2438,7 @@ void initVars()
 #endif
 
 	//
-	if(sysConfig.mode==1)
+	if(sysConfig.mode==SERVER)
 	{
 		settings.host=sysConfig.mqtt;
 		settings.port = sysConfig.mqttport;
@@ -2672,37 +2476,31 @@ void initVars()
 		lookuptable[i-NKEYS/2].val=i-NKEYS/2;
 	}
 
-	strcpy(tcmds[0],"START");
-	strcpy(tcmds[1],"STOP");
-	strcpy(tcmds[2],"ACK");
-	strcpy(tcmds[3],"NAK");
-	strcpy(tcmds[4],"DONE");
-	strcpy(tcmds[5],"PING");
-	strcpy(tcmds[6],"PONG");
-	strcpy(tcmds[7],"SENDC");
-	strcpy(tcmds[8],"COUNTERS");
-	strcpy(tcmds[9],"TEST");
-	strcpy(tcmds[10],"INTERVAL");
-	strcpy(tcmds[11],"DELAY");
-	strcpy(tcmds[12],"QUIET");
-	strcpy(tcmds[13],"RESETC");
-	strcpy(tcmds[14],"RESET");
-	strcpy(tcmds[15],"NEWID");
-	strcpy(tcmds[16],"RUN");
-	strcpy(tcmds[17],"OFF");
-	strcpy(tcmds[18],"ON");
-	strcpy(tcmds[19],"RUALIVE");
-	strcpy(tcmds[20],"IMALIVE");
-	strcpy(tcmds[21],"KILL");
-	strcpy(tcmds[22],"BLINK");
-	strcpy(tcmds[23],"LEDS");
-	strcpy(tcmds[24],"FIRMW");
-	strcpy(tcmds[25],"WALK");
-	strcpy(tcmds[26],"EXECW");
-	strcpy(tcmds[27],"SENDCLONE");
-	strcpy(tcmds[28],"CLONE");
-	strcpy(tcmds[29],"LOGIN");
-	strcpy(tcmds[30],"ALARM");
+//	enum {ACK,NAK,DONE,PING,PONG,QUIET,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
+
+	strcpy(tcmds[0],"ACK");
+	strcpy(tcmds[1],"NAK");
+	strcpy(tcmds[2],"DONE");
+	strcpy(tcmds[3],"PING");
+	strcpy(tcmds[4],"PONG");
+	strcpy(tcmds[5],"QUIET");
+	strcpy(tcmds[6],"RESET");
+	strcpy(tcmds[7],"NEWID");
+	strcpy(tcmds[8],"RUN");
+	strcpy(tcmds[9],"OFF");
+	strcpy(tcmds[10],"ON");
+	strcpy(tcmds[11],"RUALIVE");
+	strcpy(tcmds[12],"IMALIVE");
+	strcpy(tcmds[13],"KILL");
+	strcpy(tcmds[14],"BLINK");
+	strcpy(tcmds[15],"LEDS");
+	strcpy(tcmds[16],"FIRMW");
+	strcpy(tcmds[17],"WALK");
+	strcpy(tcmds[18],"EXECW");
+	strcpy(tcmds[19],"SENDCLONE");
+	strcpy(tcmds[20],"CLONE");
+	strcpy(tcmds[21],"LOGIN");
+	strcpy(tcmds[22],"ALARM");
 
 	strcpy(kbdTable[0],"Blink");
 	strcpy(kbdTable[1],"Factor");
@@ -2721,29 +2519,23 @@ void initVars()
 	strcpy(kbdTable[14],"Status");
 	strcpy(kbdTable[15],"MqttId");
 	strcpy(kbdTable[16],"AccessPoint");
-	strcpy(kbdTable[17],"Delay");
-	strcpy(kbdTable[18],"Interval");
-	strcpy(kbdTable[19],"Mode");
-	strcpy(kbdTable[20],"Start");
-	strcpy(kbdTable[21],"Stop");
-	strcpy(kbdTable[22],"Ping");
-	strcpy(kbdTable[23],"Counters");
-	strcpy(kbdTable[24],"ResetCount");
-	strcpy(kbdTable[25],"Reset");
-	strcpy(kbdTable[26],"NewId");
-	strcpy(kbdTable[27],"Statistics");
-	strcpy(kbdTable[28],"Zero");
-	strcpy(kbdTable[29],"Display");
-	strcpy(kbdTable[30],"Settings");
-	strcpy(kbdTable[31],"Beat");
-	strcpy(kbdTable[32],"StopCycle");
-	strcpy(kbdTable[33],"Alive");
-	strcpy(kbdTable[34],"Streets");
-	strcpy(kbdTable[35],"Help");
-	strcpy(kbdTable[36],"Silent");
-	strcpy(kbdTable[37],"BulbTest");
-	strcpy(kbdTable[38],"Date");
-	strcpy(kbdTable[39],"Dumpcore");
+	strcpy(kbdTable[17],"Mode");
+	strcpy(kbdTable[18],"Ping");
+	strcpy(kbdTable[19],"Reset");
+	strcpy(kbdTable[20],"NewId");
+	strcpy(kbdTable[21],"Statistics");
+	strcpy(kbdTable[22],"Zero");
+	strcpy(kbdTable[23],"Display");
+	strcpy(kbdTable[24],"Settings");
+	strcpy(kbdTable[25],"Beat");
+	strcpy(kbdTable[26],"StopCycle");
+	strcpy(kbdTable[27],"Alive");
+	strcpy(kbdTable[28],"Streets");
+	strcpy(kbdTable[29],"Help");
+	strcpy(kbdTable[30],"Silent");
+	strcpy(kbdTable[31],"BulbTest");
+	strcpy(kbdTable[32],"Date");
+	strcpy(kbdTable[33],"Dumpcore");
 
 	//Set up Mqtt Variables
 	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/MSG";
@@ -2922,7 +2714,10 @@ int read_flash()
 
 		makeMd5((void*)&sysConfig,diff,(void*)lkey);
 		int que=memcmp(&sysConfig.md5,&lkey,16);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
 		printf("MD5 sysconfig %s\n",que?"No":"Ok");
+#endif
 		return que;
 
 }
@@ -2944,7 +2739,10 @@ int read_flash_seq()
 
 		makeMd5((void*)&sysSequence,diff,(void*)lkey);
 		int que=memcmp(&sysSequence.md5,&lkey,16);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
 		printf("MD5 Sequence %s\n",que?"No":"Ok");
+#endif
 		return que;
 }
 
@@ -2965,7 +2763,10 @@ int read_flash_cycles()
 
 		makeMd5((void*)&allCycles,diff,(void*)lkey);
 		int que=memcmp(&allCycles.md5,&lkey,16);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
 		printf("MD5 Cycles %s\n",que?"No":"Ok");
+#endif
 		return que;
 
 }
@@ -2988,7 +2789,10 @@ int read_flash_lights()
 
 		makeMd5((void*)&sysLights,diff,(void*)lkey);
 		int que=memcmp(&sysLights.md5,&lkey,16);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
 		printf("MD5 Lights %s\n",que?"No":"Ok");
+#endif
 		return que;
 }
 
@@ -3498,7 +3302,7 @@ void app_main(void)
 
 	load_lights();
 
-	if(sysConfig.mode==1)  //Scheduler only in Controller Mode
+	if(sysConfig.mode==SERVER)  //Scheduler only in Controller Mode
 		load_others();
 
 
@@ -3518,7 +3322,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	curSSID=sysConfig.lastSSID;
 	initVars(); 			// used like this instead of var init to be able to have independent file per routine(s)
 
-	if(sysConfig.mode==1)
+	if(sysConfig.mode==SERVER)
 	{
 		initI2C();  			// for Screen
 		initScreen();			// Screen
@@ -3545,12 +3349,12 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	rxtxf=false; //default stop
 	memset(&answer,0,sizeof(answer));
 	// Start Main Tasks
-	if(sysConfig.mode==1)
+	if(sysConfig.mode==SERVER)
 		xTaskCreate(&timerManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
 	xTaskCreate(&kbd,"kbd",8192,NULL, MGOS_TASK_PRIORITY, NULL);								// User interface while in development. Erased in RELEASE
 	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
 
-	if(sysConfig.mode==0)
+	if(sysConfig.mode==CLIENT)
 		if(string(sysConfig.ssid[0])=="")
 			initWiFi();
 		else
@@ -3558,7 +3362,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	else
 	    initWiFi();
 
-	if(sysConfig.mode==1){
+	if(sysConfig.mode==SERVER){
 		xTaskCreate(&controller,"vm",10240,NULL, 5, NULL);									// If we are a Controller
 		xTaskCreate(&heartBeat, "heartB", 4096, NULL, 4, NULL);
 	}

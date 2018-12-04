@@ -78,6 +78,6 @@ using namespace std;
  EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID;
  EXTERN int								RSSI,gCycleTime,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
  EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[20];
- EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[40][10];
+ EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10];
 
 #endif /* MAIN_GLOBALS_H_ */

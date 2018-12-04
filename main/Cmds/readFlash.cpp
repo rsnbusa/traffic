@@ -103,7 +103,7 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 		{
 			printf ("Last Compile %s-%s\n",__DATE__,__TIME__);
 
-			if(sysConfig.mode && numsensors>0)
+			if(sysConfig.mode==SERVER && numsensors>0)
 				printf("Temp %.02f\n",DS_get_temp(&sensors[0][0]));
 			u32 diffd=now-sysConfig.lastTime;
 			u16 horas=diffd/3600;
@@ -123,8 +123,8 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 			printf("%s",mmac.c_str());
 			mmac="";
 			printf("[AP Name:%s] Mongoose%d\n",AP_NameString.c_str(),mongf);
-			printf("Meter Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
-			if(sysConfig.mode)
+			printf("TController Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
+			if(sysConfig.mode==SERVER)
 			{
 				printf("MQTT Server:[%s:%d] Connected:%s User:[%s] Passw:[%s]\n",sysConfig.mqtt,sysConfig.mqttport,mqttf?"Yes":"No",sysConfig.mqttUser,sysConfig.mqttPass);
 				printf("Cmd Queue:%s\n",cmdTopic.c_str());
@@ -156,20 +156,20 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 		printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 //Trace Flags
 
-
+		if(sysConfig.mode==SERVER)
 		//Connected Users
-		if(full==0 || full==3)
-		{
-
-			if(sonUid>0)
+			if(full==0 || full==3)
 			{
-				printf("Connected Users %d\n",sonUid);
-				for (int a=0;a<sonUid;a++){
-					printf("Uid %s ",montonUid[a].c_str());
-					print_date_time(string("LogIn"),uidLogin[a] );
+
+				if(sonUid>0)
+				{
+					printf("Connected Users %d\n",sonUid);
+					for (int a=0;a<sonUid;a++){
+						printf("Uid %s ",montonUid[a].c_str());
+						print_date_time(string("LogIn"),uidLogin[a] );
+					}
 				}
 			}
-		}
 		//Station Stuff
 		if(full==0 || full==4 ||full==1)
 		{
@@ -200,7 +200,7 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 					sysLights.lasLuces[a].opt,sysLights.lasLuces[a].typ?"%":"F",sysLights.lasLuces[a].valor);
 				}
 
-			if(sysConfig.mode==1)
+			if(sysConfig.mode==SERVER)
 			{
 				//Cycles
 				printf("Total TLights %d\n",sysConfig.totalLights);
@@ -241,6 +241,7 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 				}
 			}
 		}
+		if(sysConfig.mode==SERVER)
 			if(full==0 || full==3)
 			{
 				printf("Active Nodes\n");
@@ -279,7 +280,8 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 				ts = *localtime((const time_t*)&sysSequence.sequences[este].startSeq);
 				strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 				int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
-				printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
+				if(sysConfig.mode==SERVER)
+					printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
 				ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
 				strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 				printf("%s\n",textl);
@@ -318,7 +320,7 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 		{
 			sprintf(textl,"with total duration %d in Light %d %d ms\n",cuantoDura,globalLuz,globalLuzDuration);
 			printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
-			if(sysConfig.mode)
+			if(sysConfig.mode==SERVER)
 				printf("Controller is in Street %s duration %d ms\n",sysConfig.calles[globalNode],globalDuration);
 		}
 

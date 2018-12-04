@@ -15,7 +15,7 @@
 #define FOREVER								true
 #define MINHEAP								20000
 #define NKEYS 								24
-#define KCMDS								40
+#define KCMDS								34
 #define MAXLOGINTIME						60   //one minute
 
 #define UIO									5  //GMT local time
