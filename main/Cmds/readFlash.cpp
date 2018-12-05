@@ -70,6 +70,7 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 	string algo;
 	struct tm  ts;
 	time_t local;
+	tcpip_adapter_ip_info_t ip_info ;
 
 
 
@@ -114,15 +115,22 @@ void show_config( u8 full) // read flash and if HOW display Status message for t
 			for(int a=0;a<2;a++)
 				if(sysConfig.ssid[a][0]!=0)
 					printf("[SSID[%d]:[%s]-[%s] %s\n",a,sysConfig.ssid[a],sysConfig.pass[a],curSSID==a ?"*":" ");
-			printf( "[IP:" IPSTR "] ", IP2STR(&localIp));
+			if(sysConfig.mode==CLIENT){
+				tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+				printf( "[Client IP:" IPSTR "] ", IP2STR(&ip_info.ip));
+			}
+			else
+			{
+				tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+				printf( "%s->[%s IP:" IPSTR "] ",sysConfig.mode==SERVER?"Server":"Repeater",sysConfig.mode==SERVER?"Internet":"Controller", IP2STR(&ip_info.ip));
+				tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+				printf( "[%s IP:" IPSTR "]\n",sysConfig.mode==SERVER?"Client":"ClientRep", IP2STR(&ip_info.ip));
+			}
 
 			u8 mac[6];
 			esp_wifi_get_mac(WIFI_IF_STA, mac);
-			sprintf(textl,"[MAC %2x%2x] ",mac[4],mac[5]);
-			string mmac=string(textl);
-			printf("%s",mmac.c_str());
-			mmac="";
-			printf("[AP Name:%s] Mongoose%d\n",AP_NameString.c_str(),mongf);
+			printf("[MAC %2x%2x] ",mac[4],mac[5]);
+			printf("[AP Name:%s]\n",AP_NameString.c_str());
 			printf("TController Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
 			if(sysConfig.mode==SERVER)
 			{

@@ -554,51 +554,7 @@ void mongooseTask(void *data) {
 		mg_mgr_poll(&mgr, 10);
 
 } // mongooseTask
-/*
-void mdnstask(void *args){
-	char textl[60];
-	time_t now;
-	struct tm timeinfo;
-	esp_err_t ret;
-	time(&now);
-	localtime_r(&now, &timeinfo);
 
-		esp_err_t err = mdns_init();
-		if (err) {
-			printf( "Failed starting MDNS: %u\n", err);
-		}
-		else
-		{
-			if(sysConfig.traceflag&(1<<CMDD))
-				printf("[CMDD]MDNS hostname %s\n",AP_NameString.c_str());
-			mdns_hostname_set(AP_NameString.c_str()) ;
-			mdns_instance_name_set(AP_NameString.c_str()) ;
-
-			  mdns_txt_item_t serviceTxtData[4] = {
-			        {(char*)"WiFi",(char*)"Yes"},
-			        {(char*)"ApMode",(char*)"Yes"},
-			        {(char*)"OTA",(char*)"Yes"},
-			        {(char*)"Boot",(char*)""}
-			    };
-
-			sprintf(textl,"%d/%d/%d %d:%d:%d",1900+timeinfo.tm_year,timeinfo.tm_mon,timeinfo.tm_mday,timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
-
-			if(sysConfig.traceflag&(1<<CMDD))
-				printf("[CMDD]MDNS time %s\n",textl);
-			string s=string(textl);
-			ret=mdns_service_add( AP_NameString.c_str(),"_doorIoT", "_tcp", 80,serviceTxtData, 4 );
-			if(ret && (sysConfig.traceflag&(1<<CMDD)))
-							printf("Failed add service  %d\n",ret);
-			ret=mdns_service_txt_item_set("_doorIoT", "_tcp", "Boot", s.c_str());
-			if(ret && (sysConfig.traceflag&(1<<CMDD)))
-							printf("Failed add txt %d\n",ret);
-			s="";
-		}
-		mdnsHandle=NULL;
-
-	vTaskDelete(NULL);
-}
-*/
 void initialize_sntp(void *args)
 {
 	 struct timeval tvStart;
@@ -744,19 +700,13 @@ void newSSIDfirm(string ap, string pass)
 }
 
 esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
-	system_event_ap_staconnected_t *conap;
-	//system_event_sta_got_ip_t *ipgave;
-	system_event_sta_disconnected_t *disco;
-	conap=(system_event_ap_staconnected_t*)&event->event_info;
-	//ipgave=(system_event_sta_got_ip_t*)&event->event_info;
-	disco=(system_event_sta_disconnected_t*)&event->event_info;
-	esp_err_t err;
-	string local="Closed",temp;
-//	system_event_ap_staconnected_t *staconnected;
-	wifi_sta_list_t station_list;
-	wifi_sta_info_t *stations ;
-	ip4_addr_t addr;
+	system_event_ap_staconnected_t 			*conap;
+	string 									local="Closed",temp;
+	wifi_sta_list_t 						station_list;
+	wifi_sta_info_t 						*stations ;
+	ip4_addr_t 								addr;
 
+	conap=(system_event_ap_staconnected_t*)&event->event_info;
 
 //#ifdef DEBUGSYS
 //	if(sysConfig.traceflag & (1<<WIFID))
@@ -836,6 +786,27 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 		}
 		if(sysConfig.mode==REPEATER){//Repeater mode
+			tcpip_adapter_ip_info_t ip_info;
+			//From STA ipconfig make the AP config by adding one to the 3 byte
+			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+			u8 monton[4];
+			memcpy(&monton,(void*)&ip_info.ip.addr,4);
+			monton[3]=0;
+			memcpy(&downstream,&monton,4);
+			monton[2]+=1;//one more for the address like 192.168.(x+1).1
+			memcpy(&upstream,&monton,4);
+			upstream=upstream<<8;
+			downstream=downstream<<8;
+
+			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+			IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
+			IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
+			IP4_ADDR(&ip_info.netmask,255,255,255,0);
+			tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
+			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+			//Create repeater task with new IP given
+			xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
 			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		}
 		break;
@@ -843,16 +814,16 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
 		tcpip_adapter_ip_info_t ip_info;
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		if(sysConfig.mode==REPEATER)
-		{
-			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-			IP4_ADDR(&ip_info.ip,192,168,10,1);
-			IP4_ADDR(&ip_info.gw,192,168,10,1);
-			IP4_ADDR(&ip_info.netmask,255,255,255,0);
-			printf("set ip ret: %d\n", tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info)); //set static IP
-
-			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-		}
+//		if(sysConfig.mode==REPEATER)
+//		{
+//			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+//			IP4_ADDR(&ip_info.ip,192,168,10,1);
+//			IP4_ADDR(&ip_info.gw,192,168,10,1);
+//			IP4_ADDR(&ip_info.netmask,255,255,255,0);
+//			printf("set ip ret: %d\n", tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info)); //set static IP
+//
+//			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+//		}
 //		printf("System not Configured. Use local AP and IP:" IPSTR "\n", IP2STR(&ip_info.ip));
 		localIp=ip_info.ip;
 		if(sysConfig.mode==SERVER)
@@ -864,10 +835,9 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 				xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
 			}
 		}
-		if(sysConfig.mode==REPEATER)
-			xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
-		else
+		if(sysConfig.mode!=REPEATER)
 			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+		//Repeater task will be started by STA_GOT_IP so we can change the DHCP address.
 
 		break;
 
@@ -924,7 +894,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 		{
 			//printf("Direct Launch Red blink %d\n",sysLights.defaultLight);
 					//put the Light in Danger Mode  Blink Red light. lost host and sync
-					xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
 		}
 
 		if(cycleHandle)
@@ -1205,24 +1175,25 @@ void cmd_kill(cmd_struct cual)
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 }
 
-void cmd_runlight(cmd_struct cual)
+void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 {
-	time_t now;
-	struct tm timeinfo;
+	time_t		now;
+	struct tm	timeinfo;
+	timeval		tm;
 
-	   if(runHandle!=NULL)
-	   {
-		   vTaskDelete(runHandle),
-		   runHandle=NULL;
-	   }
-	   memcpy(&now,cual.buff,sizeof(now));
+   if(runHandle!=NULL) //do not duplicate task
+   {
+	   vTaskDelete(runHandle),
+	   runHandle=NULL;
+   }
 
-	   timeval tm;
-	   tm.tv_sec=now;
-	   tm.tv_usec=0;
-	   settimeofday(&tm,NULL);
-	   time(&now);
-	   localtime_r(&now, &timeinfo);
+   memcpy(&now,cual.buff,sizeof(now));
+
+   tm.tv_sec=now;
+   tm.tv_usec=0;
+   settimeofday(&tm,NULL);
+   time(&now);
+   localtime_r(&now, &timeinfo);
 //	   printf("Received time from Controller %s",asctime(&timeinfo));
 
 #ifdef DEBUGSYS
@@ -1280,7 +1251,6 @@ void cmd_i_am_alive(cmd_struct cual)
 		   activeNodes.lastTime[cual.free2]=now;
 		   //task to check every KEEPALIVE interval for time difference of current time-lastime(x)>KEEPALIVE, he is dead, do something
 		   //station 0 is not relevant, since its the controller
-
 	   }
 }
 
@@ -1418,14 +1388,13 @@ void cmd_login(cmd_struct cual)
 			   if(sysConfig.traceflag & (1<<WIFID))
 				   printf("[WIFID]Login %d Node %d Station %d Total %d\n",cual.fromwho,cual.free1,cual.free2,numLogins);
 #endif
-	if(!find_station(cual.free2))
-	{
-		logins[numLogins].nodel=cual.fromwho;
-		logins[numLogins].stationl=cual.free2;
-		strcpy(logins[numLogins].namel,cual.buff);
-		numLogins++;
-	}
-
+		if(!find_station(cual.free2))
+		{
+			logins[numLogins].nodel=cual.fromwho;
+			logins[numLogins].stationl=cual.free2;
+			strcpy(logins[numLogins].namel,cual.buff);
+			numLogins++;
+		}
 	}
 }
 
@@ -1441,26 +1410,22 @@ void cmd_alarm(cmd_struct cual)
 			   if(sysConfig.traceflag & (1<<WIFID))
 				   printf("[WIFID]Alarm %d Node %d Station %d %s\n",cual.fromwho,cual.free1,cual.free2,textl);
 #endif
-	sendAlert(string(textl),strlen(textl));
+		sendAlert(string(textl),strlen(textl));
 	}
 }
 
 void process_cmd(cmd_struct cual)
 {
-    string algo;
-
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
 		printf("[CMDD]Process Cmd(%d) %s towho %d Fromwho %d Node %d\n",cual.cmd,tcmds[cual.cmd],cual.towho,cual.fromwho,cual.nodeId);
 #endif
+
 	if(((cual.towho==EVERYBODY) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
 	{
 		show_leds(cual.cmd);
-
 		entran++;
-	//	enum {ACK,NAK,DONE,PING,PONG,QUIET,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
-
 
 	   switch (cual.cmd)
 	   {
@@ -1534,6 +1499,7 @@ void process_cmd(cmd_struct cual)
 			   cmd_alarm(cual);
 			   break;
 		   default:
+			   printf("Invalid incoming Command %d\n",cual.cmd);
 			   break;
 	   }
 	}
@@ -1559,7 +1525,6 @@ void reportLight(u32 expected, u32 readleds)
 						fue=b;
 						break;
 					}
-		//		printf("Bit %d(%s) failed\n",a,sysLights.theNames[fue]);
 				sysLights.failed = sysLights.failed|(1ul<<a);
 		//		write_to_flash_lights();
 				if(sysConfig.mode==SERVER)
@@ -1579,18 +1544,18 @@ void reportLight(u32 expected, u32 readleds)
 
 void runLight(void * pArg)
 {
-	cuantoDura=(int)pArg*FACTOR2;
-	int demora=0,son=0;
-	int restar=0;
-	u32 ledStatus,tempread;
-	bool qfue;
+	int 					demora=0,son=0;
+	int 					restar=0;
+	u32 					ledStatus,tempread;
+	bool 					qfue;
 
+	cuantoDura=(int)pArg*FACTOR2;
 
 	for (int a=0;a<sysLights.numLuces;a++)
-		{
-			if (!sysLights.lasLuces[a].typ)
-				restar+=sysLights.lasLuces[a].valor;
-		}
+	{
+		if (!sysLights.lasLuces[a].typ)
+			restar+=sysLights.lasLuces[a].valor;
+	}
 
 	cuantoDura-=(restar*FACTOR2);
 #ifdef DEBUGSYS
@@ -1634,15 +1599,15 @@ void runLight(void * pArg)
 				if((sysLights.lasLuces[a].inports & ledStatus)!=sysLights.lasLuces[a].inports )
 					reportLight(sysLights.lasLuces[a].inports, ledStatus);
 #ifdef DEBUGSYS
-			if(sysConfig.traceflag & (1<<WEBD))
-			{
-				tempread=sysLights.lasLuces[a].inports & ledStatus;
-				if(tempread==sysLights.lasLuces[a].inports)
-					qfue=true;
-				else
-					qfue=false;
-				printf("[WEBD]Read GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
-			}
+				if(sysConfig.traceflag & (1<<WEBD))
+				{
+					tempread=sysLights.lasLuces[a].inports & ledStatus;
+					if(tempread==sysLights.lasLuces[a].inports)
+						qfue=true;
+					else
+						qfue=false;
+					printf("[WEBD]Read GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
+				}
 #endif
 				delay(demora-100);
 			}
@@ -1661,19 +1626,18 @@ void runLight(void * pArg)
 						reportLight(sysLights.lasLuces[a].inports, ledStatus);
 
 #ifdef DEBUGSYS
-			if(sysConfig.traceflag & (1<<WEBD))
-			{
-				tempread=sysLights.lasLuces[a].inports & ledStatus;
-				if(tempread==sysLights.lasLuces[a].inports)
-					qfue=true;
-				else
-					qfue=false;
-				printf("[WEBD]BRead GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
-			}
+					if(sysConfig.traceflag & (1<<WEBD))
+					{
+						tempread=sysLights.lasLuces[a].inports & ledStatus;
+						if(tempread==sysLights.lasLuces[a].inports)
+							qfue=true;
+						else
+							qfue=false;
+						printf("[WEBD]BRead GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
+					}
 #endif
 				}
 			}
-
 		}
 		else
 		{
@@ -1710,16 +1674,16 @@ void runLight(void * pArg)
 
 static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool ap)
 {
-    struct ip_mreq imreq ;
-    struct in_addr iaddr;
+    struct ip_mreq 				imreq ;
+    struct in_addr 				iaddr;
+    int 						err = 0;
+    tcpip_adapter_ip_info_t 	ip_info ;
+
     memset(&imreq,0,sizeof(imreq));
     memset(&iaddr,0,sizeof(iaddr));
-    int err = 0;
-    // Configure source interface
-
-    tcpip_adapter_ip_info_t ip_info ;
     memset(&ip_info,0,sizeof(ip_info));
-    printf("Configuring Multicast for %s = ",ap?"AP":"STA");
+
+  //  printf("Configuring Multicast for %s = ",ap?"AP":"STA");
     if(!ap)
     	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
     else
@@ -1727,33 +1691,19 @@ static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool 
 
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "Failed to get IP address info. Error 0x%x", err);
-        goto err;
+        return err;
     }
-    printf("%d:%d:%d:%d\n",IP2STR(&ip_info.ip));
 
-  //  inet_addr_from_ipaddr(&iaddr, &ip_info.ip);
+	imreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
 
-//    uint8_t ttl = MULTICAST_TTL;
-//    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
-//    if (err < 0) {
-//        ESP_LOGE(TAG, "Failed to set IP_MULTICAST_TTL. Error %d %s", errno,strerror(errno));
-//        goto err;
-//    }
-
-	    imreq.imr_multiaddr.s_addr = inet_addr("232.10.11.12");
-//	    imreq.imr_interface.s_addr = (in_addr_t) ip_info.ip.addr;
-//	    imreq.imr_interface.s_addr = ap?inet_addr("192.168.10.1"):inet_addr("192.168.4.2");
-	    ESP_LOGI(TAG, "Multicast address %s", inet_ntoa(imreq.imr_multiaddr.s_addr));
-//	    ESP_LOGI(TAG, "Interface Multicast address %s", inet_ntoa(imreq.imr_interface.s_addr));
-	         err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
-	        if (err < 0) {
-	            ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
-	            goto err;
-	        }
-
-
- err:
-    return err;
+	ESP_LOGI(TAG, "Multicast address %s", inet_ntoa(imreq.imr_multiaddr.s_addr));
+	err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
+	if (err < 0)
+	{
+		ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
+		return err;
+	 }
+	return err;
 }
 
 int create_multicast_ipv4_socket(int port,bool ap)
@@ -1805,167 +1755,13 @@ err:
     return -1;
 }
 
-
-
-/*
-static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool ap)
-{
-    struct ip_mreq imreq ;
-    struct in_addr iaddr;
-    memset(&imreq,0,sizeof(imreq));
-    memset(&iaddr,0,sizeof(iaddr));
-    int err = 0;
-    // Configure source interface
-
-    tcpip_adapter_ip_info_t ip_info ;
-    memset(&ip_info,0,sizeof(ip_info));
-    if(!ap)
-    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-    else
-    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get IP address info. Error 0x%x", err);
-        goto err;
-    }
-    ESP_LOGI(TAG,"MULTIAssigned Ip %d:%d:%d:%d",IP2STR(&ip_info.ip));
-    inet_addr_from_ipaddr(&iaddr, &ip_info.ip);
-//#endif
-    // Configure multicast address to listen to
-    err = inet_aton(MULTICAST_IPV4_ADDR, &imreq.imr_multiaddr.s_addr);
-    if (err != 1) {
-        ESP_LOGE(TAG, "Configured IPV4 multicast address '%s' is invalid.", MULTICAST_IPV4_ADDR);
-        goto err;
-    }
-    ESP_LOGI(TAG, "Configured IPV4 Multicast address %s", inet_ntoa(imreq.imr_multiaddr.s_addr));
-    if (!IP_MULTICAST(ntohl(imreq.imr_multiaddr.s_addr))) {
-        ESP_LOGW(TAG, "Configured IPV4 multicast address '%s' is not a valid multicast address. This will probably not work.", MULTICAST_IPV4_ADDR);
-    }
-
-    	struct in_addr        localInterface;
-		tcpip_adapter_ip_info_t if_info;
-		if(ap)
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &if_info);
-		else
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &if_info);
-	    ESP_LOGI(TAG,"Adapter Ip %d:%d:%d:%d",IP2STR(&if_info.ip));
-//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &if_info);
-//		    ESP_LOGI(TAG,"AdapterSTA Ip %d:%d:%d:%d",IP2STR(&if_info.ip));
-
-//		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
-//		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
-//		{
-//			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
-//			close(sock);
-//			return 1;
-//		  }
-
- //   if (assign_source_if) {
-        // Assign the IPv4 multicast source interface, via its IP
-        // (only necessary if this socket is IPV4 only)
-
-	    imreq.imr_multiaddr.s_addr = inet_addr("232.10.11.12");
-	    imreq.imr_interface.s_addr = ap?inet_addr("192.168.10.1"):inet_addr("192.168.4.1");
-	         err=setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
-
-	   //     err = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,&imreq, sizeof(struct ip_mreq));
-	        if (err < 0) {
-	            ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
-	            goto err;
-	        }
-
-        err = setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF, &iaddr,
-                         sizeof(struct in_addr));
-        if (err < 0) {
-            ESP_LOGE(TAG, "Failed to set IP_MULTICAST_IF. Error %d %s", errno,strerror(errno));
-            goto err;
-        }
- //   }
-
-    err = setsockopt(sock, IPPROTO_IP, IP_ADD_MEMBERSHIP,
-                         &imreq, sizeof(struct ip_mreq));
-    if (err < 0) {
-        ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
-        goto err;
-    }
-
- err:
-    return err;
-}
-
-int create_multicast_ipv4_socket(int port,bool ap)
-{
-    struct sockaddr_in saddr;
-    struct in_addr iaddr;
-    struct ip_mreq group ;
-
-    memset(&saddr,0,sizeof(saddr));
-    tcpip_adapter_ip_info_t ip_info ;
-
-    int sock = -1;
-    int err = 0;
-
-    sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-    if (sock < 0) {
-        ESP_LOGE(TAG, "Failed to create socket. Error %d %s", errno,strerror(errno));
-        return -1;
-    }
-    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
-        printf("setsockopt(SO_REUSEADDR) failed\n");
-
-   		tcpip_adapter_get_ip_info(ap?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &ip_info);
-   	  inet_addr_from_ipaddr(&iaddr, &ip_info.ip);
-    ESP_LOGI(TAG,"%s Bind Ip %d:%d:%d:%d",ap?"AP":"STA",IP2STR(&ip_info.ip));
-
-
-    // Bind the socket to any address
-    saddr.sin_family = PF_INET;
-    saddr.sin_port = htons(port);
-    saddr.sin_addr.s_addr = htonl(INADDR_ANY);
-//    if(ap)
-//    	inet_aton("192.168.10.1", &saddr.sin_addr.s_addr);
-//    else
-//    	inet_aton("192.168.4.1", &saddr.sin_addr.s_addr);
-
-  //  saddr.sin_addr.s_addr =	ip_info.ip.addr;
-    saddr.sin_len=0;
-    err = bind(sock, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in));
-    if (err < 0) {
-        ESP_LOGE(TAG, "Failed to bind socket. Error %d %s", errno,strerror(errno));
-        goto err;
-    }
-
-
-    uint8_t ttl = MULTICAST_TTL;
-    setsockopt(sock, IPPROTO_IP, IP_MULTICAST_TTL, &ttl, sizeof(uint8_t));
-    if (err < 0) {
-        ESP_LOGE(TAG, "Failed to set IP_MULTICAST_TTL. Error %d %s", errno,strerror(errno));
-        goto err;
-    }
-
-    // this is also a listening socket, so add it to the multicast
-       // group for listening...
-       err = socket_add_ipv4_multicast_group(sock, true,ap);
-       if (err < 0) {
-       	ESP_LOGE(TAG, "Error group %d %s", errno,strerror(errno));
-           goto err;
-       }
-
-    return sock;
-
-err:
-    close(sock);
-    return -1;
-}
-*/
 void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 {
+	int 						sock,err;
+    struct in_addr       		localInterface;
+    struct sockaddr_in   		groupSock;
+    tcpip_adapter_ip_info_t 	ip_info ;
 
-	//sending message is alway to the STA part of the interface
-	int sock,err;
-    struct in_addr        localInterface;
-    struct sockaddr_in    groupSock;
-    struct ip_mreq imreq ;
 
 	answer.centinel=THECENTINEL;
 	answer.cmd=cmd;
@@ -1978,6 +1774,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	answer.seqnum++;
 	answer.myip=localIp;
 	time(&answer.theTime);
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
 		printf("[CMDD]SendMsg %s towho %d\n",tcmds[cmd],aquien);
@@ -1987,11 +1784,10 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		memcpy(&answer.buff,que,len);
 
 	tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
-    tcpip_adapter_ip_info_t ip_info ;
-    tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &ip_info);
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		ESP_LOGI(TAG,"Send Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
+		ESP_LOGI(TAG,"Send to Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
 #endif
 
 	salen++;
@@ -2006,7 +1802,6 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		 memset((char *) &groupSock, 0, sizeof(groupSock));
 		 groupSock.sin_family = AF_INET;
 		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
-	//	 groupSock.sin_addr.s_addr = inet_addr("232.10.11.12");
 		 groupSock.sin_port = htons(UDP_PORT);
 
 		 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
@@ -2019,9 +1814,13 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		}
 
 		//set the Interface we want to use.
-		tcpip_adapter_ip_info_t if_info;
-		tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &if_info);//for repeater AP and STA should be interchangeable
-		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
+	//	tcpip_adapter_ip_info_t if_info;
+		if(sysConfig.mode==CLIENT || sysConfig.mode==REPEATER)
+			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
+		else
+			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
+
+		localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
 		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
 		{
 			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
@@ -2042,67 +1841,13 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		close(sock);
 }
 
-
-void sendRepeat(cmd_struct *cmd,bool ap)
-{
-	int sock,err;
-    struct in_addr        localInterface;
-    struct sockaddr_in    groupSock;
-    struct ip_mreq imreq ;
-
-
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]SendMsg %s ->%s\n",tcmds[cmd->cmd],ap?"Downstream":"Upstream");
-#endif
-
-	salen++;
-		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-		if (sock < 0)
-		{
-			ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
-			return;
-		}
-
-		//SET THE MULTICAST ADDRESS AND PORT
-		 memset((char *) &groupSock, 0, sizeof(groupSock));
-		 groupSock.sin_family = AF_INET;
-		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
-		 groupSock.sin_port = htons(UDP_PORT);
-
-		//set the Interface we want to use.
-		tcpip_adapter_ip_info_t if_info;
-		tcpip_adapter_get_ip_info(ap?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &if_info);//for repeater AP and STA should be interchangeable
-		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
-		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
-		{
-			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
-			close(sock);
-			return;
-		  }
-
-		//Send it
-		err=sendto(sock, cmd, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
-		if (err < 0)
-		{
-			ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
-			close(sock);
-			return;
-		}
-		if(sysConfig.showLeds)
-			blink(SENDLED);
-		close(sock);
-}
-
 void rxMessage(void *pArg)
 {
-	int que=(int)pArg;
-
-	cmd_struct comando;
-    char raddr_name[32];
-    struct sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
-    u32 lastts=0;
-    int theSock;
+	cmd_struct 	comando;
+    char 		raddr_name[32];
+    struct 		sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
+    u32 		lastts=0;
+    int 		theSock;
 
 	theSock = create_multicast_ipv4_socket(UDP_PORT,false);
 	if (theSock < 0) {
@@ -2121,23 +1866,23 @@ void rxMessage(void *pArg)
 		if (len < 0) {
 
 			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
-			exit(1);
+			vTaskDelete(NULL);
+			//exit(1);
 		}
 
 		entrats=millis()-lastts;
 		lastts=millis();
 
-		// Get the sender's address as a string
 
-		if (raddr.sin6_family == PF_INET) {
-			inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,
-						raddr_name, sizeof(raddr_name)-1);
-		}
-
-		string algo=string(raddr_name);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]In from %s seq %d msg %s\n",algo.c_str(),comando.seqnum, comando.buff);
+	{
+		// Get the sender's address as a string
+		memset(raddr_name,0,sizeof(raddr_name));
+		if (raddr.sin6_family == PF_INET)
+			inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
+		printf("[CMDD]In from %s seq %d msg %s\n",raddr_name,comando.seqnum, comando.buff);
+	}
 #endif
 
 		if (comando.centinel!=THECENTINEL)
@@ -2191,13 +1936,13 @@ void streamTask(void *pArg)
 			{
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
-				printf("[TRAFFICD]Sending %s\n",ap?"Up":"Down");
+				printf("[TRAFFICD]Sending %s CMD(%d) %s\n",ap?"Up":"Down",comand.cmd,tcmds[comand.cmd]);
 #endif
 				err=sendto(sock, &comand, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
 				if (err < 0)
 				{
 					ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
-					close(sock);
+					close(sock); //we are going to die anyway. Should do something usefull like blink all lights
 					break; //reopen socket, etc
 				}
 			}
@@ -2207,30 +1952,24 @@ void streamTask(void *pArg)
 
 void repeater(void *pArg)
 {
-	cmd_struct comando;
-    char raddr_name[32];
-    u32 upstream, downstream;
-
-    struct sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
-    u32 lastts=0;
-    int theSock;
+	cmd_struct 	comando;
+    char 		raddr_name[32];
+    struct 		sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
+    u32 		lastts=0;
+    int 		theSock;
 
 	theSock = create_multicast_ipv4_socket(UDP_PORT,true);
 	if (theSock < 0)
 		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
 
-	downstream= 0x0004a8c0<<8; //192.168.4.x
-	upstream=   0x000aa8c0<<8; //192.168.10.x
-
-	xTaskCreate(&streamTask,"upstream",4096,(void*)1, 5, NULL);									// If we are a Controller
-	xTaskCreate(&streamTask,"downstream",4096,(void*)0, 5, NULL);									// If we are a Controller
+	xTaskCreate(&streamTask,"upstream",4096,(void*)1, 5, NULL);
+	xTaskCreate(&streamTask,"downstream",4096,(void*)0, 5, NULL);
 
 	while(1)
 	{
-		memset(raddr_name,0,sizeof(raddr_name));
 
 		socklen_t socklen = sizeof(raddr);
-		int len = recvfrom(theSock, &comando, sizeof(comando), MSG_WAITALL,(struct sockaddr *)&raddr, &socklen);
+		int len = recvfrom(theSock,(void*)&comando, sizeof(comando), MSG_WAITALL,(struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0)
 		{
@@ -2241,18 +1980,18 @@ void repeater(void *pArg)
 		entrats=millis()-lastts;
 		lastts=millis();
 
-		if (raddr.sin6_family == PF_INET)
-			inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
-
-		string algo=string(raddr_name);
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
-			printf("[TRAFFICD]In from %s seq %d msg %s\n",algo.c_str(),comando.seqnum, comando.buff);
+		{
+			memset(raddr_name,0,sizeof(raddr_name));
+			if (raddr.sin6_family == PF_INET)
+				inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
+			printf("[TRAFFICD]In from %s seq %d msg %s towho %d\n",raddr_name,comando.seqnum, comando.buff,comando.towho);
+		}
 #endif
 
 		u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
 		u8 monton[4];
-
 		u32 mask=0x00ffffff;
 		u32 res=(este&mask)<<8;
 		memcpy(monton,&res,4);
@@ -2262,11 +2001,11 @@ void repeater(void *pArg)
 #endif
 		if(res==upstream)
 		{
+			xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag&(1<<TRAFFICD))
 			printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
 #endif
-			xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
 		}
 		if(res==downstream)
 		{
@@ -2280,14 +2019,17 @@ void repeater(void *pArg)
 //					break; //do not send them downstream, its an answer
 //				default:
 //					//is it for us, Station ID
-	#ifdef DEBUGSYS
-			if(sysConfig.traceflag&(1<<TRAFFICD))
-					printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
-	#endif
-					if(comando.towho==sysConfig.stationid )
-						process_cmd(comando);
-					//also send because you there can be clones....
-					xQueueSend( downQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+
+			//also send because you there can be clones....
+			xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
+
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<TRAFFICD))
+				printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+#endif
+
+			if(comando.towho==sysConfig.stationid ) //its for us, you are also a standard light
+				process_cmd(comando);
 //			}
 		}
 	}
@@ -2295,11 +2037,10 @@ void repeater(void *pArg)
 
 void initWiFi()
 {
-	wifi_init_config_t 				cfg=WIFI_INIT_CONFIG_DEFAULT();
-	wifi_config_t 					configap;
-	u8 mac[6];
-	char textl[20];
-	printf("Start AP+STA\n");
+	wifi_init_config_t 	cfg=WIFI_INIT_CONFIG_DEFAULT();
+	wifi_config_t 		configap;
+	u8 					mac[6];
+	char 				textl[20];
 
 	tcpip_adapter_init();
 	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
@@ -2332,7 +2073,7 @@ void initWiFi()
 	configap.ap.ssid_hidden=false;
 	configap.ap.max_connection=14;
 	configap.ap.beacon_interval=100;
-	ESP_LOGI(TAG,"AP %s",sysConfig.ssid[0]);
+//	ESP_LOGI(TAG,"AP %s",sysConfig.ssid[0]);
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
 
 	ESP_ERROR_CHECK(esp_wifi_start());
@@ -2348,7 +2089,7 @@ void initWiFiSta()
 	cfg.event_handler = &esp_event_send;
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	esp_wifi_set_ps(WIFI_PS_NONE);
+	esp_wifi_set_ps(WIFI_PS_NONE);//multicast problem fix
 
 	if (string(sysConfig.ssid[0])!="")
 	{
@@ -2360,18 +2101,16 @@ void initWiFiSta()
 		ESP_ERROR_CHECK(esp_wifi_start());
 	}
 	else
-		printf("Station has no Controller configured\n");
-
+		printf("Station has no Controller/Repeater configured\n");
 
 	// WiFi led
-	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
+//	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
 }
 
 
 void initScreen()
 {
-
 	if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 	{
 		display.init();
@@ -2382,27 +2121,26 @@ void initScreen()
 		drawString(64,40,string(sysConfig.ssid[curSSID]),10,TEXT_ALIGN_CENTER,DISPLAYIT,NOREP);
 		xSemaphoreGive(I2CSem);
 	}
-
 }
 
 
 void initVars()
 {
-	char textl[30];
+	char textl[40];
 
 	//We do it this way so we can have a single global.h file with EXTERN variables(when not main app)
 	// and be able to compile routines in an independent file
 
-
 	cola = xQueueCreate( 10, sizeof( u16 ) ); //DONE queue
-	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //DONE queue
-	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //DONE queue
+	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Upstream queue
+	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
 
 	sonUid=0;
 
 	//blinking stuff
 	interval=100;
 	howmuch=1000;
+
 	FACTOR=sysConfig.reserved;
 	if(FACTOR==0)
 		FACTOR=1000;
@@ -2421,8 +2159,9 @@ void initVars()
 	kalive=true;
 	globalWalk=false;
 	numLogins=0;
-
 	semaphoresOff=false;
+
+	//clear activity stats
 	for (int a=0;a<20;a++){
 		activeNodes.lastTime[a]=0;
 		activeNodes.nodesReported[a]=-1;
@@ -2430,7 +2169,7 @@ void initVars()
 	activeNodes.reported=0;
 
 	uint16_t a=esp_random();
-	sprintf(textl,"Traffic%04d",a);
+	sprintf(textl,"Trf%04x",a);
 	idd=string(textl);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<BOOTD))
@@ -2442,18 +2181,20 @@ void initVars()
 	{
 		settings.host=sysConfig.mqtt;
 		settings.port = sysConfig.mqttport;
-		settings.client_id="RSNClient";
+		textl[strlen(textl)]=0;
+		memcpy((void*)&miclient,textl,strlen(textl)); //need to be Const Char. Thats what this stuff is about
+		settings.client_id=miclient;
+		printf("Client %s\n",settings.client_id);
 		settings.username=sysConfig.mqttUser;
 		settings.password=sysConfig.mqttPass;
 		settings.event_handle = mqtt_event_handler;
 		settings.user_context =sysConfig.mqtt; //name of server
 		settings.transport=0?MQTT_TRANSPORT_OVER_SSL:MQTT_TRANSPORT_OVER_TCP;
 		settings.buffer_size=2048;
-		settings.disable_clean_session=true;
-//	printf("Client %s username %s password %s host %s port %d\n",settings.client_id,settings.username,settings.password,settings.host,settings.port);
+		settings.disable_clean_session=false;
 	}
-	strcpy(APP,"TrafficIoT");
 
+	strcpy(APP,"TrafficIoT");
 	strcpy(lookuptable[0].key,"BOOTD");
 	strcpy(lookuptable[1].key,"WIFID");
 	strcpy(lookuptable[2].key,"MQTTD");
@@ -2471,13 +2212,11 @@ void initVars()
 	{
 		strcpy(lookuptable[i].key,"-");
 		strcat(lookuptable[i].key,lookuptable[i-NKEYS/2].key);
-//		printf("Look %d=%s\n",i,lookuptable[i].key);
 		lookuptable[i].val=i*-1;
 		lookuptable[i-NKEYS/2].val=i-NKEYS/2;
 	}
 
-//	enum {ACK,NAK,DONE,PING,PONG,QUIET,RESET,NEWID,RUN,OFF,ON,RUALIVE,IMALIVE,KILL,BLINK,LEDS,FWARE,WALK,EXECW,SENDCLONE,CLONE,LOGIN,ALARM};
-
+	// Commands available
 	strcpy(tcmds[0],"ACK");
 	strcpy(tcmds[1],"NAK");
 	strcpy(tcmds[2],"DONE");
@@ -2502,6 +2241,7 @@ void initVars()
 	strcpy(tcmds[21],"LOGIN");
 	strcpy(tcmds[22],"ALARM");
 
+	//kbd Comands text
 	strcpy(kbdTable[0],"Blink");
 	strcpy(kbdTable[1],"Factor");
 	strcpy(kbdTable[2],"Ports");
@@ -2541,7 +2281,7 @@ void initVars()
 	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/MSG";
 	cmdTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/CMD";
 
-	strcpy(MQTTSERVER,"m13.cloudmqtt.com");
+	strcpy(MQTTSERVER,"m15.cloudmqtt.com");
 
 	strcpy(meses[0],"Ene");
 	strcpy(meses[1],"Feb");
@@ -2716,7 +2456,7 @@ int read_flash()
 		int que=memcmp(&sysConfig.md5,&lkey,16);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("MD5 sysconfig %s\n",que?"No":"Ok");
+		printf("%s MD5 sysconfig\n",que?"Invalid":"Valid");
 #endif
 		return que;
 
@@ -2741,7 +2481,7 @@ int read_flash_seq()
 		int que=memcmp(&sysSequence.md5,&lkey,16);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("MD5 Sequence %s\n",que?"No":"Ok");
+		printf("%s MD5 Sequence\n",que?"Invalid":"Valid");
 #endif
 		return que;
 }
@@ -2765,7 +2505,7 @@ int read_flash_cycles()
 		int que=memcmp(&allCycles.md5,&lkey,16);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("MD5 Cycles %s\n",que?"No":"Ok");
+		printf("%s MD5 Cycles\n",que?"Invalid":"Valid");
 #endif
 		return que;
 
@@ -2791,7 +2531,7 @@ int read_flash_lights()
 		int que=memcmp(&sysLights.md5,&lkey,16);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("MD5 Lights %s\n",que?"No":"Ok");
+		printf("%s MD5 Lights\n",que?"Invalid":"Valid");
 #endif
 		return que;
 }
@@ -2817,16 +2557,6 @@ void init_temp()
 		}
 	}
 #endif
-}
-
-void reinitScreen()
-{
-	displayf=false;
-	display.end();
-	display.init();
-	display.flipScreenVertically();
-	display.clear();
-	displayf=true;
 }
 
 bool loadScheduler()
@@ -2883,15 +2613,9 @@ void makeNodeTime(string cual, node_struct* losnodos)
 
 void doneCallback( TimerHandle_t xTimer )
 {
-	u16 soyYo=100;
+	u16 soyYo=100; //timeout signal
 	if(xTimer==doneTimer)
-	{
-		 //  vTimerSetTimerID( xTimer, ( void * ) 1 ); //time out
-		//  xSemaphoreGive(ackSem);//force a done to the waiting task
-		  xQueueSend( cola, &soyYo,( TickType_t ) 0 ); //use a high number to signal Timeout
-
-		//  printf("Timeout\n");
-	}
+		xQueueSend( cola, &soyYo,( TickType_t ) 0 ); //use a high number to signal Timeout
 }
 
 void cycleManager(void * pArg)
@@ -3033,7 +2757,7 @@ int este;
 		{
 			if(semaphoresOff)
 			{
-			//	sendMsg(ON,EVERYBODY,0,0,NULL,0);
+				sendMsg(ON,EVERYBODY,0,0,NULL,0);
 				semaphoresOff=false;
 			}
 
@@ -3072,8 +2796,9 @@ struct tm timeinfo ;
 	if(!loadScheduler())
 	{
 		printf("Scheduler not enabled.\n");
-		while(true)
-			delay(10000);
+		vTaskDelete(NULL);
+	//	while(true)
+	//		delay(10000);
 	}
 //	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
 	now=time(NULL)-5*3600;
@@ -3130,11 +2855,13 @@ struct tm timeinfo ;
 		printf("[TRAFFICD]First Timer %d Factor %d\n",scheduler.duration[scheduler.voy]*FACTOR,FACTOR);
 #endif
 	scheduleTimer=xTimerCreate("Schedule",(scheduler.duration[scheduler.voy]*FACTOR) /portTICK_PERIOD_MS,pdFALSE,( void * ) 0,&timerCallback);
-		if(scheduleTimer==NULL)
-			printf("Failed to create timer\n");
-		else
-			xTimerStart(scheduleTimer,0);
-		vTaskDelete(NULL);
+
+	if(scheduleTimer==NULL)
+		printf("Failed to create timer\n");
+	else
+		xTimerStart(scheduleTimer,0);
+
+	vTaskDelete(NULL);//done
 }
 
 void heartBeat(void *pArg)
@@ -3175,7 +2902,7 @@ int recover(string cual, void * donde, int len, int diff)
 
 	if (q !=ESP_OK)
 	{
-		printf("Error read %d\n",q);
+		printf("Error read recover %d\n",q);
 		return -1;
 	}
 
@@ -3212,7 +2939,7 @@ void load_config()
 		{
 			int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
 			err=recover("config",(void*)&sysConfig,sizeof(sysConfig),diff);
-			printf("Recovery %d\n",err);
+			printf("Recovering Configuration %d\n",err);
 			if(err==0)
 				write_to_flash(false);
 		}
@@ -3235,7 +2962,7 @@ void load_others()
 		{
 			int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
 			err=recover("seq",(void*)&sysSequence,sizeof(sysSequence),diff);
-			printf("Recovery Sequence %d\n",err);
+			printf("Recovering Sequence %d\n",err);
 			if(err==0)
 				write_to_flash_seq(false);
 		}
@@ -3244,7 +2971,7 @@ void load_others()
 		{
 			int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
 			err=recover("seq",(void*)&allCycles,sizeof(allCycles),diff);
-			printf("Recovery Cycles %d\n",err);
+			printf("Recovering Cycles %d\n",err);
 			if(err==0)
 				write_to_flash_cycles(false);
 		}
@@ -3266,12 +2993,14 @@ void load_lights()
 		{
 			int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
 			err=recover("lights",(void*)&sysLights,sizeof(sysLights),diff);
-			printf("Recovery %d\n",err);
+			printf("Recovering Lights %d\n",err);
 			if(err==0)
 				write_to_flash_lights(false);
 		}
 	}
 }
+
+
 //main
 void app_main(void)
 {
@@ -3298,8 +3027,6 @@ void app_main(void)
 	delay(3000);
 	reboot= rtc_get_reset_reason(1); //Reset cause for CPU 1
 
-	traceflag=(debugflags)sysConfig.traceflag;
-
 	load_lights();
 
 	if(sysConfig.mode==SERVER)  //Scheduler only in Controller Mode
@@ -3320,6 +3047,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	printf("VersionEsp32-1.0.1\n");
 
 	curSSID=sysConfig.lastSSID;
+
 	initVars(); 			// used like this instead of var init to be able to have independent file per routine(s)
 
 	if(sysConfig.mode==SERVER)
@@ -3329,7 +3057,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 		init_temp();		// Temperature sensors
 		initRtc();			//RTC CLock
 	}
-//shit
+
 	init_log();				// Log file management
 	initPorts();			//Output and Input ports
 
@@ -3342,8 +3070,8 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	//Save new boot count and reset code
 	sysConfig.bootcount++;
 	sysConfig.lastResetCode=reboot;
-//	sysLights.failed=0;
-//	write_to_flash_lights();
+	sysLights.failed=0;
+	write_to_flash_lights(false);
 	write_to_flash(true);
 
 	rxtxf=false; //default stop
@@ -3363,7 +3091,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	    initWiFi();
 
 	if(sysConfig.mode==SERVER){
-		xTaskCreate(&controller,"vm",10240,NULL, 5, NULL);									// If we are a Controller
+		xTaskCreate(&controller,"controller",10240,NULL, 5, NULL);									// If we are a Controller
 		xTaskCreate(&heartBeat, "heartB", 4096, NULL, 4, NULL);
 	}
 }

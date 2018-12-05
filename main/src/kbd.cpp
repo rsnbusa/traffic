@@ -51,10 +51,10 @@ int cmdfromstring(string key)
 }
 
 
-string get_string(uart_port_t uart_num,u8 cual)
+string get_string(uart_port_t uart_num,u8 cual,bool strip)
 {
 	uint8_t ch;
-	char dijo[100];
+	char dijo[50],noblanks[50];
 	int son=0,len;
 	memset(&dijo,0,sizeof(dijo));
 	while(1)
@@ -64,7 +64,15 @@ string get_string(uart_port_t uart_num,u8 cual)
 		{
 		//	printf("%d ",ch);
 			if(ch==cual)
-				return string(dijo);
+			{
+				if(strip)
+				{
+				sscanf(dijo, "%s", noblanks); // Trimming on both sides occurs here
+				return string(noblanks);
+				}
+				else
+					return(string(dijo));
+			}
 
 			else
 				dijo[son++]=ch;
@@ -308,7 +316,7 @@ void kbd_ports(uart_port_t uart_num)
 	printf("Ports Definitions(out-in-name,...)\n");
 	printf("Ports(Out:%s In:%s)[%s]:",outb.c_str(),inb.c_str(),s1.c_str());
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10); //format is port#-name,port#-name,etc
+	s1=get_string((uart_port_t)uart_num,10,false); //format is port#-name,port#-name,etc
 	if (s1!=""){
 		sysLights.numLuces=0;
 		for(int a=0;a<6;a++){
@@ -348,19 +356,19 @@ void kbd_factor(uart_port_t uart_num)
 	string s1;
 	printf("Factorschedule(%d):",FACTOR);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		FACTOR=atoi(s1.c_str());
 	sysConfig.reserved=FACTOR;
 	printf("FactorLight(%d):",FACTOR2);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		FACTOR2=atoi(s1.c_str());
 	sysConfig.reserved2=FACTOR2;
 	printf("Show Leds(%s):",sysConfig.showLeds?"Y":"N");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="Y")
 	{
@@ -387,19 +395,19 @@ void kbd_light_sequence(uart_port_t uart_num)
 
 	printf("Default Light(%d)(%s):",sysLights.defaultLight,algo.c_str());
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sysLights.defaultLight=atoi(s1.c_str());
 
 	printf("Blink Light(%d)(%s):",sysLights.blinkLight,algo.c_str());
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sysLights.blinkLight=atoi(s1.c_str());
 
 	printf("Component#:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 	{
 		if(atoi(s1.c_str())<sysLights.numLuces)
@@ -407,7 +415,7 @@ void kbd_light_sequence(uart_port_t uart_num)
 			pos=atoi(s1.c_str());
 			printf("IOPorts(%s/%s)(%s):",byte_to_binarytxt(sysLights.lasLuces[pos].ioports,true).c_str(),byte_to_binarytxt(sysLights.lasLuces[pos].inports,false).c_str(),algo.c_str());
 			fflush(stdout);
-			s1=get_string((uart_port_t)uart_num,10);
+			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!=""){
 				add=strbitsConfirm(s1);
 				if(add>0)
@@ -423,17 +431,17 @@ void kbd_light_sequence(uart_port_t uart_num)
 			}
 			printf("Options(%d):",sysLights.lasLuces[pos].opt);
 			fflush(stdout);
-			s1=get_string((uart_port_t)uart_num,10);
+			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!="")
 				sysLights.lasLuces[pos].opt=atoi(s1.c_str());
 			printf("Type(%s)[0=FIX,1=%%]:",sysLights.lasLuces[pos].typ?"%":"F");
 			fflush(stdout);
-			s1=get_string((uart_port_t)uart_num,10);
+			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!="")
 				sysLights.lasLuces[pos].typ=atoi(s1.c_str());
 			printf("Value(%d):",sysLights.lasLuces[pos].valor);
 			fflush(stdout);
-			s1=get_string((uart_port_t)uart_num,10);
+			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!="")
 				sysLights.lasLuces[pos].valor=atol(s1.c_str());
 		}
@@ -449,14 +457,14 @@ void kbd_cycle(uart_port_t uart_num)
 
 	printf("Total TLights(%d):",sysConfig.totalLights);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if(s1!=""){
 		sysConfig.totalLights=atoi(s1.c_str());
 		write_to_flash(true);
 	}
 	printf("Cycle#:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if(s1!="")
 	{
 		pos=atoi(s1.c_str());
@@ -470,7 +478,7 @@ void kbd_cycle(uart_port_t uart_num)
 
 		printf("Cycle(Node-Time)(%d):%s->",allCycles.totalTime[pos],allCycles.nodeSeq[pos]);
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,false);
 		if(s1!="")
 		{
 			allCycles.totalTime[pos]=getNodeTime(s1);
@@ -496,7 +504,7 @@ void kbd_schedule(uart_port_t uart_num)
 
 			printf("Schedule Seq#:");
 			fflush(stdout);
-			s1=get_string((uart_port_t)uart_num,10);
+			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!="")
 			{
 				pos=atoi(s1.c_str());
@@ -504,13 +512,13 @@ void kbd_schedule(uart_port_t uart_num)
 				{
 					printf("Cycle[max %d]:",allCycles.numcycles);
 					fflush(stdout);
-					s1=get_string((uart_port_t)uart_num,10);
+					s1=get_string((uart_port_t)uart_num,10,true);
 					if(s1!="")
 						nodeseq=atoi(s1.c_str());
 
 					printf("WeekDay#(%d):",sysSequence.sequences[pos].weekDay);
 					fflush(stdout);
-					s1=get_string((uart_port_t)uart_num,10);
+					s1=get_string((uart_port_t)uart_num,10,true);
 					if(s1!="")
 						weekd=atoi(s1.c_str());
 					else
@@ -521,7 +529,7 @@ void kbd_schedule(uart_port_t uart_num)
 
 					printf("Start Time(HH:MM:SS)(%s):",textl);
 					fflush(stdout);
-					s1=get_string((uart_port_t)uart_num,10);
+					s1=get_string((uart_port_t)uart_num,10,true);
 					if(s1!="")
 					{
 						memset(&tm, 0, sizeof(struct tm));
@@ -542,7 +550,7 @@ void kbd_schedule(uart_port_t uart_num)
 					strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 					printf("Stop Time(HH:MM:SS)(%s):",textl);
 					fflush(stdout);
-					s1=get_string((uart_port_t)uart_num,10);
+					s1=get_string((uart_port_t)uart_num,10,true);
 					if(s1!="")
 					{
 						algo="2000-1-1 "+s1;
@@ -595,27 +603,27 @@ void kbd_id(uart_port_t uart_num)
 	string s1;
 	printf("Street Id(%d)",sysConfig.whoami);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sysConfig.whoami=atoi(s1.c_str());
 	printf("Node Id(%d):",sysConfig.nodeid);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sysConfig.nodeid=atoi(s1.c_str());
 	printf("Station Id(%d):",sysConfig.stationid);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sysConfig.stationid=atoi(s1.c_str());
 	printf("Station Name(%s):",sysConfig.stationName);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		strcpy(sysConfig.stationName,s1.c_str());
 	printf("Clone Id(%s):",sysConfig.clone?"Y":"N");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if(s1!="")
 	{
 		for (auto & c: s1) c = toupper(c);
@@ -636,7 +644,7 @@ void kbd_firmware(uart_port_t uart_num)
 
 	printf("Launch Firmware update:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="Y")
 	{
@@ -657,7 +665,7 @@ void kbd_clearlog(uart_port_t uart_num)
 
 	printf("Clear Log File?");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="Y")
 	{
@@ -701,13 +709,13 @@ void kbd_quiet(uart_port_t uart_num)
 	string s1;
 	printf("Quiet To Whom:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1=="")
 		return;
 	int whom=atoi(s1.c_str());
 	printf("Quiet(%d):",quiet);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 	{
 		quiet=atoi(s1.c_str());
@@ -734,17 +742,10 @@ void kbd_trace(uart_port_t uart_num)
 	printf("\nEnter TRACE FLAG:");
 	fflush(stdout);
 
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if(s1=="")
 		return;
 	for (auto & c: s1) c = toupper(c);
-
-//				memset(textl,0,10);
-//				memcpy(textl,s1.c_str(),s1.length());
-//				for (int a=0;a<s1.length();a++)
-//					textl[a]=toupper(textl[a]);
-//				printf("Debug %s\n",textl);
-//				s1=string(textl);
 
 	if(strcmp(s1.c_str(),"NONE")==0)
 	{
@@ -792,7 +793,7 @@ void kbd_accessPoint(uart_port_t uart_num)
 	{
 		printf("Which AP:");
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,true);
 	}
 	else
 		s1="0"; //for Clients
@@ -801,7 +802,7 @@ void kbd_accessPoint(uart_port_t uart_num)
 		len=atoi(s1.c_str());
 		printf("SSID(%s):",sysConfig.ssid[len]);
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,true);
 		if(s1!="")
 		{
 			memset((void*)&sysConfig.ssid[len][0],0,sizeof(sysConfig.ssid[len]));
@@ -809,7 +810,7 @@ void kbd_accessPoint(uart_port_t uart_num)
 		}
 		printf("Password(%s):",sysConfig.pass[len]);
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,true);
 		if(s1!="")
 		{
 			memset((void*)&sysConfig.pass[len][0],0,sizeof(sysConfig.pass[len]));
@@ -832,7 +833,7 @@ void kbd_mode(uart_port_t uart_num)
 		s1="R";
 	printf("Mode Server=S Client=C Repeater=R(%s)",s1.c_str());
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="S"||s1=="R")
 	{
@@ -842,12 +843,12 @@ void kbd_mode(uart_port_t uart_num)
 			sysConfig.mode=REPEATER;
 		printf("Light Name(%s)",sysConfig.lightName);
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,true);
 		if (s1!="")
 			strcpy(sysConfig.lightName,s1.c_str());
 		printf("Group Name(%s)",sysConfig.groupName);
 		fflush(stdout);
-		s1=get_string((uart_port_t)uart_num,10);
+		s1=get_string((uart_port_t)uart_num,10,true);
 		if (s1!="")
 			strcpy(sysConfig.groupName,s1.c_str());
 		if(string(sysConfig.groupName)=="")
@@ -866,11 +867,11 @@ void kbd_newid(uart_port_t uart_num)
 	string s1,s2;
 	printf("New Id for Who:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!=""){
 		printf("Id(can duplicate):");
 		fflush(stdout);
-		s2=get_string((uart_port_t)uart_num,10);
+		s2=get_string((uart_port_t)uart_num,10,true);
 		if (s2!=""){
 			if(atoi(s1.c_str())==255)
 			{
@@ -888,13 +889,13 @@ void kbd_street(uart_port_t uart_num)
 	string s1;
 	printf("Which Street:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1=="")
 		return;
 	int len=atoi(s1.c_str());
 	printf("Name(%s):",sysConfig.calles[len]);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if(s1=="")
 		return;
 	strcpy(sysConfig.calles[len],s1.c_str());
@@ -907,7 +908,7 @@ void kbd_kalive(uart_port_t uart_num)
 
 	printf("%s Heartbeat:",kalive?"Stop":"Resume");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if(s1=="Y")
 		kalive=!kalive;
@@ -919,7 +920,7 @@ void kbd_alive(uart_port_t uart_num)
 	string s1;
 	printf("Alive Time(%d):",sysConfig.keepAlive);
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!=""){
 		sysConfig.keepAlive=atol(s1.c_str());
 		write_to_flash(true);
@@ -938,7 +939,7 @@ void kbd_reset(uart_port_t uart_num)
 	string s1;
 	printf("Reset Unit:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sendMsg(RESET,atoi(s1.c_str()),0,0,NULL,0);
 }
@@ -948,7 +949,7 @@ void kbd_ping(uart_port_t uart_num)
 	string s1;
 	printf("Ping Who:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		sendMsg(PING,atoi(s1.c_str()),0,0,NULL,0);
 }
@@ -959,7 +960,7 @@ void kbd_bulbTest(uart_port_t uart_num)
 	int cual=0;
 	printf("Bulb Seq to Test:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!=""){
 		cual=atoi(s1.c_str());
 		for (int a=0;a<5;a++){
@@ -980,7 +981,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Set date. Year:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid year\n");
 		return;
@@ -989,7 +990,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Month:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid month\n");
 		return;
@@ -998,7 +999,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Day:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid day\n");
 		return;
@@ -1007,7 +1008,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Hour:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid hour\n");
 		return;
@@ -1016,7 +1017,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Minutes:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid minutes\n");
 		return;
@@ -1025,7 +1026,7 @@ void kbd_date(uart_port_t uart_num)
 
 	printf("Seconds:");
 	fflush(stdout);
-	s1=get_string((uart_port_t)uart_num,10);
+	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1==""){
 		printf("Invalid seconds\n");
 		return;
@@ -1082,7 +1083,7 @@ void kbd(void *arg) {
 
 	while(1)
 	{
-		cmds=get_string((uart_port_t)uart_num,10);
+		cmds=get_string((uart_port_t)uart_num,10,true);
 		for (auto & c: cmds) c = toupper(c);
 		if(cmds!="")
 			lastcmd=cmdfromstring(cmds);
@@ -1097,7 +1098,7 @@ void kbd(void *arg) {
 //				kbd_blink(uart_num);
 				ledStatus=REG_READ(GPIO_IN_REG );//read bits
 				printf("ON Read GPIO %x\n",ledStatus);
-				get_string((uart_port_t)uart_num,10);
+				get_string((uart_port_t)uart_num,10,true);
 				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 				ledStatus=REG_READ(GPIO_IN_REG );//read bits
 				printf("OFF Read GPIO %x\n",ledStatus);
@@ -1183,7 +1184,7 @@ void kbd(void *arg) {
 			case STATUSc://14
 				printf("How(0:Full,1:Config,2:Statistics,3:Network,4:LightSuff,5:General):");
 				fflush(stdout),
-				s1=get_string((uart_port_t)uart_num,10);
+				s1=get_string((uart_port_t)uart_num,10,true);
 				show_config(atoi(s1.c_str()));
 				break;
 

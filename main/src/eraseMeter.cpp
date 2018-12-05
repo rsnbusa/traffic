@@ -17,9 +17,9 @@ void erase_config() //do the dirty work
 	sysConfig.DISPTIME=DISPMNGR;
 	sysConfig.mqtt[sizeof(MQTTSERVER)]=0;
 	sysConfig.mqttport=MQTTPORT;
-	strcpy(sysConfig.mqtt,"m13.cloudmqtt.com");
-	strcpy(sysConfig.mqttUser,"wckwlvot");
-	strcpy(sysConfig.mqttPass,"MxoMTQjeEIHE");
+	strcpy(sysConfig.mqtt,"m15.cloudmqtt.com");
+	strcpy(sysConfig.mqttUser,"yyfmmvmh");
+	strcpy(sysConfig.mqttPass,"tREY8m3selD9");
 	printf("Mqtt Erase %s:%d\n",sysConfig.mqtt,sysConfig.mqttport);
 	memcpy(sysConfig.domain,"feediot.co.nf",13);// mosquito server feediot.co.nf
 	sysConfig.domain[13]=0;

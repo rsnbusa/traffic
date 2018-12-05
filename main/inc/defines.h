@@ -31,7 +31,7 @@
 #define FW_SERVER_PORT 						"80"
 #define FW_FILENAME 						"http://feediot.co.nf/TrafficIoT.bin"
 
-#define MQTTPORT                   			18747
+#define MQTTPORT                   			18247
 
 // pins
 #define SDAW                				GPIO_NUM_18      // SDA
