@@ -50,7 +50,7 @@
 #define ERRORAUTH           				3
 #define MINFO								6
 
-#define MAXCMDS             				17
+#define MAXCMDS             				1
 #define MAXDEVS             				3
 #define u8									uint8_t
 #define u16									uint16_t

@@ -6,7 +6,8 @@
  */
 
 #include "setCommon.h"
-extern string getParameter(arg* argument,string cual);
+//extern string getParameter(arg* argument,string cual);
+extern int getParameter(arg* argument, string cual,char * donde);
 
 void  set_latest_time(string datestr, string timestr, string utcStr){
 	//set local internal Time and set RTC to received value. Its a total trust thing
@@ -36,13 +37,14 @@ void addUid(string cual)
 
 bool set_commonCmd(arg* pArg,bool check)  //not really uselfull but was to use a single routine to check common parameters.
 {
+	char donde[30];
 //	string s1,datestr,timestr,utcStr,nameStr;
 	// process common arguments expected: date , time, uid and name
 //	datestr=getParameter(pArg,"date");
 //	timestr=getParameter(pArg,"time");
 //	utcStr=getParameter(pArg,"UTC");  //must be a global variable
-	uidStr=getParameter(pArg,"uid");
-	addUid(uidStr);
+	if(getParameter(pArg,"uid",donde)==ESP_OK)
+		addUid(string(donde));
 //	nameStr=getParameter(pArg,"bff");
 	return true;
 

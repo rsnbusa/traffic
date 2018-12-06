@@ -63,6 +63,7 @@ extern "C"{
 #include "esp_log.h"
 #include "errno.h"
 #include "mbedtls/md.h"
+#include <esp_http_server.h>
 void app_main();
 }
 #endif

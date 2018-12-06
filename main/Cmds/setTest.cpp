@@ -10,7 +10,8 @@ using namespace std;
 #include "setErase.h"
 
 extern bool set_commonCmd(arg* pArg,bool check);
-extern string getParameter(arg* argument,string cual);
+//extern string getParameter(arg* argument,string cual);
+extern int getParameter(arg* argument, string cual,char * donde);
 extern void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 extern void erase_config();
 extern void postLog(int code,int code1);
@@ -21,11 +22,13 @@ void set_test(void * pArg){
 	string algo;
 	char textl[50];
 
-	printf("Test\n");
 	if(!set_commonCmd(argument,false))
 		return;
 
-	algo=getParameter(argument,"password");
+	memset(textl,0,sizeof(textl));
+
+	if(getParameter(argument,"password",textl)==ESP_OK)
+		algo=string(textl);
 	if(algo!="zipo")
 	{
 		algo="Not authorized";
@@ -42,7 +45,6 @@ void set_test(void * pArg){
 #endif
 	exit:
 	algo="";
-
 }
 
 

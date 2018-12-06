@@ -36,6 +36,7 @@ enum {BLINKc,FACTORc,PORTSc,LIGHTSc,CYCLEc,SCHEDULEc,CONNECTEDc,IDc,FIRMWAREc,LO
 typedef enum {NOREP,REPLACE} overType;
 typedef enum {NODISPLAY,DISPLAYIT} displayType;
 typedef enum {SYSBOOT,DLOGCLEAR,FWUPDATE,GERROR,OPENCLOSE,LOGM,DRESET,APSET,LINTERNAL,DCONTROL,DBORN,OPENABORT,DSTUCK,SLEEPMODE,ACTIVEMODE,BREAKMODE,GUARDISCO} nnada;
+
 #define u16		uint16_t
 #define u8		uint8_t
 #define u32		uint32_t
@@ -166,6 +167,7 @@ enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIV
 typedef struct { char key[10]; int val; } t_symstruct;
 
 typedef void (*functrsn)(void *);
+typedef esp_err_t (*url_cb)(httpd_req_t *req);
 
 typedef struct{
     char comando[20];

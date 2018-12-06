@@ -68,7 +68,9 @@ using namespace std;
  EXTERN cmdRecord 						cmds[MAXCMDS];
  EXTERN login_struct					logins[20];
  EXTERN mbedtls_md_context_t 			md5;
-
+ EXTERN httpd_handle_t 					server;
+ EXTERN httpd_uri_t 					loscmds[30];
+ EXTERN functrsn						theCode[MAXCMDS];
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,globalWalk,backupf;
@@ -79,6 +81,6 @@ using namespace std;
  EXTERN int								RSSI,gCycleTime,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
  EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[20],upstream,downstream;
  EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10];
- EXTERN const char						miclient[40];
+ EXTERN const char						miclient[40],cmdName[MAXCMDS][20];
 
 #endif /* MAIN_GLOBALS_H_ */
