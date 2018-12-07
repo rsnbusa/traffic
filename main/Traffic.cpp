@@ -130,7 +130,7 @@ int write_blob(nvs_handle theHandle, string theName, void *desde,int len,bool re
 		printf("Commit Error %s %d\n",theName.c_str(),q);
 		return ESP_FAIL;
 	}
-	 if (rec)
+	if (rec)
 	 {
 		q=nvs_set_blob(backhandle,theName.c_str(),desde,len);
 		if(q!=ESP_OK)
@@ -2164,7 +2164,18 @@ void initVars()
 
 	strcpy(cmdName[0],"/tf_test");
 	theCode[0]=set_test;
-
+	strcpy(cmdName[1],"/tf_onoff");
+	theCode[1]=set_OnOff;
+	strcpy(cmdName[2],"/tf_blink");
+	theCode[2]=set_blink;
+	strcpy(cmdName[3],"/tf_reset");
+	theCode[3]=set_reset;
+	strcpy(cmdName[4],"/tf_run");
+	theCode[4]=set_run;
+	strcpy(cmdName[5],"/tf_leds");
+	theCode[5]=set_leds;
+	strcpy(cmdName[6],"/tf_walk");
+	theCode[6]=set_walk;
 	//Load the Http uri structure and our cmds structures with commands
 	for (int a=0;a<MAXCMDS;a++)
 	{
