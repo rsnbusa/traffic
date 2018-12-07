@@ -14,7 +14,7 @@ extern void write_to_flash_lights(bool andRecovery);
 extern void write_to_flash_cycles(bool andRecovery);
 extern string makeDateString(time_t t);
 extern void cycleManager(void *pArg);
-extern void delay(uint16_t cuanto);
+extern void delay(uint32_t cuanto);
 
 string byte_to_binarytxt(uint32_t x,bool outp);
 

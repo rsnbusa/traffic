@@ -9,7 +9,7 @@
 using namespace std;
 
 extern void postLog(int code,int code1);
-extern void delay(uint16_t a);
+extern void delay(uint32_t a);
 
 void startDownload(void *pArg);
 void initWiFiFw(void*pArg);

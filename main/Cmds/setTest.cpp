@@ -1,19 +1,9 @@
-
-/*
- * set_statusSend.cpp
-
- *
- *  Created on: Apr 16, 2017
- *      Author: RSN
- */
 using namespace std;
 #include "setErase.h"
 
 extern bool set_commonCmd(arg* pArg,bool check);
-//extern string getParameter(arg* argument,string cual);
 extern int getParameter(arg* argument, string cual,char * donde);
 extern void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
-extern void erase_config();
 extern void postLog(int code,int code1);
 extern uint32_t IRAM_ATTR millis();
 

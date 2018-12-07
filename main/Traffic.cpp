@@ -9,13 +9,13 @@
 #include "cmds.h"
 #include "freertos/timers.h"
 #include "driver/adc.h"
-//#include <port/arpa/inet.h>
 
 const char *TAG = "TFF";
 extern void postLog(int code,int code1);
 extern void timerManager(void *pArg);
 extern void drawBars();
 
+//forward local declarations
 void processCmds(void * nc,cJSON * comands);
 void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 void runLight(void * pArg);
@@ -24,6 +24,16 @@ void repeater(void * pArg);
 void blinkLight(void *pArg);
 
 using namespace std;
+
+uint32_t IRAM_ATTR millis()
+{
+	return xTaskGetTickCount() * portTICK_PERIOD_MS;
+}
+
+void delay(u32 a)
+{
+	vTaskDelay(a /  portTICK_RATE_MS);
+}
 
 void makeMd5(void *que, int len, void * donde)
 {
@@ -35,21 +45,8 @@ void makeMd5(void *que, int len, void * donde)
 void blink(int cual)
 {
 	gpio_set_level((gpio_num_t)cual, 1);
-	vTaskDelay(interval / portTICK_PERIOD_MS);
+	delay(interval);
 	gpio_set_level((gpio_num_t)cual, 0);
-}
-
-uint32_t readADC()
-{
-	u32 adc_reading=0;
-
-    for (int i = 0; i < SAMPLES; i++)
-    	adc_reading += adc1_get_raw((adc1_channel_t)adcchannel);
-
-        adc_reading /= SAMPLES;
-        uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_reading, adc_chars);
-    //    printf("Reading %d volt %d\n",adc_reading,voltage);
-	return voltage;
 }
 
 void eraseMainScreen()
@@ -58,16 +55,6 @@ void eraseMainScreen()
 	display.fillRect(0,19,127,32);
 	display.setColor((OLEDDISPLAY_COLOR)1);
 	display.display();
-}
-
-uint32_t IRAM_ATTR millis()
-{
-	return xTaskGetTickCount() * portTICK_PERIOD_MS;
-}
-
-void delay(uint16_t a)
-{
-	vTaskDelay(a /  portTICK_RATE_MS);
 }
 
 int getGPIO(int cual)
@@ -86,6 +73,7 @@ int getGPIO(int cual)
 	return como;
 }
 
+//mqtt incoming handler. Create a mqttMsg queue entry
 void datacallback(esp_mqtt_client_handle_t self, esp_mqtt_event_handle_t event)
 {
 	mqttMsg mensa;
@@ -101,7 +89,8 @@ void mqttmanager(void * parg)
 {
 	mqttMsg mensa;
 
-	mqttQ = xQueueCreate( 20, sizeof( mensa ) );
+	mqttQ = xQueueCreate( 20, sizeof( mensa ) ); //Our queue
+
 	while(1)
 	{
 		if( xQueueReceive( mqttQ, &mensa, portMAX_DELAY ))
@@ -123,150 +112,63 @@ void mqttmanager(void * parg)
 	}
 }
 
-void write_to_flash_lights(bool rec) //save our configuration
+int write_blob(nvs_handle theHandle, string theName, void *desde,int len,bool rec,void *md5start)
 {
-	esp_err_t q ;
+	int diff=(u8*)md5start-(u8*)desde;
+	makeMd5(desde,diff,md5start);
 
-	//MD5 set
-	int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
-	makeMd5((void*)&sysLights,diff,(void*)&sysLights.md5);
-
-	q=nvs_set_blob(lighthandle,"lights",(void*)&sysLights,sizeof(sysLights));
-
+	int q=nvs_set_blob(theHandle,theName.c_str(),desde,len);
 	if (q !=ESP_OK)
 	{
-		printf("Error write Lights %d\n",q);
-		return;
+		printf("Error write %s %d\n",theName.c_str(),q);
+		return ESP_FAIL;
 	}
-	 q = nvs_commit(lighthandle);
-	 if (q !=ESP_OK)
-	 {
-	 	printf("Commit Error Lights %d\n",q);
-	 	return;
-	 }
 
+	q = nvs_commit(theHandle);
+	if (q !=ESP_OK)
+	{
+		printf("Commit Error %s %d\n",theName.c_str(),q);
+		return ESP_FAIL;
+	}
 	 if (rec)
 	 {
-		q=nvs_set_blob(backhandle,"lights",(void*)&sysLights,sizeof(sysLights));
+		q=nvs_set_blob(backhandle,theName.c_str(),desde,len);
 		if(q!=ESP_OK)
-			printf("Recovery write Error Lights\n");
+		{
+			printf("Recovery write Error %s Sequence\n",theName.c_str());
+			return ESP_FAIL;
+		}
 		else
 		{
 			q=nvs_commit(backhandle);
 			if(q!=ESP_OK)
-				printf("Recovery Lights Commit error %d\n",q);
+			{
+				printf("Recovery Sequence Commit %s error %d\n",theName.c_str(),q);
+				return ESP_FAIL;
+			}
 		}
 	 }
+	return ESP_OK;
+}
 
+void write_to_flash_lights(bool rec) //save our configuration
+{
+	write_blob(lighthandle,"lights",(void*)&sysLights,sizeof(sysLights),rec,(void*)&sysLights.md5);
 }
 
 void write_to_flash_seq(bool rec) //save our configuration
 {
-	esp_err_t q ;
-
-	//MD5 set
-	int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
-	makeMd5((void*)&sysSequence,diff,(void*)&sysSequence.md5);
-
-	q=nvs_set_blob(seqhandle,"seq",(void*)&sysSequence,sizeof(sysSequence));
-
-	if (q !=ESP_OK)
-	{
-		printf("Error write Seq %d\n",q);
-		return;
-	}
-	 q = nvs_commit(seqhandle);
-	 if (q !=ESP_OK)
-	 {
-	 	printf("Commit Error Seq %d\n",q);
-	 	return;
-	 }
-
-	 if (rec)
-	 {
-		q=nvs_set_blob(backhandle,"seq",(void*)&sysSequence,sizeof(sysSequence));
-		if(q!=ESP_OK)
-			printf("Recovery write Error Sequence\n");
-		else
-		{
-			q=nvs_commit(backhandle);
-			if(q!=ESP_OK)
-				printf("Recovery Sequence Commit error %d\n",q);
-		}
-
-	 }
+	write_blob(seqhandle,"seq",(void*)&sysSequence,sizeof(sysSequence),rec,(void*)&sysSequence.md5);
 }
 
 void write_to_flash_cycles(bool rec) //save our configuration
 {
-	esp_err_t q ;
-
-	//MD5 set
-	int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
-	makeMd5((void*)&allCycles,diff,(void*)&allCycles.md5);
-
-	q=nvs_set_blob(seqhandle,"cycles",(void*)&allCycles,sizeof(allCycles));
-
-	if (q !=ESP_OK)
-	{
-		printf("Error write Cycles %d\n",q);
-		return;
-	}
-	 q = nvs_commit(seqhandle);
-	 if (q !=ESP_OK)
-	 {
-	 	printf("Commit Error Cycles %d\n",q);
-	 	return;
-	 }
-
-	 if (rec)
-	 {
-		q=nvs_set_blob(backhandle,"cycles",(void*)&allCycles,sizeof(allCycles));
-		if(q!=ESP_OK)
-			printf("Recovery write Error Cycles\n");
-		else
-		{
-			q=nvs_commit(backhandle);
-			if(q!=ESP_OK)
-				printf("Recovery Cycles Commit error %d\n",q);
-		}
-
-	 }
+	write_blob(seqhandle,"cycles",(void*)&allCycles,sizeof(allCycles),rec,(void*)&allCycles.md5);
 }
 
 void write_to_flash(bool rec) //save our configuration
 {
-	esp_err_t q ;
-
-	int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
-	makeMd5((void*)&sysConfig,diff,(void*)&sysConfig.md5);
-
-	q=nvs_set_blob(nvshandle,"config",(void*)&sysConfig,sizeof(sysConfig));
-
-	if (q !=ESP_OK)
-	{
-		printf("Error write Config %d\n",q);
-		return;
-	}
-	 q = nvs_commit(nvshandle);
-	 if (q !=ESP_OK)
-	 {
-	 	printf("Commit Error Config %d\n",q);
-	 	return;
-	 }
-
-	 if (rec)
-	 {
-		q=nvs_set_blob(backhandle,"config",(void*)&sysConfig,sizeof(sysConfig));
-		if(q!=ESP_OK)
-			printf("Recovery write Error config\n");
-		else
-		{
-			q=nvs_commit(backhandle);
-			if(q!=ESP_OK)
-				printf("Recovery Config Commit error %d\n",q);
-		}
-	 }
+	write_blob(nvshandle,"config",(void*)&sysConfig,sizeof(sysConfig),rec,(void*)&sysConfig.md5);
 }
 
 void get_traffic_name()
@@ -275,10 +177,7 @@ void get_traffic_name()
 	string appn;
 	u8  mac[6];
 
-	if (sysConfig.ssid[0]==0)
-		esp_wifi_get_mac(WIFI_IF_AP, mac);
-	else
-		esp_wifi_get_mac(WIFI_IF_STA, mac);
+	esp_wifi_get_mac(WIFI_IF_STA, mac);
 
 	sprintf(local,"%02x%02x",mac[4],mac[5]);//last tow bytes of MAC to identify the connection
 	string macID=string(local);
@@ -299,13 +198,11 @@ void get_traffic_name()
 	}
 	macID="";
 	appn="";
-
 }
 
 int getParameter(arg* argument, string cual,char *donde)
 {
 	char paramr[50];
-	char *buf;
 
 	if (argument->typeMsg ==1) //Json get parameter cual
 	{
@@ -325,7 +222,7 @@ int getParameter(arg* argument, string cual,char *donde)
 		int buf_len = httpd_req_get_url_query_len(req) + 1;
 		if (buf_len > 1)
 		{
-			buf = (char*)malloc(buf_len);
+			char *buf = (char*)malloc(buf_len);
 			if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK)
 			{
 				if (httpd_query_key_value(buf, cual.c_str(), paramr, sizeof(paramr)) == ESP_OK)
@@ -354,28 +251,6 @@ int findCommand(string cual)
 			return a;
 	return ESP_FAIL;
 }
-
-
-//void webCmds(void * nc,struct http_message * params)
-//{
-//	char *uri=mgStrToStr(params->uri);
-//	int cualf=findCommand(uri);
-//	if(cualf>=0)
-//	{
-//		arg *argument=(arg*)malloc(sizeof(arg));
-//#ifdef DEBUGSYS
-//		if(sysConfig.traceflag & (1<<CMDD))
-//			printf("[CMDD]Webcmdrsn %d %s\n",cualf,uri);
-//#endif
-//		argument->pMessage=(void*)params;
-//		argument->typeMsg=0;
-//		argument->pComm=nc;
-//		(*cmds[cualf].code)(argument);
-//		free(argument);
-//		//xTaskCreate(cmds[cualf].code,"cmds",10000,(void*)argument, (configMAX_PRIORITIES - 1),NULL );
-//	}
-//	free(uri);
-//}
 
 void processCmds(void * nc,cJSON * comands)
 {
@@ -421,18 +296,16 @@ void sendAlert(string que, int len)
 					if(sysConfig.traceflag & (1<<PUBSUBD))
 						printf("[PUBSUBD]Alert Publish %s Msg %s\n",lpublishTopic.c_str(),que.c_str());
 	#endif
-					esp_mqtt_client_publish(gClient, (char*)lpublishTopic.c_str(), (char*)que.c_str(),que.length(), 0, 0);
+
+	esp_mqtt_client_publish(gClient, (char*)lpublishTopic.c_str(), (char*)que.c_str(),que.length(), 0, 0);
 }
-
-
-
 
 void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withUid, bool retain)
 {
 	if(!mqttf)
 		return;
 
-	struct mg_connection *nc=(struct mg_connection*)comm;
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<PUBSUBD))
 		printf("[PUBSUBD]Type %d Sending response %s len=%d\n",msgTipo,que.c_str(),que.length());
@@ -441,7 +314,6 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withU
 	{ // MQTT Response
 		esp_mqtt_client_handle_t mcomm=( esp_mqtt_client_handle_t)comm;
 		string final;
-//		sprintf(textl,"%02d!",code);
 		final=que;
 
 		if (!mqttf)
@@ -483,18 +355,7 @@ void sendResponse(void * comm,int msgTipo,string que,int len,int code,bool withU
 		if(sysConfig.traceflag & (1<<WEBD))
 			printf("[WEBD]Web response\n");
 #endif
-		if(len==0)
-		{
-			que=" ";
-			len=1;
-		}
-	//	char *resp_str="Respuesta";
-
-		httpd_resp_send(comm, que.c_str(), que.length());
-
-//		mg_send_head(nc, 200, len, withUid?"Content-Type: text/html":"Content-Type: text/plain");
-//		mg_printf(nc, "%s", que.c_str());
-//		nc->flags |= MG_F_SEND_AND_CLOSE;
+		httpd_resp_send((httpd_req*)comm, que.c_str(), que.length());
 	}
 }
 
@@ -538,25 +399,25 @@ void initPorts()
 
 void initialize_sntp(void *args)
 {
-	 struct timeval tvStart;
+	struct timeval tvStart;
+	time_t now = 0;
+	int retry = 0;
+	struct tm timeinfo;
+
 	sntp_setoperatingmode(SNTP_OPMODE_POLL);
 	sntp_setservername(0, (char*)"pool.ntp.org");
 	sntp_init();
-	time_t now = 0;
 
-
-	int retry = 0;
 	const int retry_count = 10;
 //	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
 //	tzset();
 
-	struct tm timeinfo;// = { 0 };
-		timeinfo.tm_hour=timeinfo.tm_min=timeinfo.tm_sec=0;
-		timeinfo.tm_mday=1;
-		timeinfo.tm_mon=0;
-		timeinfo.tm_year=100;
-		// set to 1/1/2000 0:0:0
-		// timer *1000 im ms
+	timeinfo.tm_hour=timeinfo.tm_min=timeinfo.tm_sec=0;
+	timeinfo.tm_mday=1;
+	timeinfo.tm_mon=0;
+	timeinfo.tm_year=100;
+	// set to 1/1/2000 0:0:0
+	// timer *1000 im ms
 
 	while(timeinfo.tm_year < (2016 - 1900) && ++retry < retry_count) {
 		vTaskDelay(2000 / portTICK_PERIOD_MS);
@@ -570,13 +431,14 @@ void initialize_sntp(void *args)
 	}
 
 	now=now-UIO*3600;
-	   timeval tm;
-	   tm.tv_sec=now;
-	   tm.tv_usec=0;
-	   settimeofday(&tm,NULL);
+	timeval tm;
+	tm.tv_sec=now;
+	tm.tv_usec=0;
+	settimeofday(&tm,NULL);
 	localtime_r(&now, &timeinfo);
 	gettimeofday(&tvStart, NULL);
 	sntpf=true;
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag&(1<<BOOTD))
 		printf("[BOOTD]Internet Time %04d/%02d/%02d %02d:%02d:%02d YDays %d DoW:%d\n",1900+timeinfo.tm_year,timeinfo.tm_mon,timeinfo.tm_mday,
@@ -599,13 +461,13 @@ void initialize_sntp(void *args)
 
 void ConfigSystem(void *pArg)
 {
-	uint32_t del=(uint32_t)pArg;
+//	uint32_t del=(uint32_t)pArg;
 	while(FOREVER)
 	{
 		gpio_set_level((gpio_num_t)WIFILED, 1);
-		delay(del);
+		delay((uint32_t)pArg);
 		gpio_set_level((gpio_num_t)WIFILED, 0);
-		delay(del);
+		delay((uint32_t)pArg);
 	}
 }
 
@@ -638,13 +500,15 @@ void newSSID(void *pArg)
 			printf("[WIFID]Try SSID =%s= %d %d\n",temp.c_str(),cual,len);
 #endif
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-	temp=string(sysConfig.ssid[cual]);
-	len=temp.length();
-	memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
-	sta_config.sta.ssid[len]=0;
-	temp=string(sysConfig.pass[cual]);
-	len=temp.length();
-	memcpy((void*)sta_config.sta.password,temp.c_str(),len);
+//	temp=string(sysConfig.ssid[cual]);
+//	len=temp.length();
+//	memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
+	strcpy(sta_config.sta.ssid,sysConfig.ssid[cual]);
+	strcpy(sta_config.sta.password,sysConfig.pass[cual]);
+//	sta_config.sta.ssid[len]=0;
+//	temp=string(sysConfig.pass[cual]);
+//	len=temp.length();
+//	memcpy((void*)sta_config.sta.password,temp.c_str(),len);
 	sta_config.sta.bssid_set=0;
 	sta_config.sta.password[len]=0;
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
@@ -666,7 +530,7 @@ void newSSIDfirm(string ap, string pass)
 	esp_wifi_stop();
 	printf("Stop firm\n");
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-//	printf("Fimr mode\n");
+//	printf("Firmware mode\n");
 	len=ap.length();
 	memcpy((void*)sta_config.sta.ssid,ap.c_str(),len);
 	sta_config.sta.ssid[len]=0;
@@ -680,15 +544,11 @@ void newSSIDfirm(string ap, string pass)
 //	printf("Start firm\n");
 }
 
-
-/* An HTTP GET handler */
 esp_err_t http_get_handler(httpd_req_t *req)
 {
-	printf("URL received %s\n",req->uri);
-
 	arg *argument=(arg*)malloc(sizeof(arg));
 #ifdef DEBUGSYS
-	char *name=strtok(req->uri,"?");
+	char *name=strtok(req->uri,(const char*)"?");
 	if (name!=NULL)
 	if(sysConfig.traceflag & (1<<CMDD))
 		printf("[CMDD]Webcmdrsn %s\n",name);
@@ -698,209 +558,212 @@ esp_err_t http_get_handler(httpd_req_t *req)
 	argument->pComm=req;
 	(*(functrsn)req->user_ctx)(argument);
 	free(argument);
-
-	char *resp_str="Respuesta";
-
-	httpd_resp_send(req, resp_str, strlen(resp_str));
-
-//
-//    buf_len = httpd_req_get_hdr_value_len(req, "Host") + 1;
-//    if (buf_len > 1) {
-//        buf = malloc(buf_len);
-//        /* Copy null terminated value string into buffer */
-//        if (httpd_req_get_hdr_value_str(req,"Host",buf,buf_len) == ESP_OK) {
-//            ESP_LOGI(TAG, "Found header => Host: %s", buf);
-//        }
-//        free(buf);
-//    }
-//
-//      /* Read URL query string length and allocate memory for length + 1,
-//     * extra byte for null termination */
-//    buf_len = httpd_req_get_url_query_len(req) + 1;
-//    if (buf_len > 1) {
-//        buf = malloc(buf_len);
-//        if (httpd_req_get_url_query_str(req, buf, buf_len) == ESP_OK) {
-//            ESP_LOGI(TAG, "Found URL query => %s", buf);
-//            char param[32];
-//            /* Get value of expected key from query string */
-//            if (httpd_query_key_value(buf, "query1", param, sizeof(param)) == ESP_OK) {
-//                ESP_LOGI(TAG, "Found URL query parameter => query1=%s", param);
-//            }
-//            if (httpd_query_key_value(buf, "query3", param, sizeof(param)) == ESP_OK) {
-//                ESP_LOGI(TAG, "Found URL query parameter => query3=%s", param);
-//            }
-//            if (httpd_query_key_value(buf, "query2", param, sizeof(param)) == ESP_OK) {
-//                ESP_LOGI(TAG, "Found URL query parameter => query2=%s", param);
-//            }
-//        }
-//        free(buf);
-//    }
-//
-//    /* Send response with custom headers and body set as the
-//     * string passed in user context*/
-//	const char* resp_str;
-//    if(req->user_ctx!=NULL)
-//    	resp_str = (const char*) req->user_ctx;
-//    else
-//    	resp_str="Respuesta";
-//
-//    httpd_resp_send(req, resp_str, strlen(resp_str));
-
     return ESP_OK;
 }
 
-//httpd_uri_t hello = {
-//    .uri       = "/hello",
-//    .method    = HTTP_GET,
-//    .handler   = hello_get_handler,
-//    /* Let's pass response string in user
-//     * context to demonstrate it's usage */
-//    .user_ctx  = "Hello World!"
-//};
-
-
 void httpTask(void* pArg)
 {
-	  server=NULL;
-	  httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-	  printf("Max Server URI %d\n",config.max_uri_handlers);
-	  config.max_uri_handlers=30;
-	  if (httpd_start(&server, &config) == ESP_OK) {
-		  printf("Installed Http. Max %d URI %s\n",config.max_uri_handlers,loscmds[0].uri);
-	      int err=httpd_register_uri_handler(server, &loscmds[0]);
-	      if(err!=ESP_OK)
-	    	  printf("Error handler %d\n",err);
-	  }
-	  while(1)
-		  delay(100);
-	  }
+	int err;
+	server=NULL;
+	httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
-esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
+	config.max_uri_handlers=30;
+	if (httpd_start(&server, &config) == ESP_OK)
+	{
+		for(int a=0;a<MAXCMDS;a++)
+		{
+			err=httpd_register_uri_handler(server, &loscmds[a]);
+			if(err!=ESP_OK)
+			printf("Error handler %d\n",err);
+		}
+	 }
+	 vTaskDelete(NULL);
+}
+
+void station_setup(system_event_t *event)
+{
+	gpio_set_level((gpio_num_t)WIFILED, 1);
+	connf=true;
+	localIp=event->event_info.got_ip.ip_info.ip;
+	get_traffic_name();
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag&(1<<BOOTD))
+		printf( "[BOOTD]Got IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
+#endif
+	gpio_set_level((gpio_num_t)WIFILED, 1);
+
+	if(blinkHandle)
+   {
+	   vTaskDelete(blinkHandle);
+	   blinkHandle=NULL;
+	   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
+   }
+
+	if(sysConfig.mode==SERVER) //Server Mode Only
+	{
+		if(!mqttf)
+		{
+#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<BOOTD))
+				printf("[BOOTD]Connect to mqtt\n");
+#endif
+			xTaskCreate(&mqttmanager,"mgr",10240,NULL,  5, &mqttHandle);		// User interface while in development. Erased in RELEASE
+
+			clientCloud = esp_mqtt_client_init(&settings);
+			 if(clientCloud)
+				esp_mqtt_client_start(clientCloud);
+			 else
+			 {
+				 printf("Fail mqtt initCloud\n");
+				 vTaskDelete(mqttHandle);
+			 }
+		}
+
+		if(!mongf)
+		{
+#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<BOOTD))
+				printf("[BOOTD]Start Mongoose\n");
+#endif
+			setLogo("Traffic");
+			xTaskCreate(&httpTask, "mongooseTask", 10240, NULL, 5, &mongoHandle); //  web commands Interface controller
+			xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
+		}
+	}
+
+	// Main routine for Commands
+	if(sysConfig.mode==CLIENT ){
+		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+	}
+	if(sysConfig.mode==REPEATER){//Repeater mode
+		tcpip_adapter_ip_info_t ip_info;
+		//From STA ipconfig make the AP config by adding one to the 3 byte
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+		u8 monton[4];
+		memcpy(&monton,(void*)&ip_info.ip.addr,4);
+		monton[3]=0;
+		memcpy(&downstream,&monton,4);
+		monton[2]+=1;//one more for the address like 192.168.(x+1).1
+		memcpy(&upstream,&monton,4);
+		upstream=upstream<<8;
+		downstream=downstream<<8;
+
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+		IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
+		IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
+		IP4_ADDR(&ip_info.netmask,255,255,255,0);
+		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
+		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+		//Create repeater task with new IP given
+		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+	}
+}
+
+void station_disconnected(system_event_t *event)
+{
+	string temp;
+
+	connf=false;
+	gpio_set_level((gpio_num_t)RXLED, 0);
+	gpio_set_level((gpio_num_t)SENDLED, 0);
+	gpio_set_level((gpio_num_t)MQTTLED, 0);
+	gpio_set_level((gpio_num_t)WIFILED, 0);
+	if(runHandle)
+	{
+		vTaskDelete(runHandle);
+		runHandle=NULL;
+	}
+
+	if(sysConfig.mode!=REPEATER)
+	{
+		if(rxHandle){
+//			close(theSock);
+			vTaskDelete(rxHandle);
+			rxHandle=NULL;
+		}
+	}
+
+	if(blinkHandle){
+		vTaskDelete(blinkHandle);
+		blinkHandle=NULL;
+		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
+	}
+	else
+	{
+		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+	}
+
+	if(cycleHandle)
+	{
+		vTaskDelete(cycleHandle);
+		cycleHandle=NULL;
+	}
+		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<WIFID))
+		printf("[WIFID]Reconnect %d\n",curSSID);
+#endif
+	if(sysConfig.mode>0)
+	{
+		curSSID++;
+		if(curSSID>4)
+			curSSID=0;
+		temp=string(sysConfig.ssid[curSSID]);
+		if(temp=="")
+			curSSID=0;
+	}
+	else
+		curSSID=0; //Client mode always
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<WIFID))
+		printf("[WIFID]Temp[%d]==%s=\n",curSSID,temp.c_str());
+#endif
+
+	xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
+}
+
+esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
+{
 	system_event_ap_staconnected_t 			*conap;
-	string 									local="Closed",temp;
+	string 									local="Closed";
 	wifi_sta_list_t 						station_list;
 	wifi_sta_info_t 						*stations ;
 	ip4_addr_t 								addr;
+	tcpip_adapter_ip_info_t 				ip_info;
 
 	conap=(system_event_ap_staconnected_t*)&event->event_info;
 
-//#ifdef DEBUGSYS
-//	if(sysConfig.traceflag & (1<<WIFID))
-//		printf("[WIFID]Wifi Handler %d Reason %d\n",event->event_id,disco->reason);
-//#endif
 	switch(event->event_id)
 	{
     case SYSTEM_EVENT_AP_STADISCONNECTED:
-      	ESP_LOGI(TAG,"Station disconnected %02x:%02x:%02x:%02x:%02x:%02x",conap->mac[0],conap->mac[1],
-      			conap->mac[2],conap->mac[3],conap->mac[4],conap->mac[5]);
+//      	ESP_LOGI(TAG,"Station disconnected %02x:%02x:%02x:%02x:%02x:%02x",conap->mac[0],conap->mac[1],
+//      			conap->mac[2],conap->mac[3],conap->mac[4],conap->mac[5]);
     	dhcp_search_ip_on_mac(conap->mac , &addr);//this IP died. Do something
     	esp_wifi_ap_get_sta_list(&station_list);
     	totalConnected=station_list.num;
-      	//must send a warning message. TL is now down for a street.
+      	//must send a warning message. TL is now down for a street. Actually STOP
       	break;
+
     case SYSTEM_EVENT_AP_STAIPASSIGNED:
     	esp_wifi_ap_get_sta_list(&station_list);
     	stations=(wifi_sta_info_t*)station_list.sta;
     	dhcp_search_ip_on_mac(stations[station_list.num-1].mac , &addr);
-    	//printf("AP Assigned %d.%d.%d.%d \n",IP2STR(&addr));
     	connectedToAp[station_list.num-1]=addr.addr;
     	totalConnected=station_list.num;
     	break;
 
 	case SYSTEM_EVENT_STA_GOT_IP:
-		gpio_set_level((gpio_num_t)WIFILED, 1);
-		connf=true;
-		localIp=event->event_info.got_ip.ip_info.ip;
-		get_traffic_name();
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag&(1<<BOOTD))
-			printf( "[BOOTD]Got IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
-#endif
-		gpio_set_level((gpio_num_t)WIFILED, 1);
-
-		if(blinkHandle)
-	   {
-		   vTaskDelete(blinkHandle);
-		   blinkHandle=NULL;
-		   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
-	   }
-
-		if(sysConfig.mode==SERVER) //Server Mode Only
-		{
-			if(!mqttf)
-			{
-#ifdef DEBUGSYS
-				if(sysConfig.traceflag&(1<<BOOTD))
-					printf("[BOOTD]Connect to mqtt\n");
-#endif
-				xTaskCreate(&mqttmanager,"mgr",10240,NULL,  5, &mqttHandle);		// User interface while in development. Erased in RELEASE
-
-				clientCloud = esp_mqtt_client_init(&settings);
-				 if(clientCloud)
-					esp_mqtt_client_start(clientCloud);
-				 else{
-					 printf("Fail mqtt initCloud\n");
-					 vTaskDelete(mqttHandle);
-				 }
-			}
-
-			if(!mongf)
-			{
-#ifdef DEBUGSYS
-				if(sysConfig.traceflag&(1<<BOOTD))
-					printf("[BOOTD]Start Mongoose\n");
-#endif
-				setLogo("Traffic");
-				xTaskCreate(&httpTask, "mongooseTask", 10240, NULL, 5, &mongoHandle); //  web commands Interface controller
-				xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
-			}
-		}
-
-		// Main routine for Commands
-		if(sysConfig.mode==CLIENT ){
-			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
-			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
-		}
-		if(sysConfig.mode==REPEATER){//Repeater mode
-			tcpip_adapter_ip_info_t ip_info;
-			//From STA ipconfig make the AP config by adding one to the 3 byte
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-			u8 monton[4];
-			memcpy(&monton,(void*)&ip_info.ip.addr,4);
-			monton[3]=0;
-			memcpy(&downstream,&monton,4);
-			monton[2]+=1;//one more for the address like 192.168.(x+1).1
-			memcpy(&upstream,&monton,4);
-			upstream=upstream<<8;
-			downstream=downstream<<8;
-
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-			IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
-			IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
-			IP4_ADDR(&ip_info.netmask,255,255,255,0);
-			tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
-			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-			//Create repeater task with new IP given
-			xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
-			sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
-		}
+		station_setup(event);
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
-		tcpip_adapter_ip_info_t ip_info;
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-//		if(sysConfig.mode==REPEATER)
-//		{
-//			tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-//			IP4_ADDR(&ip_info.ip,192,168,10,1);
-//			IP4_ADDR(&ip_info.gw,192,168,10,1);
-//			IP4_ADDR(&ip_info.netmask,255,255,255,0);
-//			printf("set ip ret: %d\n", tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info)); //set static IP
-//
-//			tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-//		}
-//		printf("System not Configured. Use local AP and IP:" IPSTR "\n", IP2STR(&ip_info.ip));
 		localIp=ip_info.ip;
 		if(sysConfig.mode==SERVER)
 		{
@@ -942,68 +805,7 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event) {
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
-		connf=false;
-		gpio_set_level((gpio_num_t)RXLED, 0);
-		gpio_set_level((gpio_num_t)SENDLED, 0);
-		gpio_set_level((gpio_num_t)MQTTLED, 0);
-		gpio_set_level((gpio_num_t)WIFILED, 0);
-		if(runHandle)
-		{
-			vTaskDelete(runHandle);
-			runHandle=NULL;
-		}
-
-//		if(rxHandle){
-//			close(theSock);
-//			vTaskDelete(rxHandle);
-//			rxHandle=NULL;
-//		}
-
-		if(blinkHandle){
-			vTaskDelete(blinkHandle);
-			blinkHandle=NULL;
-		//	printf("Launch Red blink %d\n",sysLights.defaultLight);
-			//put the Light in Danger Mode  Blink Red light. lost host and sync
-			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
-		}
-		else
-		{
-			//printf("Direct Launch Red blink %d\n",sysLights.defaultLight);
-					//put the Light in Danger Mode  Blink Red light. lost host and sync
-			xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
-		}
-
-		if(cycleHandle)
-		{
-			vTaskDelete(cycleHandle);
-			cycleHandle=NULL;
-		}
-			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
-			gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
-
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Reconnect %d\n",curSSID);
-#endif
-		if(sysConfig.mode>0)
-		{
-			curSSID++;
-			if(curSSID>4)
-				curSSID=0;
-			temp=string(sysConfig.ssid[curSSID]);
-			if(temp=="")
-				curSSID=0;
-		}
-		else
-			curSSID=0; //Client mode always
-
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Temp[%d]==%s=\n",curSSID,temp.c_str());
-#endif
-
-		xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
-
+		station_disconnected(event);
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
@@ -1104,18 +906,6 @@ esp_err_t mqtt_event_handler(esp_mqtt_event_handle_t event)
     return ESP_OK;
 }
 
-u8 lastAddr(string que)
-{
-	  char * pch;
-	  u8 res=0;
-	  pch = strtok ((char*)que.c_str(),".");
-	  while (pch != NULL){
-		  res=atoi(pch);
-	    pch = strtok (NULL, ".");
-	  }
-	  return res;
-}
-
 void blinkLight(void *pArg)
 {
 	int cual=(int)pArg;
@@ -1131,34 +921,34 @@ void blinkLight(void *pArg)
 void show_leds(int cual)
 {
 	if(sysConfig.mode==CLIENT)
-			{
-				   switch (cual)
-				   { //Valid Incoming Cmds related to this station
-				   	   case PING:
-				   	   case QUIET:
-				   	   case NEWID:
-				   	   case RESET:
-				   	   case KILL:
-				   	   case RUN:
-				   	   case OFF:
-				   	   case ON:
-				   	   case RUALIVE:
-				   	   case LEDS:
-				   	   case FWARE:
-				   	   case WALK:
-				   	   case EXECW:
-				   	   case LOGIN:
-				   	   case CLONE:
-							if(sysConfig.showLeds)
-								blink(RXLED);
-						break;
-				   	   default:
-				   		   break;
-				   }
-			}
-			else //as server all
+	{
+	   switch (cual)
+	   { //Valid Incoming Cmds related to this station
+		   case PING:
+		   case QUIET:
+		   case NEWID:
+		   case RESET:
+		   case KILL:
+		   case RUN:
+		   case OFF:
+		   case ON:
+		   case RUALIVE:
+		   case LEDS:
+		   case FWARE:
+		   case WALK:
+		   case EXECW:
+		   case LOGIN:
+		   case CLONE:
 				if(sysConfig.showLeds)
 					blink(RXLED);
+			break;
+		   default:
+			   break;
+	   }
+	}
+		else //as server all
+			if(sysConfig.showLeds)
+				blink(RXLED);
 }
 
 void cmd_ack(cmd_struct cual)
@@ -1225,9 +1015,9 @@ void cmd_newid(cmd_struct cual)
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
 				   printf("[TRAFFICD][%d-%d]NewId from %d to %d \n",cual.towho,sysConfig.whoami,sysConfig.whoami,cual.free1);
 #endif
-			   sysConfig.whoami=cual.free1;
-			   write_to_flash(true);
-				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
+	sysConfig.whoami=cual.free1;
+	write_to_flash(true);
+	sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 }
 
 void cmd_reset(cmd_struct cual)
@@ -1236,19 +1026,19 @@ void cmd_reset(cmd_struct cual)
 			   if(sysConfig.traceflag & (1<<CMDD))
 				   printf("[CMDD]Reset unit after 5 seconds\n");
 #endif
-				sendMsg(ACK,cual.fromwho,0,0,NULL,0);
-			   vTaskDelay(5000 / portTICK_PERIOD_MS);
-			   esp_restart();
+	sendMsg(ACK,cual.fromwho,0,0,NULL,0);
+	vTaskDelay(5000 / portTICK_PERIOD_MS);
+	esp_restart();
 }
 
 void cmd_kill(cmd_struct cual)
 {
-	   if(runHandle!=NULL)
-	   {
-		   vTaskDelete(runHandle),
-		   runHandle=NULL;
-	   }
-		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
+	if(runHandle!=NULL)
+	{
+	   vTaskDelete(runHandle),
+	   runHandle=NULL;
+	}
+	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 }
 
 void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
@@ -1282,170 +1072,171 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 void cmd_off(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD]Turn Off TLight\n");
+   if(sysConfig.traceflag & (1<<TRAFFICD))
+	   printf("[TRAFFICD]Turn Off TLight\n");
 #endif
-			   if(runHandle!=NULL)
-			   {
-				   vTaskDelete(runHandle),
-				   runHandle=NULL;
-			   }
-				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+	if(runHandle!=NULL)
+	{
+	   vTaskDelete(runHandle),
+	   runHandle=NULL;
+	}
+	REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 }
 
 void cmd_on(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD]Turn On TLight\n");
+   if(sysConfig.traceflag & (1<<TRAFFICD))
+	   printf("[TRAFFICD]Turn On TLight\n");
 #endif
-				gpio_set_level((gpio_num_t)sysLights.defaultLight, 1); //Default light On
+	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1); //Default light On
 }
 
 void cmd_are_you_alive(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<ALIVED))
-				   printf("[ALIVED]Heartbeat Received\n");
+   if(sysConfig.traceflag & (1<<ALIVED))
+	   printf("[ALIVED]Heartbeat Received\n");
 #endif
-				sendMsg(IMALIVE,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,NULL,0);//stationid will be used for Alive.MUST be unique
+	sendMsg(IMALIVE,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,NULL,0);//stationid will be used for Alive.MUST be unique
 }
 
 void cmd_i_am_alive(cmd_struct cual)
 {
 	time_t now;
-	   if(sysConfig.mode==SERVER)
-	   {
+   if(sysConfig.mode==SERVER)
+   {
 #ifdef DEBUGSYS
-		   if(sysConfig.traceflag & (1<<ALIVED))
-			   printf("[ALIVED]Alive In from %d node %d station %d\n",cual.fromwho,cual.free1,cual.free2);
+	   if(sysConfig.traceflag & (1<<ALIVED))
+		   printf("[ALIVED]Alive In from %d node %d station %d\n",cual.fromwho,cual.free1,cual.free2);
 #endif
-			//   printf( "[Remote IP:" IPSTR "]\n", IP2STR(&cual.myip));
+		//   printf( "[Remote IP:" IPSTR "]\n", IP2STR(&cual.myip));
 
-		   activeNodes.nodesReported[cual.free2]=1;
-		   time(&now);
-		   activeNodes.lastTime[cual.free2]=now;
-		   //task to check every KEEPALIVE interval for time difference of current time-lastime(x)>KEEPALIVE, he is dead, do something
-		   //station 0 is not relevant, since its the controller
-	   }
+	   activeNodes.nodesReported[cual.free2]=1;
+	   time(&now);
+	   activeNodes.lastTime[cual.free2]=now;
+	   //task to check every KEEPALIVE interval for time difference of current time-lastime(x)>KEEPALIVE, he is dead, do something
+	   //station 0 is not relevant, since its the controller
+   }
 }
 
 void cmd_blink(cmd_struct cual)
 {
-	   if(blinkHandle)
-	   {
-		   vTaskDelete(blinkHandle);
-		   blinkHandle=NULL;
-	   }
-		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
-		xTaskCreate(&blinkLight,"blight",4096,(void*)sysLights.blinkLight, MGOS_TASK_PRIORITY, &blinkHandle);				//Manages all display to LCD
+	if(blinkHandle)
+	{
+	   vTaskDelete(blinkHandle);
+	   blinkHandle=NULL;
+	}
+	REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+	xTaskCreate(&blinkLight,"blight",4096,(void*)sysLights.blinkLight, MGOS_TASK_PRIORITY, &blinkHandle);
 }
 
 void cmd_leds(cmd_struct cual)
-{
-	   sysConfig.showLeds=cual.free1;
-	   write_to_flash(true);
+	{
+	sysConfig.showLeds=cual.free1;
+	write_to_flash(true);
 }
 
 void cmd_firmware(cmd_struct cual)
 {
     firmware_type elfw;
 
-	 if(runHandle!=NULL)
-				   {
-					   vTaskDelete(runHandle),
-					   runHandle=NULL;
-				   }
-				   if(blinkHandle)
-				   {
-					   vTaskDelete(blinkHandle);
-					   blinkHandle=NULL;
-				   }
-				   if(mqttHandle)
-				   {
-					   vTaskDelete(mqttHandle);
-					   mqttHandle=NULL;
-				   }
+	if(runHandle!=NULL)
+	{
+	   vTaskDelete(runHandle),
+	   runHandle=NULL;
+	}
+	if(blinkHandle)
+	{
+	   vTaskDelete(blinkHandle);
+	   blinkHandle=NULL;
+	}
+	if(mqttHandle)
+	{
+	   vTaskDelete(mqttHandle);
+	   mqttHandle=NULL;
+	}
 
-				   if(mongoHandle)
-				   {
-					   vTaskDelete(mongoHandle);
-					   mongoHandle=NULL;
-				   }
+	if(mongoHandle)
+	{
+	   vTaskDelete(mongoHandle);
+	   mongoHandle=NULL;
+	}
 
-				   if(mdnsHandle)
-				   {
-					   vTaskDelete(mdnsHandle);
-					   mdnsHandle=NULL;
-				   }
-				//   printf("Firmware Command In\n");
-				   strcpy(elfw.ap,cual.buff);
-				   strcpy(elfw.pass,&cual.buff[strlen(elfw.ap)+1]);
-					esp_event_loop_set_cb(NULL,NULL);
-					esp_wifi_stop(); //Stop Main Connection to AP
-			//		printf("Stop\n");
-			//		delay(1000);
-					esp_wifi_deinit();
-				//	printf("Deinit\n");
-			//		delay(1000);
-					//Will now connect to Internet AP
-					// then download firmware
-				   xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,&elfw, MGOS_TASK_PRIORITY, NULL);
-				   if(rxHandle) //harakiri
-				   {
-					   vTaskDelete(rxHandle);
-					   rxHandle=NULL;
-				   }
+	if(mdnsHandle)
+	{
+	   vTaskDelete(mdnsHandle);
+	   mdnsHandle=NULL;
+	}
+	//   printf("Firmware Command In\n");
+	strcpy(elfw.ap,cual.buff);
+	strcpy(elfw.pass,&cual.buff[strlen(elfw.ap)+1]);
+	esp_event_loop_set_cb(NULL,NULL);
+	esp_wifi_stop(); //Stop Main Connection to AP
+	//		printf("Stop\n");
+	//		delay(1000);
+	esp_wifi_deinit();
+	//	printf("Deinit\n");
+	//		delay(1000);
+	//Will now connect to Internet AP
+	// then download firmware
+	xTaskCreate(&set_FirmUpdateCmd,"dispMgr",10240,&elfw, MGOS_TASK_PRIORITY, NULL);
+	if(rxHandle) //harakiri
+	{
+	   vTaskDelete(rxHandle);
+	   rxHandle=NULL;
+	}
 }
 
 void cmd_walk(cmd_struct cual)
 {
-	   if(sysConfig.mode==SERVER){
-#ifdef DEBUGSYS
-	   if(sysConfig.traceflag & (1<<WIFID))
-		   printf("[WIFID]Walk In from %d NodeId %d Button %d\n",cual.fromwho,cual.nodeId, cual.free1);
-#endif
-	   //Inform the Street cual.free1;
-		sendMsg(EXECW,cual.free1,0,0,NULL,0);
-	   }
+	if(sysConfig.mode==SERVER)
+	{
+	#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Walk In from %d NodeId %d Button %d\n",cual.fromwho,cual.nodeId, cual.free1);
+	#endif
+	//Inform the Street cual.free1;
+	sendMsg(EXECW,cual.free1,0,0,NULL,0);
+	}
 }
 
 void cmd_execute_walk(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]Walk Execute from %d NodeId %d\n",cual.fromwho,cual.nodeId);
+   if(sysConfig.traceflag & (1<<WIFID))
+	   printf("[WIFID]Walk Execute from %d NodeId %d\n",cual.fromwho,cual.nodeId);
 #endif
-			   globalWalk=true;
+   globalWalk=true;
 }
 
 void cmd_clone(cmd_struct cual)
 {
-#ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]Clone from %d NodeId %d Clone %s\n",cual.fromwho,cual.nodeId,sysConfig.clone?"Y":"N");
-#endif
-			   if(sysConfig.clone){
-				   if(memcmp((void*)&cual.buff,(void*)&sysLights,sizeof(sysLights))!=0)
-				   {
-#ifdef DEBUGSYS
-					   if(sysConfig.traceflag & (1<<WIFID))
-						   printf("[WIFID]New Lights Configuration via Clone\n");
-#endif
-					   memcpy(&sysLights,&cual.buff,sizeof(sysLights));
-					   write_to_flash_lights(true);
-				   }
-			   }
+	#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<WIFID))
+	   printf("[WIFID]Clone from %d NodeId %d Clone %s\n",cual.fromwho,cual.nodeId,sysConfig.clone?"Y":"N");
+	#endif
+	if(sysConfig.clone){
+		if(memcmp((void*)&cual.buff,(void*)&sysLights,sizeof(sysLights))!=0)
+		{
+	#ifdef DEBUGSYS
+			if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]New Lights Configuration via Clone\n");
+	#endif
+			memcpy(&sysLights,&cual.buff,sizeof(sysLights));
+			write_to_flash_lights(true);
+		}
+	}
 }
 
 void cmd_send_clone(cmd_struct cual)
 {
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]SendClone from %d NodeId %d Clone %s\n",cual.fromwho,cual.nodeId,sysConfig.clone?"Y":"N");
+   if(sysConfig.traceflag & (1<<WIFID))
+	   printf("[WIFID]SendClone from %d NodeId %d Clone %s\n",cual.fromwho,cual.nodeId,sysConfig.clone?"Y":"N");
 #endif
-			   if(!sysConfig.clone)
-				   sendMsg(CLONE,sysConfig.whoami,0,0,(char*)&sysLights,sizeof(sysLights));
+   if(!sysConfig.clone)
+	   sendMsg(CLONE,sysConfig.whoami,0,0,(char*)&sysLights,sizeof(sysLights));
 }
 
 bool find_station(u8 stat)
@@ -1460,10 +1251,10 @@ void cmd_login(cmd_struct cual)
 {
 	if(sysConfig.mode==SERVER) //Only server
 	{
-#ifdef DEBUGSYS
+	#ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
 				   printf("[WIFID]Login %d Node %d Station %d Total %d\n",cual.fromwho,cual.free1,cual.free2,numLogins);
-#endif
+	#endif
 		if(!find_station(cual.free2))
 		{
 			logins[numLogins].nodel=cual.fromwho;
@@ -1476,18 +1267,18 @@ void cmd_login(cmd_struct cual)
 
 void cmd_alarm(cmd_struct cual)
 {
-	char textl[70];
+char textl[70];
 
 	if(sysConfig.mode==SERVER) //Only server
 	{
 		strcpy(textl,cual.buff);
 
-#ifdef DEBUGSYS
+	#ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
 				   printf("[WIFID]Alarm %d Node %d Station %d %s\n",cual.fromwho,cual.free1,cual.free2,textl);
-#endif
+	#endif
 		sendAlert(string(textl),strlen(textl));
-	}
+}
 }
 
 void process_cmd(cmd_struct cual)
@@ -1784,7 +1575,7 @@ static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool 
 
 int create_multicast_ipv4_socket(int port,bool ap)
 {
-    tcpip_adapter_ip_info_t ip_info ;
+    tcpip_adapter_ip_info_t ip_info;
     struct sockaddr_in saddr;
     memset(&saddr,0,sizeof(saddr));
 
@@ -1867,54 +1658,54 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 #endif
 
 	salen++;
-		sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
-		if (sock < 0)
-		{
-			ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
-			return;
-		}
+	sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (sock < 0)
+	{
+		ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
+		return;
+	}
 
-		//SET THE MULTICAST ADDRESS AND PORT
-		 memset((char *) &groupSock, 0, sizeof(groupSock));
-		 groupSock.sin_family = AF_INET;
-		 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
-		 groupSock.sin_port = htons(UDP_PORT);
+	//SET THE MULTICAST ADDRESS AND PORT
+	 memset((char *) &groupSock, 0, sizeof(groupSock));
+	 groupSock.sin_family = AF_INET;
+	 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
+	 groupSock.sin_port = htons(UDP_PORT);
 
-		 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
-		char loopch=1;
-		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
-		{
-			ESP_LOGE(TAG,"Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
-			close(sock);
-			return;
-		}
-
-		//set the Interface we want to use.
-	//	tcpip_adapter_ip_info_t if_info;
-		if(sysConfig.mode==CLIENT || sysConfig.mode==REPEATER)
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
-		else
-			tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
-
-		localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
-		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
-		{
-			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
-			close(sock);
-			return;
-		  }
-
-		//Send it
-		err=sendto(sock, &answer, sizeof(answer), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
-		if (err < 0)
-		{
-			ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
-			close(sock);
-			return;
-		}
-		if(sysConfig.showLeds)
-			blink(SENDLED);
+	 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
+	char loopch=1;
+	if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
+	{
+		ESP_LOGE(TAG,"Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
 		close(sock);
+		return;
+	}
+
+	//set the Interface we want to use.
+//	tcpip_adapter_ip_info_t if_info;
+	if(sysConfig.mode==CLIENT || sysConfig.mode==REPEATER)
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
+	else
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
+
+	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
+	if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+	{
+		ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
+		close(sock);
+		return;
+	  }
+
+	//Send it
+	err=sendto(sock, &answer, sizeof(answer), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
+	if (err < 0)
+	{
+		ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
+		close(sock);
+		return;
+	}
+	if(sysConfig.showLeds)
+		blink(SENDLED);
+	close(sock);
 }
 
 void rxMessage(void *pArg)
@@ -1968,7 +1759,7 @@ void rxMessage(void *pArg)
 		}
   }
 
-void streamTask(void *pArg)
+void streamTask(void *pArg) //for Repeater configuration
 {
 	cmd_struct 				comand;
 	int 					sock;
@@ -2085,17 +1876,6 @@ void repeater(void *pArg)
 		}
 		if(res==downstream)
 		{
-//			switch(comando.cmd)
-//			{
-//				case ACK:
-//				case NAK:
-//				//case DONE: //its necesarry because WALK checks if DONE for that Street
-//				case IMALIVE:
-//				case WALK:
-//					break; //do not send them downstream, its an answer
-//				default:
-//					//is it for us, Station ID
-
 			//also send because you there can be clones....
 			xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
 
@@ -2106,7 +1886,6 @@ void repeater(void *pArg)
 
 			if(comando.towho==sysConfig.stationid ) //its for us, you are also a standard light
 				process_cmd(comando);
-//			}
 		}
 	}
 }
@@ -2381,18 +2160,21 @@ void initVars()
 	daysInMonth [10] =30;
 	daysInMonth [11] =31;
 
+	// Section to set Command names and associated code to execute for Webcmds and Mqtt Commands
+
 	strcpy(cmdName[0],"/tf_test");
 	theCode[0]=set_test;
 
+	//Load the Http uri structure and our cmds structures with commands
 	for (int a=0;a<MAXCMDS;a++)
 	{
 		loscmds[a].method=HTTP_GET;
 		loscmds[a].user_ctx=(void*)theCode[a];
 		loscmds[a].handler=http_get_handler;
 		loscmds[a].uri=strdup(cmdName[a]);
+		strcpy(cmds[a].comando,cmdName[a]);
+		cmds[a].code=theCode[a];
 	}
-
-	strcpy((char*)&cmds[0].comando,cmdName[0]);			cmds[0].code=theCode[0];			//done...needs testing in a good esp32
 
 	barX[0]=0;
 	barX[1]=6;
@@ -2517,103 +2299,58 @@ int init_log()
 	return ESP_OK;
 }
 
+int read_blob(nvs_handle theHandle,string name,u8 *donde, int len, u8 *md5start)
+{
+	unsigned char 	lkey[16];
+	size_t 			largo=len;
+	int 			que;
+
+	esp_err_t q=nvs_get_blob(theHandle,name.c_str(),donde,&largo);
+
+	if (q !=ESP_OK)
+	{
+		printf("Read %s error %d\n",name.c_str(),q);
+		return ESP_FAIL; //try to recover
+	}
+
+	int diff =md5start-donde;
+
+	makeMd5(donde,diff,(void*)lkey);
+	que=memcmp(md5start,&lkey,16);
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		printf("%s MD5 %s\n",name.c_str(),que?"Invalid":"Valid");
+#endif
+	return que;
+}
+
 int read_flash()
 {
 		esp_err_t q ;
-		size_t largo=sizeof(sysConfig);
-			q=nvs_get_blob(nvshandle,"config",(void*)&sysConfig,&largo);
-
-		if (q !=ESP_OK)
-		{
-			printf("Error read %d\n",q);
-			return -1; //try to recover
-		}
-
-		int diff=(u8*)&sysConfig.md5-(u8*)&sysConfig;
-		unsigned char lkey[16];
-
-		makeMd5((void*)&sysConfig,diff,(void*)lkey);
-		int que=memcmp(&sysConfig.md5,&lkey,16);
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("%s MD5 sysconfig\n",que?"Invalid":"Valid");
-#endif
-		return que;
-
+		q=read_blob(nvshandle, "config",(u8*)&sysConfig,sizeof(sysConfig),(u8*)&sysConfig.md5);
+		return q;
 }
 
 int read_flash_seq()
 {
 		esp_err_t q ;
-		size_t largo=sizeof(sysSequence);
-		q=nvs_get_blob(seqhandle,"seq",(void*)&sysSequence,&largo);
-
-		if (q !=ESP_OK)
-		{
-			printf("Error read seq %d\n",q);
-			return -1; //try to recover
-		}
-
-		int diff=(u8*)&sysSequence.md5-(u8*)&sysSequence;
-		unsigned char lkey[16];
-
-		makeMd5((void*)&sysSequence,diff,(void*)lkey);
-		int que=memcmp(&sysSequence.md5,&lkey,16);
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("%s MD5 Sequence\n",que?"Invalid":"Valid");
-#endif
-		return que;
+		q=read_blob(seqhandle, "seq",(u8*)&sysSequence,sizeof(sysSequence),(u8*)&sysSequence.md5);
+		return q;
 }
 
 int read_flash_cycles()
 {
 		esp_err_t q ;
-		size_t largo=sizeof(allCycles);
-		q=nvs_get_blob(seqhandle,"cycles",(void*)&allCycles,&largo);
-
-		if (q !=ESP_OK)
-		{
-			printf("Error read cycles %d\n",q);
-			return -1; //try to recover
-		}
-
-		int diff=(u8*)&allCycles.md5-(u8*)&allCycles;
-		unsigned char lkey[16];
-
-		makeMd5((void*)&allCycles,diff,(void*)lkey);
-		int que=memcmp(&allCycles.md5,&lkey,16);
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("%s MD5 Cycles\n",que?"Invalid":"Valid");
-#endif
-		return que;
-
+		q=read_blob(seqhandle, "cycles",(u8*)&allCycles,sizeof(allCycles),(u8*)&allCycles.md5);
+		return q;
 }
 
 int read_flash_lights()
 {
 		esp_err_t q ;
-		size_t largo=sizeof(sysLights);
-
-		q=nvs_get_blob(lighthandle,"lights",(void*)&sysLights,&largo);
-
-		if (q !=ESP_OK)
-		{
-			printf("Error read lights%d\n",q);
-			return -1; //try to recover
-		}
-
-		int diff=(u8*)&sysLights.md5-(u8*)&sysLights;
-		unsigned char lkey[16];
-
-		makeMd5((void*)&sysLights,diff,(void*)lkey);
-		int que=memcmp(&sysLights.md5,&lkey,16);
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("%s MD5 Lights\n",que?"Invalid":"Valid");
-#endif
-		return que;
+		q=read_blob(lighthandle, "lights",(u8*)&sysLights,sizeof(sysLights),(u8*)&sysLights.md5);
+		return q;
 }
 
 void init_temp()
@@ -2868,18 +2605,15 @@ int este,cual;
 time_t now;
 struct tm timeinfo ;
 
-	while(!timef || !rxtxf)
+	while(!timef || !rxtxf) //wait for all Logins and the Timer Flag
 		delay(100);
-	//we got the Day to compare against TODAY
-	//Set default light on
 
 	if(!loadScheduler())
 	{
 		printf("Scheduler not enabled.\n");
 		vTaskDelete(NULL);
-	//	while(true)
-	//		delay(10000);
 	}
+
 //	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
 	now=time(NULL)-5*3600;
 	localtime_r(&now, &timeinfo);
@@ -2960,15 +2694,16 @@ void blink_lights(int lon)
 {
 	while(1)
 	{
-	gpio_set_level((gpio_num_t)WIFILED, 1);
-	gpio_set_level((gpio_num_t)SENDLED, 1);
-	gpio_set_level((gpio_num_t)RXLED, 1);
-	gpio_set_level((gpio_num_t)MQTTLED, 1);
-	delay(lon);
-	gpio_set_level((gpio_num_t)WIFILED, 0);
-	gpio_set_level((gpio_num_t)SENDLED, 0);
-	gpio_set_level((gpio_num_t)RXLED, 0);
-	gpio_set_level((gpio_num_t)MQTTLED, 0);
+		gpio_set_level((gpio_num_t)WIFILED, 1);
+		gpio_set_level((gpio_num_t)SENDLED, 1);
+		gpio_set_level((gpio_num_t)RXLED, 1);
+		gpio_set_level((gpio_num_t)MQTTLED, 1);
+			delay(lon);
+		gpio_set_level((gpio_num_t)WIFILED, 0);
+		gpio_set_level((gpio_num_t)SENDLED, 0);
+		gpio_set_level((gpio_num_t)RXLED, 0);
+		gpio_set_level((gpio_num_t)MQTTLED, 0);
+			delay(lon);
 	}
 }
 

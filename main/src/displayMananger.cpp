@@ -8,7 +8,7 @@
 #include "displayManager.h"
 using namespace std;
 extern uint32_t IRAM_ATTR millis();
-extern void delay(uint16_t a);
+extern void delay(uint32_t a);
 void sendAlert(string que, int len);
 
 
