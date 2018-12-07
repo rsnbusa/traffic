@@ -44,121 +44,121 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  19 .literal.esp_http_client_open 00000008  00000000  00000000  00000418  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 20 .literal.esp_http_client_perform 000000f0  00000000  00000000  00000420  2**2
+ 20 .literal.esp_http_client_perform 000000d8  00000000  00000000  00000420  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 21 .literal.esp_http_client_set_post_field 00000010  00000000  00000000  00000510  2**2
+ 21 .literal.esp_http_client_set_post_field 00000010  00000000  00000000  000004f8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 22 .literal.esp_http_client_get_transport_type 00000010  00000000  00000000  00000520  2**2
+ 22 .literal.esp_http_client_get_transport_type 00000010  00000000  00000000  00000508  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .text         00000000  00000000  00000000  00000530  2**0
+ 23 .text         00000000  00000000  00000000  00000518  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 24 .data         00000000  00000000  00000000  00000530  2**0
+ 24 .data         00000000  00000000  00000000  00000518  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 25 .bss          00000000  00000000  00000000  00000530  2**0
+ 25 .bss          00000000  00000000  00000000  00000518  2**0
                   ALLOC
- 26 .text.http_dispatch_event 00000028  00000000  00000000  00000530  2**2
+ 26 .text.http_dispatch_event 00000028  00000000  00000000  00000518  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.http_on_message_begin 00000013  00000000  00000000  00000558  2**2
+ 27 .text.http_on_message_begin 00000013  00000000  00000000  00000540  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 28 .text.http_on_status 00000007  00000000  00000000  0000056c  2**2
+ 28 .text.http_on_status 00000007  00000000  00000000  00000554  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 29 .text.http_on_headers_complete 0000001f  00000000  00000000  00000574  2**2
+ 29 .text.http_on_headers_complete 0000001f  00000000  00000000  0000055c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 30 .text.http_on_message_complete 0000000e  00000000  00000000  00000594  2**2
+ 30 .text.http_on_message_complete 0000000e  00000000  00000000  0000057c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 31 .text.http_on_chunk_complete 00000007  00000000  00000000  000005a4  2**2
+ 31 .text.http_on_chunk_complete 00000007  00000000  00000000  0000058c  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 32 .text.http_on_body 00000046  00000000  00000000  000005ac  2**2
+ 32 .text.http_on_body 00000046  00000000  00000000  00000594  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text.http_on_header_field 00000016  00000000  00000000  000005f4  2**2
+ 33 .text.http_on_header_field 00000016  00000000  00000000  000005dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .rodata.str1.1 00000657  00000000  00000000  0000060a  2**0
+ 34 .rodata.str1.1 000005c3  00000000  00000000  000005f2  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 35 .text.http_on_header_value 000000a4  00000000  00000000  00000c64  2**2
+ 35 .text.http_on_header_value 000000a4  00000000  00000000  00000bb8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .text._clear_connection_info 0000006c  00000000  00000000  00000d08  2**2
+ 36 .text._clear_connection_info 0000006c  00000000  00000000  00000c5c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 37 .text._clear_auth_data$isra$0 00000056  00000000  00000000  00000d74  2**2
+ 37 .text._clear_auth_data$isra$0 00000056  00000000  00000000  00000cc8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text.esp_http_client_get_data$part$1 00000030  00000000  00000000  00000dcc  2**2
+ 38 .text.esp_http_client_get_data$part$1 00000030  00000000  00000000  00000d20  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text.http_on_url 00000007  00000000  00000000  00000dfc  2**2
+ 39 .text.http_on_url 00000007  00000000  00000000  00000d50  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 40 .text.esp_http_client_set_header 00000015  00000000  00000000  00000e04  2**2
+ 40 .text.esp_http_client_set_header 00000015  00000000  00000000  00000d58  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text.esp_http_client_prepare 00000088  00000000  00000000  00000e1c  2**2
+ 41 .text.esp_http_client_prepare 00000088  00000000  00000000  00000d70  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text.esp_http_client_get_header 00000015  00000000  00000000  00000ea4  2**2
+ 42 .text.esp_http_client_get_header 00000015  00000000  00000000  00000df8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text.esp_http_client_delete_header 00000014  00000000  00000000  00000ebc  2**2
+ 43 .text.esp_http_client_delete_header 00000014  00000000  00000000  00000e10  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .text.esp_http_client_set_method 0000000a  00000000  00000000  00000ed0  2**2
+ 44 .text.esp_http_client_set_method 0000000a  00000000  00000000  00000e24  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 45 .text.esp_http_client_read 0000008b  00000000  00000000  00000edc  2**2
+ 45 .text.esp_http_client_read 0000008b  00000000  00000000  00000e30  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .text.esp_http_client_fetch_headers 00000056  00000000  00000000  00000f68  2**2
+ 46 .text.esp_http_client_fetch_headers 00000056  00000000  00000000  00000ebc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 47 .text.esp_http_client_write 0000003c  00000000  00000000  00000fc0  2**2
+ 47 .text.esp_http_client_write 0000003c  00000000  00000000  00000f14  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 48 .text.esp_http_client_close 0000002a  00000000  00000000  00000ffc  2**2
+ 48 .text.esp_http_client_close 0000002a  00000000  00000000  00000f50  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 49 .text.esp_http_client_cleanup 000000b8  00000000  00000000  00001028  2**2
+ 49 .text.esp_http_client_cleanup 000000b8  00000000  00000000  00000f7c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 50 .text.esp_http_client_set_url 000002b0  00000000  00000000  000010e0  2**2
+ 50 .text.esp_http_client_set_url 000002b0  00000000  00000000  00001034  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 51 .text.esp_http_client_init 000003d4  00000000  00000000  00001390  2**2
+ 51 .text.esp_http_client_init 000003d4  00000000  00000000  000012e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 52 .text.esp_http_client_connect 00000136  00000000  00000000  00001764  2**2
+ 52 .text.esp_http_client_connect 00000136  00000000  00000000  000016b8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 53 .text.esp_http_client_request_send 00000208  00000000  00000000  0000189c  2**2
+ 53 .text.esp_http_client_request_send 00000208  00000000  00000000  000017f0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .text.esp_http_client_open 0000001a  00000000  00000000  00001aa4  2**2
+ 54 .text.esp_http_client_open 0000001a  00000000  00000000  000019f8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 55 .text.esp_http_client_perform 0000035e  00000000  00000000  00001ac0  2**2
+ 55 .text.esp_http_client_perform 0000032a  00000000  00000000  00001a14  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .rodata.esp_http_client_perform 00000014  00000000  00000000  00001e20  2**2
+ 56 .rodata.esp_http_client_perform 00000014  00000000  00000000  00001d40  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 57 .text.esp_http_client_set_post_field 0000003e  00000000  00000000  00001e34  2**2
+ 57 .text.esp_http_client_set_post_field 0000003e  00000000  00000000  00001d54  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 58 .text.esp_http_client_get_post_field 00000012  00000000  00000000  00001e74  2**2
+ 58 .text.esp_http_client_get_post_field 00000012  00000000  00000000  00001d94  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 59 .text.esp_http_client_get_status_code 00000009  00000000  00000000  00001e88  2**2
+ 59 .text.esp_http_client_get_status_code 00000009  00000000  00000000  00001da8  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 60 .text.esp_http_client_get_content_length 00000009  00000000  00000000  00001e94  2**2
+ 60 .text.esp_http_client_get_content_length 00000009  00000000  00000000  00001db4  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 61 .text.esp_http_client_is_chunked_response 0000000a  00000000  00000000  00001ea0  2**2
+ 61 .text.esp_http_client_is_chunked_response 0000000a  00000000  00000000  00001dc0  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 62 .text.esp_http_client_get_transport_type 0000002a  00000000  00000000  00001eac  2**2
+ 62 .text.esp_http_client_get_transport_type 0000002a  00000000  00000000  00001dcc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 63 .rodata.__FUNCTION__$5700 00000018  00000000  00000000  00001ed6  2**0
+ 63 .rodata.__FUNCTION__$5700 00000018  00000000  00000000  00001df6  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 64 .rodata.__FUNCTION__$5663 0000000c  00000000  00000000  00001eee  2**0
+ 64 .rodata.__FUNCTION__$5663 0000000c  00000000  00000000  00001e0e  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 65 .rodata.HTTP_METHOD_MAPPING 00000028  00000000  00000000  00001efc  2**2
+ 65 .rodata.HTTP_METHOD_MAPPING 00000028  00000000  00000000  00001e1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 66 .debug_frame  00000358  00000000  00000000  00001f24  2**2
+ 66 .debug_frame  00000358  00000000  00000000  00001e44  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 67 .debug_info   00002c4f  00000000  00000000  0000227c  2**0
+ 67 .debug_info   00002be1  00000000  00000000  0000219c  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 68 .debug_abbrev 00000433  00000000  00000000  00004ecb  2**0
+ 68 .debug_abbrev 00000433  00000000  00000000  00004d7d  2**0
                   CONTENTS, READONLY, DEBUGGING
- 69 .debug_loc    00000cbe  00000000  00000000  000052fe  2**0
+ 69 .debug_loc    00000cbe  00000000  00000000  000051b0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 70 .debug_aranges 00000128  00000000  00000000  00005fbc  2**0
+ 70 .debug_aranges 00000128  00000000  00000000  00005e6e  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 71 .debug_ranges 00000190  00000000  00000000  000060e4  2**0
+ 71 .debug_ranges 00000190  00000000  00000000  00005f96  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 72 .debug_line   00001588  00000000  00000000  00006274  2**0
+ 72 .debug_line   0000157c  00000000  00000000  00006126  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 73 .debug_str    00001412  00000000  00000000  000077fc  2**0
+ 73 .debug_str    00001412  00000000  00000000  000076a2  2**0
                   CONTENTS, READONLY, DEBUGGING
- 74 .comment      0000003b  00000000  00000000  00008c0e  2**0
+ 74 .comment      0000003b  00000000  00000000  00008ab4  2**0
                   CONTENTS, READONLY
- 75 .xtensa.info  00000038  00000000  00000000  00008c49  2**0
+ 75 .xtensa.info  00000038  00000000  00000000  00008aef  2**0
                   CONTENTS, READONLY
- 76 .xt.lit       000000b8  00000000  00000000  00008c81  2**0
+ 76 .xt.lit       000000b8  00000000  00000000  00008b27  2**0
                   CONTENTS, RELOC, READONLY
- 77 .xt.prop      00000fa8  00000000  00000000  00008d39  2**0
+ 77 .xt.prop      00000fa8  00000000  00000000  00008bdf  2**0
                   CONTENTS, RELOC, READONLY
 
 http_auth.o:     file format elf32-xtensa-le

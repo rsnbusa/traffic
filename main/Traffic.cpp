@@ -2682,7 +2682,7 @@ void heartBeat(void *pArg)
 {
 	while(true)
 	{
-		if(kalive)
+		if(kalive )
 			sendMsg(RUALIVE,EVERYBODY,0,0,NULL,0);
 		if(sysConfig.keepAlive<10000)
 			sysConfig.keepAlive=10000;

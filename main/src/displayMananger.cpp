@@ -145,17 +145,20 @@ void checkAlive(void *pArg)
 	while(true) //forever
 	{
 		delay(sysConfig.keepAlive+1000); //one second more than the current keepAlive. Give him change to log he is alive
-		time(&now);
-		for (int a=1;a<=numLogins;a++)
+		if(kalive)
 		{
-			if((now-activeNodes.lastTime[a])>(sysConfig.keepAlive/1000) && !activeNodes.dead[a])
+			time(&now);
+			for (int a=1;a<=numLogins;a++)
 			{
-				localtime_r(&activeNodes.lastTime[a], &ts);
-				sprintf(textl,"Light[%d] %s is dead,last seen alive %s",a,logins[a].namel,asctime(&ts));
-				activeNodes.dead[a]=true;
-				sendAlert(string(textl), strlen(textl));
-			}
+				if((now-activeNodes.lastTime[a])>(sysConfig.keepAlive/1000) && !activeNodes.dead[a])
+				{
+					localtime_r(&activeNodes.lastTime[a], &ts);
+					sprintf(textl,"Light[%d] %s is dead,last seen alive %s",a,logins[a].namel,asctime(&ts));
+					activeNodes.dead[a]=true;
+					sendAlert(string(textl), strlen(textl));
+				}
 
+			}
 		}
 	}
 }
