@@ -1275,7 +1275,7 @@ char textl[70];
 
 	#ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]Alarm %d Node %d Station %d %s\n",cual.fromwho,cual.free1,cual.free2,textl);
+				   printf("[WIFID]Alarm %d Street %d Station %d %s\n",cual.fromwho,cual.free1,cual.free2,textl);
 	#endif
 		sendAlert(string(textl),strlen(textl));
 }
@@ -1394,16 +1394,16 @@ void reportLight(u32 expected, u32 readleds)
 					}
 				sysLights.failed = sysLights.failed|(1ul<<a);
 		//		write_to_flash_lights();
-				if(sysConfig.mode==SERVER)
-				{
-					sprintf(textl,"Street %s/%s Light %s failed",sysConfig.groupName,sysConfig.lightName, sysLights.theNames[fue]);
-					sendAlert(string(textl),strlen(textl));
-				}
-				else
-				{
+//				if(sysConfig.mode==SERVER)
+//				{
+//					sprintf(textl,"Street %s/%s Light %s failed",sysConfig.groupName,sysConfig.lightName, sysLights.theNames[fue]);
+//					sendAlert(string(textl),strlen(textl));
+//				}
+//				else
+//				{
 					sprintf(textl,"Station %s Light %s failed",sysConfig.stationName, sysLights.theNames[fue]);
-					sendMsg(ALARM,EVERYBODY,0,0,textl,strlen(textl));
-				}
+					sendMsg(ALARM,EVERYBODY,fue,sysConfig.stationid,textl,strlen(textl));
+//				}
 			}
 		}
 	}
@@ -2044,6 +2044,14 @@ void initVars()
 		settings.buffer_size=2048;
 		settings.disable_clean_session=false;
 	}
+
+	strcpy(bulbColors[0],"RED");
+	strcpy(bulbColors[1],"YLW");
+	strcpy(bulbColors[2],"GRN");
+	strcpy(bulbColors[3],"LFT");
+	strcpy(bulbColors[4],"RGT");
+	strcpy(bulbColors[5],"DWK");
+	strcpy(bulbColors[6],"WLK");
 
 	strcpy(APP,"TrafficIoT");
 	strcpy(lookuptable[0].key,"BOOTD");

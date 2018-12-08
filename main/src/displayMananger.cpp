@@ -144,7 +144,7 @@ void checkAlive(void *pArg)
 
 	while(true) //forever
 	{
-		delay(sysConfig.keepAlive+1000); //one second more than the current keepAlive. Give him change to log he is alive
+		delay(sysConfig.keepAlive+1000); //one second more than the current keepAlive. Give him chance to log he is alive
 		if(kalive)
 		{
 			time(&now);
