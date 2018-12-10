@@ -59,8 +59,6 @@ using namespace std;
  EXTERN esp_mqtt_client_handle_t		gClient;
  EXTERN nvs_handle 						nvshandle,seqhandle,lighthandle,backhandle;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
- EXTERN esp_adc_cal_characteristics_t 	*adc_chars;
- EXTERN adc1_channel_t 					adcchannel;     //GPIO34 if ADC1, GPIO14 if ADC2
  EXTERN cmd_struct 						answer;
  EXTERN scheduler_struct				scheduler;
  EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle;
@@ -70,14 +68,15 @@ using namespace std;
  EXTERN mbedtls_md_context_t 			md5;
  EXTERN httpd_handle_t 					server;
  EXTERN httpd_uri_t 					loscmds[30];
- EXTERN functrsn						theCode[MAXCMDS];
+ EXTERN functp							theCode[MAXCMDS];
+ EXTERN statistics_struct				internal_stats;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,globalWalk,backupf;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
  EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins;
- EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID;
+ EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID,burnt[MAXNODES];
  EXTERN int								RSSI,gCycleTime,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
  EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[20],upstream,downstream;
  EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10],

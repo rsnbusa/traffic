@@ -65,10 +65,10 @@ string get_string(uart_port_t uart_num,u8 cual,bool strip)
 		//	printf("%d ",ch);
 			if(ch==cual)
 			{
-				if(strip)
+				if(strip && strlen(dijo)>1)
 				{
-				sscanf(dijo, "%s", noblanks); // Trimming on both sides occurs here
-				return string(noblanks);
+					sscanf(dijo, "%s", noblanks); // Trimming on both sides occurs here
+					return string(noblanks);
 				}
 				else
 					return(string(dijo));
@@ -109,7 +109,7 @@ u32 makeInPorts(string cual)
 	int8_t donde;
 
 		  char * pch;
-		  printf ("For INPUT Splitting string \"%s\" into tokens:\n",cual.c_str());
+	//	  printf ("For INPUT Splitting string \"%s\" into tokens:\n",cual.c_str());
 		  pch = strtok ((char*)cual.c_str(),",");
 		  while (pch != NULL)
 		  {
@@ -245,7 +245,7 @@ string byte_to_binarytxt(uint32_t x,bool outp)
     		if(van>0)
     			resp+="-";
     		van++;
-    		resp+=sysLights.theNames[a];
+    		resp+=bulbColors[sysLights.theNames[a]];
     	}
     }
 
@@ -269,12 +269,22 @@ string byte_to_binary_porttxt(uint32_t x)
     			resp+="+";
     		van++;
     		sprintf(textl,"%d(",sysLights.outPorts[a]);
-    		resp+=string(textl)+sysLights.theNames[a];
+    		resp+=string(textl)+bulbColors[sysLights.theNames[a]];
     		resp+=")";
     	}
     }
 
     return resp;
+}
+
+int findColor(char *pch)
+{
+	for (int a=0;a<NUMCOLORS;a++)
+	{
+		if(strcmp(pch,bulbColors[a])==0)
+			return a;
+	}
+	return ESP_FAIL;
 }
 
 void kbd_blink(uart_port_t uart_num)
@@ -309,9 +319,9 @@ void kbd_ports(uart_port_t uart_num)
 		inb+=string(textl);
 
 		if(a<sysLights.numLuces-1)
-			s1+=string(sysLights.theNames[a])+"-";
+			s1+=string(bulbColors[sysLights.theNames[a]])+"-";
 		else
-			s1+=string(sysLights.theNames[a]);
+			s1+=string(bulbColors[sysLights.theNames[a]]);
 	}
 	printf("Ports Definitions(out-in-name,...)\n");
 	printf("Ports(Out:%s In:%s)[%s]:",outb.c_str(),inb.c_str(),s1.c_str());
@@ -322,11 +332,11 @@ void kbd_ports(uart_port_t uart_num)
 		for(int a=0;a<6;a++){
 			sysLights.outPorts[a]=-1;
 			sysLights.inPorts[a]=-1;
-			sysLights.theNames[a][0]=0;
+			sysLights.theNames[a]=0;
 		}
 		string s2="";
 		string s3="";
-		int van=0;
+		int van=0,lpos;
 		char * pch;
 		//Format is, output port-input port-name,...  Ex: 14-31-RED,13-32-YLW,etc
 	//	 printf ("Splitting string \"%s\" into tokens:\n",s1.c_str());
@@ -339,7 +349,15 @@ void kbd_ports(uart_port_t uart_num)
 	//		  printf("In [%s]-",pch);
 			  s3=s3+string(pch)+",";//Light Detection Port
 			  pch = strtok (NULL,",");
-			  strcpy(sysLights.theNames[van],pch);
+			  //fin position of ColorName
+			  lpos=findColor(pch);
+			  if(lpos<0)
+			  {
+				  printf("Invalid Bulb Name\n");
+				  return;
+			  }
+			  sysLights.theNames[van]=lpos;
+		//	  strcpy(sysLights.theNames[van],pch);
 	//		  printf("Name [%s]\n",pch);
 			  pch = strtok (NULL, "-");
 			  van++;
@@ -387,9 +405,9 @@ void kbd_light_sequence(uart_port_t uart_num)
 		if(sysLights.outPorts[a]>=0)
 		{
 			if(a<sysLights.numLuces-1)
-				sprintf(textl,"%d/%s,",sysLights.outPorts[a],sysLights.theNames[a]);
+				sprintf(textl,"%d/%s,",sysLights.outPorts[a],bulbColors[sysLights.theNames[a]]);
 			else
-				sprintf(textl,"%d/%s",sysLights.outPorts[a],sysLights.theNames[a]);
+				sprintf(textl,"%d/%s",sysLights.outPorts[a],bulbColors[sysLights.theNames[a]]);
 			algo+=string(textl);
 		}
 
@@ -1323,8 +1341,6 @@ void kbd(void *arg) {
 				break;
 			}
 		}
-		else
-			printf("Unknown command\n");
 		vTaskDelay(BLINKT / portTICK_PERIOD_MS);
 	}
 }

@@ -9,6 +9,7 @@
 using namespace std;
 extern uint32_t IRAM_ATTR millis();
 extern void delay(uint32_t a);
+extern void heartBeat(void *pArg);
 void sendAlert(string que, int len);
 
 
@@ -140,7 +141,8 @@ void checkAlive(void *pArg)
 {
 	struct tm  ts;
 	time_t now;
-	char textl[60];
+	char textl[100];
+	int cuales;
 
 	while(true) //forever
 	{
@@ -153,8 +155,15 @@ void checkAlive(void *pArg)
 				if((now-activeNodes.lastTime[a])>(sysConfig.keepAlive/1000) && !activeNodes.dead[a])
 				{
 					localtime_r(&activeNodes.lastTime[a], &ts);
-					sprintf(textl,"Light[%d] %s is dead,last seen alive %s",a,logins[a].namel,asctime(&ts));
+					cuales=0;
+					for (int b=0;b<numLogins;b++)
+						if(logins[b].stationl==a)
+							cuales=b;
+					sprintf(textl,"Light[%d] %s is dead,last seen alive %s",a,logins[cuales].namel,asctime(&ts));
 					activeNodes.dead[a]=true;
+//					if(a<(numLogins-1))
+//						memcpy(&logins[a],&logins[a+1],sizeof(logins[0])*(numLogins-a-1))
+//					numLogins--;
 					sendAlert(string(textl), strlen(textl));
 				}
 
@@ -195,7 +204,9 @@ void timerManager(void *arg) {
 				rxtxf=true;
 				sendMsg(SENDCLONE,EVERYBODY,0,0,NULL,0);
 				xTaskCreate(&checkAlive,"alive",4096,NULL, 5, NULL);
+				xTaskCreate(&heartBeat, "heartB", 4096, NULL, 4, NULL);
 				time(&t);
+				internal_stats.session_start=t;
 				localtime_r(&t, &timeinfo);
 				sprintf(textl,"Boot Complete for %s at %s %d stations joined",sysConfig.lightName,asctime(&timeinfo),sysConfig.totalLights-1);
 				while(!mqttf && tryMqtt)

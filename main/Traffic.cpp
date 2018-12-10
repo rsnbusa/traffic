@@ -556,7 +556,7 @@ esp_err_t http_get_handler(httpd_req_t *req)
 	argument->pMessage=req;
 	argument->typeMsg=0;
 	argument->pComm=req;
-	(*(functrsn)req->user_ctx)(argument);
+	(*(functp)req->user_ctx)(argument);
 	free(argument);
     return ESP_OK;
 }
@@ -1113,6 +1113,7 @@ void cmd_i_am_alive(cmd_struct cual)
 		//   printf( "[Remote IP:" IPSTR "]\n", IP2STR(&cual.myip));
 
 	   activeNodes.nodesReported[cual.free2]=1;
+	   activeNodes.dead[cual.free2]=false; //obviously
 	   time(&now);
 	   activeNodes.lastTime[cual.free2]=now;
 	   //task to check every KEEPALIVE interval for time difference of current time-lastime(x)>KEEPALIVE, he is dead, do something
@@ -1239,28 +1240,48 @@ void cmd_send_clone(cmd_struct cual)
 	   sendMsg(CLONE,sysConfig.whoami,0,0,(char*)&sysLights,sizeof(sysLights));
 }
 
-bool find_station(u8 stat)
+int find_station(u8 stat)
 {
 	for (int a=0;a<numLogins;a++)
 		if(logins[a].stationl==stat)
-			return true;
-	return false;
+			return a;
+	return ESP_FAIL;
 }
 
 void cmd_login(cmd_struct cual)
 {
+	int donde;
+	char textl[60];
+
 	if(sysConfig.mode==SERVER) //Only server
 	{
 	#ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]Login %d Node %d Station %d Total %d\n",cual.fromwho,cual.free1,cual.free2,numLogins);
+				   printf("[WIFID]Login %d Node %d Station(%d) %s Total %d\n",cual.fromwho,cual.free1,cual.free2,cual.buff,numLogins);
 	#endif
-		if(!find_station(cual.free2))
-		{
+		donde=find_station(cual.free2);
+		if(donde==ESP_FAIL) //new login
+		{ //new login
 			logins[numLogins].nodel=cual.fromwho;
 			logins[numLogins].stationl=cual.free2;
-			strcpy(logins[numLogins].namel,cual.buff);
+			memcpy(&logins[numLogins].namel,cual.buff,strlen(cual.buff));
+			time(&logins[numLogins].timestamp);
 			numLogins++;
+		}
+		else //was dead now alive or reboot login
+		{
+			struct tm  ts;
+			time_t now;
+			bool relogin=false;
+			time(&now);
+			localtime_r(&now, &ts);
+			if(!activeNodes.dead[donde])
+				//relogin, reboot or something. Not detected as dead
+				relogin=true;
+			activeNodes.dead[donde]=false;//resurrected
+			time(&logins[donde].timestamp);
+			sprintf(textl,"Station(%d) %s is %s at %s",logins[donde].stationl,logins[donde].namel,relogin?"Reboot":"Online",asctime(&ts));
+			sendAlert(string(textl),strlen(textl));
 		}
 	}
 }
@@ -1275,8 +1296,9 @@ char textl[70];
 
 	#ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<WIFID))
-				   printf("[WIFID]Alarm %d Street %d Station %d %s\n",cual.fromwho,cual.free1,cual.free2,textl);
+				   printf("[WIFID]Alarm from %d Light(%d)%s Station %d %s\n",cual.fromwho,cual.free1,bulbColors[cual.free1],cual.free2,textl);
 	#endif
+			   burnt[cual.free2] |=1<<cual.free1; // bit setting
 		sendAlert(string(textl),strlen(textl));
 }
 }
@@ -1401,7 +1423,7 @@ void reportLight(u32 expected, u32 readleds)
 //				}
 //				else
 //				{
-					sprintf(textl,"Station %s Light %s failed",sysConfig.stationName, sysLights.theNames[fue]);
+					sprintf(textl,"%s station %s light failed",sysConfig.stationName, bulbColors[sysLights.theNames[fue]]);
 					sendMsg(ALARM,EVERYBODY,fue,sysConfig.stationid,textl,strlen(textl));
 //				}
 			}
@@ -1639,7 +1661,11 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	answer.free1=f1;
 	answer.free2=f2;
 	answer.seqnum++;
-	answer.myip=localIp;
+	if(sysConfig.mode==SERVER)
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP,&answer.ipstuff);
+	else
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&answer.ipstuff);
+//	answer.myip=localIp;
 	time(&answer.theTime);
 
 #ifdef DEBUGSYS
@@ -1650,7 +1676,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	if(que && (len>0))
 		memcpy(&answer.buff,que,len);
 
-	tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
+	//tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
@@ -1884,7 +1910,7 @@ void repeater(void *pArg)
 				printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
 #endif
 
-			if(comando.towho==sysConfig.stationid ) //its for us, you are also a standard light
+			if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
 				process_cmd(comando);
 		}
 	}
@@ -2022,6 +2048,7 @@ void initVars()
 		activeNodes.nodesReported[a]=-1;
 	}
 	activeNodes.reported=0;
+	memset(&burnt,0,sizeof(burnt));
 
 	uint16_t a=esp_random();
 	sprintf(textl,"Trf%04x",a);
@@ -2457,15 +2484,15 @@ void doneCallback( TimerHandle_t xTimer )
 void cycleManager(void * pArg)
 {
 	char theNodes[50];
-	int voy=0,cual,este;
+	int voy=0,cual,esteCycle;
 	node_struct intersections;
 	char textl[20];
 	time_t now;
-	u16 soyYo;
+	u16 soyYo; //Street Number like 0,1,2. Should not skip one, ex, 0,2,3
 	u32 st,ulCount,fueron;
 
 	cual=(int)pArg; //cycle to use
-	este=sysSequence.sequences[cual].cycleId;
+	esteCycle=sysSequence.sequences[cual].cycleId;
 
 	while(!rxtxf)
 	{
@@ -2475,10 +2502,10 @@ void cycleManager(void * pArg)
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<TRAFFICD))
-		printf("[TRAFFICD]Schedule %d Cycle %d\n",cual,este);
+		printf("[TRAFFICD]Schedule %d Cycle %d\n",cual,esteCycle);
 #endif
 
-	strcpy(theNodes,allCycles.nodeSeq[este]);
+	strcpy(theNodes,allCycles.nodeSeq[esteCycle]);
 	makeNodeTime(theNodes,&intersections);
 
 	doneTimer=xTimerCreate("DoneMsh",1,pdFALSE,( void * ) 0,&doneCallback); //just create it. Time will be changed per Node
@@ -2511,47 +2538,50 @@ void cycleManager(void * pArg)
 		globalDuration=intersections.timeval[voy]*FACTOR;
 
 		time(&now);
+		internal_stats.schedule_changes++;
+		internal_stats.started[esteCycle][intersections.nodeid[voy]]++;
 		sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
 		if(intersections.timeval[voy]<5)
 			printf("TIMER Fault %d\n",intersections.timeval[voy]);
 
+		vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
 		xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+2)*FACTOR,0,0);//MUST wait for done so 2 secs more and no timeout
 
 		st=millis();
 		while(true)
 		{
-			if( xQueueReceive( cola, &soyYo, portMAX_DELAY ))
+			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 			{
-				if(soyYo==intersections.nodeid[voy])
+				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
 				{
 					gCycleTime=-1;
-					xTimerStop(doneTimer,0);
-					ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
-					if(ulCount)
-					{
-#ifdef DEBUGSYS
-						if(sysConfig.traceflag & (1<<TRAFFICD))
-							printf("[TRAFFICD]DONE timeout %d\n",ulCount);
-#endif
-						vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out
-						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0);
-						//Log timeout, send waring if x times,etc
+					if(xTimerIsTimerActive(doneTimer)!=pdFALSE)
+					{ //this should be time out
+						//xTimerStop(doneTimer,0);
+						//reconfirm timeout
+						internal_stats.timeout[esteCycle][soyYo]++;
+						ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
+						if(ulCount)
+						{
+	#ifdef DEBUGSYS
+							if(sysConfig.traceflag & (1<<TRAFFICD))
+								printf("[TRAFFICD]DONE timeout %d\n",ulCount);
+	#endif
+							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+							//Log timeout, send warning if x times,etc
+						}
 					}
+						internal_stats.confirmed[esteCycle][soyYo]++;
 
 					fueron=millis()-st;
 #ifdef DEBUGSYS
 					if(sysConfig.traceflag & (1<<TRAFFICD))
 						printf("[TRAFFICD]DONE received %d\n",fueron);
 #endif
-					break;
+					break; //next in cycle
 				}
 				else
-				{
-					if(soyYo>30){
-						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-						break;
-					}
-					else
+				{ //Somebody is sending DONE when not its turn
 						printf("Talking out of turn %d. Possible configuration problem\n",soyYo);
 				}
 			}
@@ -2926,6 +2956,5 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 
 	if(sysConfig.mode==SERVER){
 		xTaskCreate(&controller,"controller",10240,NULL, 5, NULL);									// If we are a Controller
-		xTaskCreate(&heartBeat, "heartB", 4096, NULL, 4, NULL);
 	}
 }

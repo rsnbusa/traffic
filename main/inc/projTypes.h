@@ -74,15 +74,15 @@ typedef struct {
 
 typedef struct {
 	u8 numcycles;
-	u16 totalTime[10];
-	char nodeSeq[10][50];
+	u16 totalTime[MAXCYCLES];
+	char nodeSeq[MAXCYCLES][50];
 	unsigned char md5[16];
 } cycle_struct;
 
 typedef struct {
 	u8 howmany;
-	u8 nodeid[10];
-	u16 timeval[10];
+	u8 nodeid[MAXNODES];
+	u16 timeval[MAXNODES];
 } node_struct;
 
 typedef struct {
@@ -93,15 +93,16 @@ typedef struct {
 
 typedef struct{
 	u8 reported;
-	int8_t nodesReported[20];
-	time_t lastTime[20];
-	bool dead[20];
+	int8_t nodesReported[MAXNODES];
+	time_t lastTime[MAXNODES];
+	bool dead[MAXNODES];
 } sta_status;
 
 typedef struct {
 	u8 nodel;
 	u8 stationl;
 	char namel[20];
+	u32 timestamp;
 } login_struct;
 
 typedef struct  {
@@ -144,7 +145,7 @@ typedef struct {
 
 typedef struct {
     u8 numSequences;
-    Sequence sequences[30]; //repeat weekly
+    Sequence sequences[MAXSEQUENCES]; //repeat weekly
     unsigned char md5[16];
 } sequence_struct;
 
@@ -152,27 +153,33 @@ typedef struct {
     // Lights for Nodes
 	u8 numLuces;
     u32 outbitsPorts,lastGivenTime;
-    int8_t outPorts[6];
-    char theNames[6][4];
-    TrafficCompStruct lasLuces[6];
+    int8_t outPorts[MAXLIGHTS];
+    u8 theNames[MAXLIGHTS];
+    TrafficCompStruct lasLuces[MAXLIGHTS];
 	u8 defaultLight,blinkLight;
 	u32 inbitsPorts;
-	int8_t inPorts[6];
+	int8_t inPorts[MAXLIGHTS];
 	u32 failed;
 	unsigned char md5[16];
 } lights_struct;
+
+typedef struct {
+	time_t session_start;
+	u32 schedule_changes;
+	u32 started[MAXCYCLES][MAXNODES],confirmed[MAXCYCLES][MAXNODES],timeout[MAXCYCLES][MAXNODES];
+} statistics_struct;
 
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
 enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD};
 
 typedef struct { char key[10]; int val; } t_symstruct;
 
-typedef void (*functrsn)(void *);
+typedef void (*functp)(void *);
 typedef esp_err_t (*url_cb)(httpd_req_t *req);
 
 typedef struct{
     char comando[20];
-    functrsn code;
+    functp code;
 }cmdRecord;
 
 typedef struct{
