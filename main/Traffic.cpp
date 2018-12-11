@@ -499,20 +499,20 @@ void newSSID(void *pArg)
 	if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Try SSID =%s= %d %d\n",temp.c_str(),cual,len);
 #endif
-	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
-//	temp=string(sysConfig.ssid[cual]);
-//	len=temp.length();
-//	memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
-	strcpy(sta_config.sta.ssid,sysConfig.ssid[cual]);
-	strcpy(sta_config.sta.password,sysConfig.pass[cual]);
-//	sta_config.sta.ssid[len]=0;
-//	temp=string(sysConfig.pass[cual]);
-//	len=temp.length();
-//	memcpy((void*)sta_config.sta.password,temp.c_str(),len);
-	sta_config.sta.bssid_set=0;
-	sta_config.sta.password[len]=0;
+//	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+	temp=string(sysConfig.ssid[cual]);
+	len=temp.length();
+	memcpy((void*)sta_config.sta.ssid,temp.c_str(),len);
+//	strcpy(sta_config.sta.ssid,sysConfig.ssid[cual]);
+//	strcpy(sta_config.sta.password,sysConfig.pass[cual]);
+	sta_config.sta.ssid[len]=0;
+	temp=string(sysConfig.pass[cual]);
+	len=temp.length();
+	memcpy((void*)sta_config.sta.password,temp.c_str(),len);
+//	sta_config.sta.bssid_set=0;
+//	sta_config.sta.password[len]=0;
 	ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
-	esp_wifi_start(); //if error try again indefinitly
+	esp_wifi_start(); //if error try again indefinitely
 	vTaskDelete(NULL);
 }
 
@@ -633,6 +633,7 @@ void station_setup(system_event_t *event)
 
 	// Main routine for Commands
 	if(sysConfig.mode==CLIENT ){
+		delay(400);
 		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 	}
@@ -658,6 +659,7 @@ void station_setup(system_event_t *event)
 		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
 		//Create repeater task with new IP given
 		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+		delay(400);
 		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 	}
 }
@@ -711,14 +713,14 @@ void station_disconnected(system_event_t *event)
 	if(sysConfig.mode>0)
 	{
 		curSSID++;
-		if(curSSID>4)
-			curSSID=0;
+		if(curSSID>1)
+			curSSID=1;
 		temp=string(sysConfig.ssid[curSSID]);
 		if(temp=="")
-			curSSID=0;
+			curSSID=1;
 	}
 	else
-		curSSID=0; //Client mode always
+		curSSID=1; //Client mode always
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<WIFID))
@@ -769,13 +771,20 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		{
 			if(!mongf)
 			{
-				printf("Mongoose Start AP\n");
+				//printf("Mongoose Start AP\n");
+		//		mongf=true;
 		//		xTaskCreate(&httpTask, "mongooseTask", 10240, NULL, 5, NULL);
 			//	xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
 			}
 		}
 		if(sysConfig.mode!=REPEATER)
-			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+		{
+			if(!rxmessagef)
+			{
+			//	printf("Launch Rxmessage %d\n",rxmessagef);
+				xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+			}
+		}
 		//Repeater task will be started by STA_GOT_IP so we can change the DHCP address.
 
 		break;
@@ -805,7 +814,11 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
-		station_disconnected(event);
+		//Fix setup as 0=AP SSID and 1 as STA ssid. If 1 is not active, AP will be already working and
+		// we only need to connect to try to engage with STA SSID.
+		// if we need to change the STA SSID name, I guess
+		esp_wifi_connect();
+	//	station_disconnected(event);
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
@@ -1601,7 +1614,7 @@ int create_multicast_ipv4_socket(int port,bool ap)
     struct sockaddr_in saddr;
     memset(&saddr,0,sizeof(saddr));
 
-    printf("Create MultiSocket Port %d AP %d\n",port,ap);
+   // printf("Create MultiSocket Port %d AP %d\n",port,ap);
     int sock = -1;
     int err = 0;
 
@@ -1615,7 +1628,7 @@ int create_multicast_ipv4_socket(int port,bool ap)
         ESP_LOGE(TAG, "Failed to create socket. Error %d %s", errno,strerror(errno));
         return -1;
     }
-    printf("Socket Address %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
+ //  printf("Socket Address %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
 
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
         printf("setsockopt(SO_REUSEADDR) failed\n");
@@ -1678,11 +1691,6 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 	//tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
 
-#ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		ESP_LOGI(TAG,"Send to Ip %d:%d:%d:%d",IP2STR(&answer.ipstuff.ip));
-#endif
-
 	salen++;
 	sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 	if (sock < 0)
@@ -1690,7 +1698,6 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
 		return;
 	}
-
 	//SET THE MULTICAST ADDRESS AND PORT
 	 memset((char *) &groupSock, 0, sizeof(groupSock));
 	 groupSock.sin_family = AF_INET;
@@ -1712,6 +1719,11 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
 	else
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		printf("SendMsg to Ip %d:%d:%d:%d",IP2STR(&ip_info.ip));
+#endif
 
 	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
 	if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
@@ -1742,6 +1754,7 @@ void rxMessage(void *pArg)
     u32 		lastts=0;
     int 		theSock;
 
+    rxmessagef=true;
 	theSock = create_multicast_ipv4_socket(UDP_PORT,false);
 	if (theSock < 0) {
 		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
@@ -1815,6 +1828,7 @@ void streamTask(void *pArg) //for Repeater configuration
 		//set the Interface we want to use.
 		tcpip_adapter_get_ip_info(ap?TCPIP_ADAPTER_IF_STA:TCPIP_ADAPTER_IF_AP, &if_info);//for repeater AP and STA should be interchangeable
 		localInterface.s_addr =(in_addr_t) if_info.ip.addr;
+		ESP_LOGI(TAG,"StreamSendMsg %s to Ip %d:%d:%d:%d",ap?"UP":"DOWN",IP2STR(&if_info.ip));
 		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
 		{
 			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
@@ -1829,7 +1843,7 @@ void streamTask(void *pArg) //for Repeater configuration
 			{
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
-				printf("[TRAFFICD]Sending %s CMD(%d) %s\n",ap?"Up":"Down",comand.cmd,tcmds[comand.cmd]);
+				printf("[TRAFFICD]Sending %s CMD(%d) %s Ip %d:%d:%d:%d\n",ap?"Up":"Down",comand.cmd,tcmds[comand.cmd],IP2STR(&if_info.ip));
 #endif
 				err=sendto(sock, &comand, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
 				if (err < 0)
@@ -1843,13 +1857,18 @@ void streamTask(void *pArg) //for Repeater configuration
     }
 }
 
-void repeater(void *pArg)
+void repeater(void *pArg) //connected to the STA
 {
 	cmd_struct 	comando;
     char 		raddr_name[32];
     struct 		sockaddr_in6 raddr; // Large enough for both IPv4 or IPv6
     u32 		lastts=0;
     int 		theSock;
+    u32			me;
+    tcpip_adapter_ip_info_t 	ip_info ;
+
+	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
+	me=ip_info.ip.addr;
 
 	theSock = create_multicast_ipv4_socket(UDP_PORT,true);
 	if (theSock < 0)
@@ -1879,39 +1898,43 @@ void repeater(void *pArg)
 			memset(raddr_name,0,sizeof(raddr_name));
 			if (raddr.sin6_family == PF_INET)
 				inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
-			printf("[TRAFFICD]In from %s seq %d msg %s towho %d\n",raddr_name,comando.seqnum, comando.buff,comando.towho);
+			printf("[TRAFFICD]Repeater In from %s seq %d msg %s towho %d\n",raddr_name,comando.seqnum, comando.buff,comando.towho);
 		}
 #endif
+
 
 		u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
-		u8 monton[4];
-		u32 mask=0x00ffffff;
-		u32 res=(este&mask)<<8;
-		memcpy(monton,&res,4);
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag&(1<<TRAFFICD))
-			printf("[TRAFFIC]RxMess for STA %d %d %d %d r=%x d=%x u=%x\n",monton[0],monton[1],monton[2],monton[3],res,downstream,upstream);
-#endif
-		if(res==upstream)
+		if(me != este)
 		{
-			xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag&(1<<TRAFFICD))
-			printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
-#endif
-		}
-		if(res==downstream)
-		{
-			//also send because you there can be clones....
-			xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
+			u8 monton[4];
+			u32 mask=0x00ffffff;
+			u32 res=(este&mask)<<8;
+			memcpy(monton,&res,4);
+	#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<TRAFFICD))
+				printf("[TRAFFIC]Repeater RxMess for STA %d %d %d %d r=%x d=%x u=%x\n",monton[0],monton[1],monton[2],monton[3],res,downstream,upstream);
+	#endif
+			if(res==upstream)
+			{
+				xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+	#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<TRAFFICD))
+				printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
+	#endif
+			}
+			if(res==downstream)
+			{
+				//also send because you there can be clones....
+				xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
 
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag&(1<<TRAFFICD))
-				printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
-#endif
+	#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<TRAFFICD))
+					printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+	#endif
 
-			if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
-				process_cmd(comando);
+				if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
+					process_cmd(comando);
+			}
 		}
 	}
 }
@@ -1931,7 +1954,9 @@ void initWiFi()
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	esp_wifi_get_mac(ESP_IF_WIFI_STA, (uint8_t*)&mac);
+
 	memset(&configap,0,sizeof(configap));
+
 	if(string(sysConfig.ssid[1])!="") //1 is in Controller=MQTT server and in Repeater=Controller
 	{
 		strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
@@ -1942,6 +1967,7 @@ void initWiFi()
 	{
 		strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
 		strcpy((char *)configap.ap.password,sysConfig.pass[0]);
+	//	printf("AP Loading [%s][%s]\n",configap.ap.ssid,configap.ap.password);
 	}
 	else
 	{
@@ -1953,32 +1979,29 @@ void initWiFi()
 	configap.ap.authmode=WIFI_AUTH_WPA_PSK;
 	configap.ap.ssid_hidden=false;
 	configap.ap.max_connection=14;
-	configap.ap.beacon_interval=100;
-//	ESP_LOGI(TAG,"AP %s",sysConfig.ssid[0]);
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
-
 	ESP_ERROR_CHECK(esp_wifi_start());
 }
 
 void initWiFiSta()
 {
-	tcpip_adapter_init();
+	wifi_init_config_t 	cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t sta_config;
-	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 
-	wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
-	cfg.event_handler = &esp_event_send;
+	tcpip_adapter_init();
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
-	esp_wifi_set_ps(WIFI_PS_NONE);//multicast problem fix
+	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
+	memset(&sta_config,0,sizeof(sta_config));
 
 	if (string(sysConfig.ssid[0])!="")
 	{
-		ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
 		strcpy((char*)sta_config.sta.ssid,sysConfig.ssid[0]);
 		strcpy((char*)sta_config.sta.password,sysConfig.pass[0]);
-		sta_config.sta.bssid_set=0;
-		ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &sta_config));
+		printf("WifiSta ssid %s pass %s\n",sta_config.sta.ssid,sta_config.sta.password);
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &sta_config));
 		ESP_ERROR_CHECK(esp_wifi_start());
 	}
 	else
@@ -2037,6 +2060,7 @@ void initVars()
 	mdnsHandle=NULL;
 	mqttHandle=NULL;
 
+	rxmessagef=false;
 	kalive=true;
 	globalWalk=false;
 	numLogins=0;
@@ -2162,6 +2186,7 @@ void initVars()
 	strcpy(kbdTable[31],"BulbTest");
 	strcpy(kbdTable[32],"Date");
 	strcpy(kbdTable[33],"Dumpcore");
+	strcpy(kbdTable[34],"Loglevel");
 
 	//Set up Mqtt Variables
 	spublishTopic=string(APP)+"/"+string(sysConfig.groupName)+"/"+string(sysConfig.lightName)+"/MSG";
@@ -2291,7 +2316,7 @@ void initRtc()
 	localtime_r(&tt, &timeinfo);
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<BOOTD))
-		printf("[BOOTD]RTC->UNIX Date %s yDay %d\n",asctime(&timeinfo),timeinfo.tm_yday);
+		printf("[BOOTD]RTC->UNIX yDay %d yDate %s\n",timeinfo.tm_yday,asctime(&timeinfo));
 #endif
 }
 
@@ -2365,8 +2390,8 @@ int read_blob(nvs_handle theHandle,string name,u8 *donde, int len, u8 *md5start)
 	que=memcmp(md5start,&lkey,16);
 
 #ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("%s MD5 %s\n",name.c_str(),que?"Invalid":"Valid");
+	if(sysConfig.traceflag & (1<<BOOTD))
+		printf("[BOOTD]%s MD5 %s\n",name.c_str(),que?"Invalid":"Valid");
 #endif
 	return que;
 }
@@ -2548,6 +2573,52 @@ void cycleManager(void * pArg)
 		xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+2)*FACTOR,0,0);//MUST wait for done so 2 secs more and no timeout
 
 		st=millis();
+
+/*		while(true)
+		{
+			if( xQueueReceive( cola, &soyYo, portMAX_DELAY ))
+			{
+				if(soyYo==intersections.nodeid[voy])
+				{
+					gCycleTime=-1;
+					xTimerStop(doneTimer,0);
+					ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
+					if(ulCount)
+					{
+#ifdef DEBUGSYS
+						if(sysConfig.traceflag & (1<<TRAFFICD))
+							printf("[TRAFFICD]DONE timeout %d\n",ulCount);
+#endif
+						vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out
+						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0);
+						//Log timeout, send waring if x times,etc
+					}
+
+					fueron=millis()-st;
+#ifdef DEBUGSYS
+					if(sysConfig.traceflag & (1<<TRAFFICD))
+						printf("[TRAFFICD]DONE received %d\n",fueron);
+#endif
+					break;
+				}
+				else
+				{
+					if(soyYo>30){
+						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
+						break;
+					}
+					else
+						printf("Talking out of turn %d. Possible configuration problem\n",soyYo);
+				}
+			}
+		}
+
+		voy++;
+		if (voy>=intersections.howmany)
+			voy=0;
+	}*/
+
+
 		while(true)
 		{
 			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
@@ -2555,8 +2626,8 @@ void cycleManager(void * pArg)
 				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
 				{
 					gCycleTime=-1;
-					if(xTimerIsTimerActive(doneTimer)!=pdFALSE)
-					{ //this should be time out
+			//		if(xTimerIsTimerActive(doneTimer)!=pdFALSE)
+			//		{ //this should be time out
 						//xTimerStop(doneTimer,0);
 						//reconfirm timeout
 						internal_stats.timeout[esteCycle][soyYo]++;
@@ -2570,7 +2641,7 @@ void cycleManager(void * pArg)
 							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
 							//Log timeout, send warning if x times,etc
 						}
-					}
+				//	}
 						internal_stats.confirmed[esteCycle][soyYo]++;
 
 					fueron=millis()-st;
@@ -2581,7 +2652,12 @@ void cycleManager(void * pArg)
 					break; //next in cycle
 				}
 				else
-				{ //Somebody is sending DONE when not its turn
+				{
+					if(soyYo>30){
+						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
+						break;
+					}
+					else
 						printf("Talking out of turn %d. Possible configuration problem\n",soyYo);
 				}
 			}
@@ -2868,7 +2944,6 @@ void load_lights()
 //main
 void app_main(void)
 {
-	//esp_log_level_set("*", ESP_LOG_ERROR); //shut up
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
         // NVS partition was truncated and needs to be erased
@@ -2885,6 +2960,7 @@ void app_main(void)
 
     open_recovery();
     load_config();
+	esp_log_level_set("*", (esp_log_level_t)sysConfig.free); //shut up
 
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
 	printf("3 Secs to erase\n");

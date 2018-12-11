@@ -1061,6 +1061,51 @@ void kbd_date(uart_port_t uart_num)
 			algo.month(),algo.date(),algo.hour(),algo.minute(),algo.second(),algo.dayOfWeek());
 }
 
+void kbd_loglevel(uart_port_t uart_num)
+{
+	string s1;
+	char textl[50];
+
+	switch(sysConfig.free)
+	{
+		case ESP_LOG_NONE:
+			strcpy(textl,"ESP_LOG_NONE");
+			break;
+		case ESP_LOG_ERROR:
+			strcpy(textl,"ESP_LOG_ERROR");
+			break;
+		case ESP_LOG_WARN:
+			strcpy(textl,"ESP_LOG_WARN");
+			break;
+		case ESP_LOG_INFO:
+			strcpy(textl,"ESP_LOG_INFO");
+			break;
+		case ESP_LOG_DEBUG:
+			strcpy(textl,"ESP_LOG_DEBUG");
+			break;
+		case ESP_LOG_VERBOSE:
+			strcpy(textl,"ESP_LOG_VERBOSE");
+			break;
+		default:
+			sysConfig.free=ESP_LOG_NONE;
+			strcpy(textl,"ESP_LOG_NONE");
+	}
+
+	printf("Log Level(%s):",textl);
+	fflush(stdout);
+	s1=get_string((uart_port_t)uart_num,10,true);
+	if (s1!=""){
+		u8 cual=atoi(s1.c_str());
+		if(cual<=ESP_LOG_VERBOSE){
+			sysConfig.free=cual;
+			esp_log_level_set("*", (esp_log_level_t)sysConfig.free); //shut up
+			write_to_flash(true);
+		}
+		else
+			printf("Invalid option\n");
+	}
+}
+
 void kbd(void *arg) {
 	uart_port_t uart_num = UART_NUM_0 ;
 	string algo;
@@ -1335,6 +1380,9 @@ void kbd(void *arg) {
 				delay(3000);
 				*p=0;
 				printf("Should not read this\n");
+				break;
+			case LOGLEVELc:
+				kbd_loglevel(uart_num);
 				break;
 			default:
 				printf("No cmd\n");

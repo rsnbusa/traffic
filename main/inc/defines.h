@@ -2,7 +2,7 @@
 #define defines_h
 #define DEBUGSYS
 
-#define UDP_PORT 							333
+#define UDP_PORT 							3333
 #define MULTICAST_TTL 						5
 #define MULTICAST_IPV4_ADDR 				"232.10.11.12"
 
@@ -15,7 +15,7 @@
 #define FOREVER								true
 #define MINHEAP								20000
 #define NKEYS 								24
-#define KCMDS								34
+#define KCMDS								35
 #define MAXLOGINTIME						60   //one minute
 
 #define UIO									5  //GMT local time

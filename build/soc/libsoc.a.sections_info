@@ -130,117 +130,117 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  28 .literal.rtc_clk_cpu_freq_set_xtal 00000010  00000000  00000000  0000026c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .literal.rtc_clk_cpu_freq_set_config 00000058  00000000  00000000  0000027c  2**2
+ 29 .literal.rtc_clk_cpu_freq_set_config 00000068  00000000  00000000  0000027c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .literal.rtc_clk_cpu_freq_set 00000008  00000000  00000000  000002d4  2**2
+ 30 .literal.rtc_clk_cpu_freq_set 00000008  00000000  00000000  000002e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .literal.rtc_clk_cpu_freq_set_config_fast 00000010  00000000  00000000  000002dc  2**2
+ 31 .literal.rtc_clk_cpu_freq_set_config_fast 00000010  00000000  00000000  000002ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .literal.rtc_clk_cpu_freq_set_fast 00000008  00000000  00000000  000002ec  2**2
+ 32 .literal.rtc_clk_cpu_freq_set_fast 00000008  00000000  00000000  000002fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .literal.rtc_clk_apb_freq_get 00000010  00000000  00000000  000002f4  2**2
+ 33 .literal.rtc_clk_apb_freq_get 00000010  00000000  00000000  00000304  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 34 .text         00000000  00000000  00000000  00000304  2**0
+ 34 .text         00000000  00000000  00000000  00000314  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 35 .data         00000000  00000000  00000000  00000304  2**0
+ 35 .data         00000000  00000000  00000000  00000314  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 36 .bss          00000000  00000000  00000000  00000304  2**0
+ 36 .bss          00000000  00000000  00000000  00000314  2**0
                   ALLOC
- 37 .text.rtc_clk_bbpll_disable 0000003a  00000000  00000000  00000304  2**2
+ 37 .text.rtc_clk_bbpll_disable 0000003a  00000000  00000000  00000314  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .rodata.str1.1 000000a0  00000000  00000000  0000033e  2**0
+ 38 .rodata.str1.1 000000a0  00000000  00000000  0000034e  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 39 .text.rtc_clk_cpu_freq_to_pll_mhz 00000094  00000000  00000000  000003e0  2**2
+ 39 .text.rtc_clk_cpu_freq_to_pll_mhz 00000094  00000000  00000000  000003f0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text.rtc_clk_32k_enable_common$constprop$7 00000078  00000000  00000000  00000474  2**2
+ 40 .text.rtc_clk_32k_enable_common$constprop$7 00000078  00000000  00000000  00000484  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text.rtc_clk_32k_enable 00000029  00000000  00000000  000004ec  2**2
+ 41 .text.rtc_clk_32k_enable 00000029  00000000  00000000  000004fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text.rtc_clk_32k_enable_external 0000000f  00000000  00000000  00000518  2**2
+ 42 .text.rtc_clk_32k_enable_external 0000000f  00000000  00000000  00000528  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text.rtc_clk_32k_bootstrap 0000009c  00000000  00000000  00000528  2**2
+ 43 .text.rtc_clk_32k_bootstrap 0000009c  00000000  00000000  00000538  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .text.rtc_clk_32k_enabled 00000010  00000000  00000000  000005c4  2**2
+ 44 .text.rtc_clk_32k_enabled 00000010  00000000  00000000  000005d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 45 .text.rtc_clk_8m_enable 0000007e  00000000  00000000  000005d4  2**2
+ 45 .text.rtc_clk_8m_enable 0000007e  00000000  00000000  000005e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .text.rtc_clk_8m_enabled 00000015  00000000  00000000  00000654  2**2
+ 46 .text.rtc_clk_8m_enabled 00000015  00000000  00000000  00000664  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 47 .text.rtc_clk_8md256_enabled 00000015  00000000  00000000  0000066c  2**2
+ 47 .text.rtc_clk_8md256_enabled 00000015  00000000  00000000  0000067c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 48 .text.rtc_clk_apll_enable 0000014a  00000000  00000000  00000684  2**2
+ 48 .text.rtc_clk_apll_enable 0000014a  00000000  00000000  00000694  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 49 .text.rtc_clk_slow_freq_set 00000044  00000000  00000000  000007d0  2**2
+ 49 .text.rtc_clk_slow_freq_set 00000044  00000000  00000000  000007e0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 50 .text.rtc_clk_slow_freq_get 00000010  00000000  00000000  00000814  2**2
+ 50 .text.rtc_clk_slow_freq_get 00000010  00000000  00000000  00000824  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 51 .text.rtc_clk_slow_freq_get_hz 00000026  00000000  00000000  00000824  2**2
+ 51 .text.rtc_clk_slow_freq_get_hz 00000026  00000000  00000000  00000834  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 52 .text.rtc_clk_fast_freq_set 0000002a  00000000  00000000  0000084c  2**2
+ 52 .text.rtc_clk_fast_freq_set 0000002a  00000000  00000000  0000085c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 53 .text.rtc_clk_fast_freq_get 00000010  00000000  00000000  00000878  2**2
+ 53 .text.rtc_clk_fast_freq_get 00000010  00000000  00000000  00000888  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .text.rtc_clk_bbpll_configure 00000164  00000000  00000000  00000888  2**2
+ 54 .text.rtc_clk_bbpll_configure 00000164  00000000  00000000  00000898  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 55 .text.rtc_clk_xtal_freq_get 00000026  00000000  00000000  000009ec  2**2
+ 55 .text.rtc_clk_xtal_freq_get 00000026  00000000  00000000  000009fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .text.rtc_clk_cpu_freq_from_mhz_internal 00000043  00000000  00000000  00000a14  2**2
+ 56 .text.rtc_clk_cpu_freq_from_mhz_internal 00000043  00000000  00000000  00000a24  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 57 .text.rtc_clk_cpu_freq_from_mhz 00000011  00000000  00000000  00000a58  2**2
+ 57 .text.rtc_clk_cpu_freq_from_mhz 00000011  00000000  00000000  00000a68  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 58 .text.rtc_clk_cpu_freq_value 00000052  00000000  00000000  00000a6c  2**2
+ 58 .text.rtc_clk_cpu_freq_value 00000052  00000000  00000000  00000a7c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 59 .text.rtc_clk_cpu_freq_to_config 00000079  00000000  00000000  00000ac0  2**2
+ 59 .text.rtc_clk_cpu_freq_to_config 00000079  00000000  00000000  00000ad0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 60 .text.rtc_clk_cpu_freq_mhz_to_config 0000005a  00000000  00000000  00000b3c  2**2
+ 60 .text.rtc_clk_cpu_freq_mhz_to_config 0000005a  00000000  00000000  00000b4c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 61 .text.rtc_clk_cpu_freq_get_config 00000097  00000000  00000000  00000b98  2**2
+ 61 .text.rtc_clk_cpu_freq_get_config 00000097  00000000  00000000  00000ba8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 62 .text.rtc_clk_cpu_freq_get 0000001c  00000000  00000000  00000c30  2**2
+ 62 .text.rtc_clk_cpu_freq_get 0000001c  00000000  00000000  00000c40  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 63 .text.rtc_clk_xtal_freq_update 00000029  00000000  00000000  00000c4c  2**2
+ 63 .text.rtc_clk_xtal_freq_update 00000029  00000000  00000000  00000c5c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 64 .text.rtc_clk_apb_freq_update 00000019  00000000  00000000  00000c78  2**2
+ 64 .text.rtc_clk_apb_freq_update 00000019  00000000  00000000  00000c88  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 65 .text.rtc_clk_cpu_freq_to_xtal 00000089  00000000  00000000  00000c94  2**2
+ 65 .text.rtc_clk_cpu_freq_to_xtal 00000089  00000000  00000000  00000ca4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 66 .text.rtc_clk_cpu_freq_set_xtal 0000001f  00000000  00000000  00000d20  2**2
+ 66 .text.rtc_clk_cpu_freq_set_xtal 0000001f  00000000  00000000  00000d30  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 67 .text.rtc_clk_cpu_freq_set_config 000000e4  00000000  00000000  00000d40  2**2
+ 67 .text.rtc_clk_cpu_freq_set_config 00000124  00000000  00000000  00000d50  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 68 .text.rtc_clk_cpu_freq_set 00000017  00000000  00000000  00000e24  2**2
+ 68 .text.rtc_clk_cpu_freq_set 00000017  00000000  00000000  00000e74  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 69 .text.rtc_clk_cpu_freq_set_config_fast 00000038  00000000  00000000  00000e3c  2**2
+ 69 .text.rtc_clk_cpu_freq_set_config_fast 00000038  00000000  00000000  00000e8c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 70 .text.rtc_clk_cpu_freq_set_fast 00000017  00000000  00000000  00000e74  2**2
+ 70 .text.rtc_clk_cpu_freq_set_fast 00000017  00000000  00000000  00000ec4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 71 .text.rtc_clk_apb_freq_get 00000027  00000000  00000000  00000e8c  2**2
+ 71 .text.rtc_clk_apb_freq_get 00000027  00000000  00000000  00000edc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 72 .bss.s_cur_pll_freq 00000004  00000000  00000000  00000eb4  2**2
+ 72 .bss.s_cur_pll_freq 00000004  00000000  00000000  00000f04  2**2
                   ALLOC
- 73 .debug_frame  00000340  00000000  00000000  00000eb4  2**2
+ 73 .debug_frame  00000340  00000000  00000000  00000f04  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 74 .debug_info   0000181d  00000000  00000000  000011f4  2**0
+ 74 .debug_info   000018aa  00000000  00000000  00001244  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 75 .debug_abbrev 000003c9  00000000  00000000  00002a11  2**0
+ 75 .debug_abbrev 000003c9  00000000  00000000  00002aee  2**0
                   CONTENTS, READONLY, DEBUGGING
- 76 .debug_loc    00000b03  00000000  00000000  00002dda  2**0
+ 76 .debug_loc    00000b03  00000000  00000000  00002eb7  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 77 .debug_aranges 00000128  00000000  00000000  000038dd  2**0
+ 77 .debug_aranges 00000128  00000000  00000000  000039ba  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 78 .debug_ranges 00000148  00000000  00000000  00003a05  2**0
+ 78 .debug_ranges 00000148  00000000  00000000  00003ae2  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 79 .debug_line   00000dcd  00000000  00000000  00003b4d  2**0
+ 79 .debug_line   00000df1  00000000  00000000  00003c2a  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 80 .debug_str    00000b0b  00000000  00000000  0000491a  2**0
+ 80 .debug_str    00000b0b  00000000  00000000  00004a1b  2**0
                   CONTENTS, READONLY, DEBUGGING
- 81 .comment      0000003b  00000000  00000000  00005425  2**0
+ 81 .comment      0000003b  00000000  00000000  00005526  2**0
                   CONTENTS, READONLY
- 82 .xtensa.info  00000038  00000000  00000000  00005460  2**0
+ 82 .xtensa.info  00000038  00000000  00000000  00005561  2**0
                   CONTENTS, READONLY
- 83 .xt.lit       00000110  00000000  00000000  00005498  2**0
+ 83 .xt.lit       00000110  00000000  00000000  00005599  2**0
                   CONTENTS, RELOC, READONLY
- 84 .xt.prop      00000abc  00000000  00000000  000055a8  2**0
+ 84 .xt.prop      00000abc  00000000  00000000  000056a9  2**0
                   CONTENTS, RELOC, READONLY
 
 rtc_clk_init.o:     file format elf32-xtensa-le
