@@ -74,7 +74,7 @@ using namespace std;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							rxmessagef,llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,
- 	 	 	 	 	 	 	 	 	 	globalWalk,backupf,rtcf;
+ 	 	 	 	 	 	 	 	 	 	globalWalk,backupf,rtcf,rebootf,loginf;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
  EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins;

@@ -595,6 +595,7 @@ void login(void *pArg)
 			if(sysConfig.traceflag&(1<<WIFID))
 				printf("[WIFID]Login Acked\n");
 #endif
+			loginf=true;
 			vTaskDelete(NULL);
 		}
 		printf("Time out semaphore loginack\n");
@@ -689,6 +690,7 @@ void station_setup(system_event_t *event)
 
 void station_disconnected(system_event_t *event)
 {
+	wifi_config_t 		config;
 	string temp;
 
 	connf=false;
@@ -729,6 +731,19 @@ void station_disconnected(system_event_t *event)
 		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 
+	if(sysConfig.mode==REPEATER && !rebootf)
+	{
+		rebootf=true;
+		esp_wifi_get_config(ESP_IF_WIFI_AP,&config);
+		esp_wifi_get_config(ESP_IF_WIFI_STA,&config);
+		ESP_ERROR_CHECK(esp_wifi_stop());
+		delay(500);
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
+		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &config));
+		ESP_ERROR_CHECK(esp_wifi_start());
+		//Must do a Stop then a Start again
+	}
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<WIFID))
 		printf("[WIFID]Reconnect %d\n",curSSID);
@@ -743,14 +758,17 @@ void station_disconnected(system_event_t *event)
 			curSSID=1;
 	}
 	else
-		curSSID=1; //Client mode always
+	{
+		curSSID=0;
+		temp=string(sysConfig.ssid[curSSID]);
+	}
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<WIFID))
 		printf("[WIFID]Temp[%d]==%s=\n",curSSID,temp.c_str());
 #endif
 
-	xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
+//	xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
 }
 
 esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
@@ -843,8 +861,9 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		//Fix setup as 0=AP SSID and 1 as STA ssid. If 1 is not active, AP will be already working and
 		// we only need to connect to try to engage with STA SSID.
 		// if we need to change the STA SSID name, I guess
+		if(!rebootf)
+			station_disconnected(event);
 		esp_wifi_connect();
-	//	station_disconnected(event);
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
@@ -2163,9 +2182,11 @@ void initVars()
 	semaphoresOff=false;
 	sntpf=false;
 	rtcf=false;
+	rebootf=false;
+	loginf=false;
 
 	//clear activity stats
-	for (int a=0;a<20;a++){
+	for (int a=0;a<MAXNODES;a++){
 		activeNodes.lastTime[a]=0;
 		activeNodes.nodesReported[a]=-1;
 	}
@@ -2603,6 +2624,7 @@ void makeNodeTime(string cual, node_struct* losnodos)
 void doneCallback( TimerHandle_t xTimer )
 {
 	u16 soyYo=100; //timeout signal
+	printf("Timer timeout\n");
 	if(xTimer==doneTimer)
 		xQueueSend( cola, &soyYo,( TickType_t ) 0 ); //use a high number to signal Timeout
 }

@@ -66,6 +66,7 @@ string theTime(time_t eltime)
 void print_hardware_section(time_t now)
 {
 	tcpip_adapter_ip_info_t ip_info ;
+	u8 mac[6];
 
 	printf("========== Hardware ===========\n");
 	printf ("Last Compile %s-%s\n",__DATE__,__TIME__);
@@ -78,24 +79,29 @@ void print_hardware_section(time_t now)
 	u16 secs=diffd-(horas*3600)-(min*60);
 	printf("[Last Boot: %s] [Elapsed %02d:%02d:%02d] [Previous Boot %s] [Count:%d ResetCode:0x%02x]\n",makeDateString(sysConfig.lastTime).c_str(),horas,min,secs,
 			makeDateString(sysConfig.preLastTime).c_str(),sysConfig.bootcount,sysConfig.lastResetCode);
-	for(int a=0;a<2;a++)
-		if(sysConfig.ssid[a][0]!=0)
-			printf("[SSID[%d]:[%s]-[%s] %s\n",a,sysConfig.ssid[a],sysConfig.pass[a],curSSID==a ?"*":" ");
+
 	if(sysConfig.mode==CLIENT){
+		printf("[SSID:[%s]-[%s]\n",sysConfig.ssid[0],sysConfig.pass[0]);
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
 		printf( "[Client IP:" IPSTR "] ", IP2STR(&ip_info.ip));
+		esp_wifi_get_mac(WIFI_IF_STA, mac);
+		printf("[STA MAC %2x%2x%2x%2x%2x%2x] ",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	}
 	else
 	{
+		for(int a=0;a<2;a++)
+			printf("[SSID[%d]:[%s]-[%s]\n",a,sysConfig.ssid[a],sysConfig.pass[a]);
+
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
 		printf( "%s->[%s IP:" IPSTR "] ",sysConfig.mode==SERVER?"Server":"Repeater",sysConfig.mode==SERVER?"Internet":"Controller", IP2STR(&ip_info.ip));
+		esp_wifi_get_mac(WIFI_IF_STA, mac);
+		printf("[STA MAC %2x%2x%2x%2x%2x%2x] ",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
 		printf( "[%s IP:" IPSTR "]\n",sysConfig.mode==SERVER?"Client":"ClientRep", IP2STR(&ip_info.ip));
+		esp_wifi_get_mac(WIFI_IF_AP, mac);
+		printf("[AP MAC %2x%2x%2x%2x%2x%2x] ",mac[0],mac[1],mac[2],mac[3],mac[4],mac[5]);
 	}
 
-	u8 mac[6];
-	esp_wifi_get_mac(WIFI_IF_STA, mac);
-	printf("[MAC %2x%2x] ",mac[4],mac[5]);
 	printf("[AP Name:%s]\n",AP_NameString.c_str());
 	printf("TController Name:%s Working:%s\n",sysConfig.lightName,sysConfig.working?"On":"Off");
 	if(sysConfig.mode==SERVER)
@@ -131,7 +137,7 @@ void print_id_section()
 {
 	printf("\n========== Identification ===========\n");
 
-	printf("Station Id:%d NodeId:%d Clone:%s Name %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",sysConfig.stationName);
+	printf("Station Id:%d NodeId:%d Clone:%s Name %s Login %d\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",sysConfig.stationName,loginf);
 	printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 
 }
@@ -294,7 +300,8 @@ void print_general_section(u8 full)
 		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 		int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
 		if(sysConfig.mode==SERVER)
-			printf("RxTxf %d Timef %d  RTCF %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,rtcf,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
+			printf("RxTxf %d Timef %d RTCF %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,rtcf,
+					totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
 		ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
 		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 		printf("%s\n",textl);
