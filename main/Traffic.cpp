@@ -583,6 +583,23 @@ void httpTask(void* pArg)
 	 vTaskDelete(NULL);
 }
 
+void login(void *pArg)
+{
+	while(1)
+	{
+		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+		if(xSemaphoreTake(loginSemaphore, ( TickType_t ) 10000)) //every second try again
+		{
+			//we have a LoginAck for us. exit
+#ifdef DEBUGSYS
+			if(sysConfig.traceflag&(1<<WIFID))
+				printf("[WIFID]Login Acked\n");
+#endif
+			vTaskDelete(NULL);
+		}
+		printf("Time out semaphore loginack\n");
+	}
+}
 void station_setup(system_event_t *event)
 {
 	gpio_set_level((gpio_num_t)WIFILED, 1);
@@ -637,7 +654,9 @@ void station_setup(system_event_t *event)
 	// Main routine for Commands
 	if(sysConfig.mode==CLIENT ){
 		delay(400);
-		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
+
+	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 	}
 	if(sysConfig.mode==REPEATER){//Repeater mode
@@ -663,7 +682,8 @@ void station_setup(system_event_t *event)
 		//Create repeater task with new IP given
 		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
 		delay(400);
-		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
+	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 	}
 }
 
@@ -975,6 +995,7 @@ void cmd_ack(cmd_struct cual)
 #ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
 				   printf("[TRAFFICD][%d-%d]ACK received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
+
 #endif
 }
 
@@ -1302,6 +1323,7 @@ void cmd_login(cmd_struct cual)
 			sprintf(textl,"Station(%d) %s is %s at %s",logins[donde].stationl,logins[donde].namel,relogin?"Reboot":"Online",asctime(&ts));
 			sendAlert(string(textl),strlen(textl));
 		}
+		sendMsg(ACKL,cual.fromwho,cual.free2,0,NULL,0);//ack the login station
 	}
 }
 
@@ -1322,12 +1344,25 @@ char textl[70];
 }
 }
 
+void cmd_acklogin(cmd_struct cual)
+{
+#ifdef DEBUGSYS
+		   if(sysConfig.traceflag & (1<<WIFID))
+			   printf("[WIFID]LoginAck %d Node %d Station(%d) %s\n",cual.fromwho,cual.free1,cual.free2,cual.buff);
+#endif
+		   if(cual.free1==sysConfig.stationid)
+			   if(xSemaphoreGive(loginSemaphore)!= pdTRUE)
+				   printf("Failed to give Ack Semaphore\n");
+
+}
+
 void process_cmd(cmd_struct cual)
 {
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]Process Cmd(%d) %s towho %d Fromwho %d Node %d\n",cual.cmd,tcmds[cual.cmd],cual.towho,cual.fromwho,cual.nodeId);
+		printf("[CMDD]Process Cmd(%d) %s towho %d Fromwho %d Node %d Me %d Free1 %d Free2 %d\n",cual.cmd,tcmds[cual.cmd],
+							cual.towho,cual.fromwho,cual.nodeId,sysConfig.whoami,cual.free1,cual.free2);
 #endif
 
 	if(((cual.towho==EVERYBODY) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
@@ -1405,6 +1440,9 @@ void process_cmd(cmd_struct cual)
 			   	   break;
 		   case ALARM:
 			   cmd_alarm(cual);
+			   break;
+		   case ACKL:
+			   cmd_acklogin(cual);
 			   break;
 		   default:
 			   printf("Invalid incoming Command %d\n",cual.cmd);
@@ -2095,6 +2133,8 @@ void initVars()
 	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Upstream queue
 	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
 
+	loginSemaphore= xSemaphoreCreateBinary();
+
 	sonUid=0;
 
 	//blinking stuff
@@ -2208,6 +2248,7 @@ void initVars()
 	strcpy(tcmds[20],"CLONE");
 	strcpy(tcmds[21],"LOGIN");
 	strcpy(tcmds[22],"ALARM");
+	strcpy(tcmds[23],"LOGINACK");
 
 	//kbd Comands text
 	strcpy(kbdTable[0],"Blink");

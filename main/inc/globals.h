@@ -70,6 +70,7 @@ using namespace std;
  EXTERN httpd_uri_t 					loscmds[30];
  EXTERN functp							theCode[MAXCMDS];
  EXTERN statistics_struct				internal_stats;
+ EXTERN SemaphoreHandle_t 				loginSemaphore;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							rxmessagef,llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,
