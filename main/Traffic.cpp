@@ -654,38 +654,54 @@ void station_setup(system_event_t *event)
 
 	// Main routine for Commands
 	if(sysConfig.mode==CLIENT ){
-		delay(400);
 		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
-
 	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 	}
-	if(sysConfig.mode==REPEATER){//Repeater mode
-		tcpip_adapter_ip_info_t ip_info;
-		//From STA ipconfig make the AP config by adding one to the 3 byte
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-		u8 monton[4];
-		memcpy(&monton,(void*)&ip_info.ip.addr,4);
-		monton[3]=0;
-		memcpy(&downstream,&monton,4);
-		monton[2]+=1;//one more for the address like 192.168.(x+1).1
-		memcpy(&upstream,&monton,4);
-		upstream=upstream<<8;
-		downstream=downstream<<8;
 
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-		IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
-		IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
-		IP4_ADDR(&ip_info.netmask,255,255,255,0);
-		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
-		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-		//Create repeater task with new IP given
+	if(sysConfig.mode==REPEATER)
+	{
+		printf("Got Ip Repeater\n");
+//		tcpip_adapter_ip_info_t ip_info;
+//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+//		u8 monton[4];
+//		memcpy(&monton,(void*)&ip_info.ip.addr,4);
+//
+//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+//		IP4_ADDR(&ip_info.ip,192,168,monton[2]+1,1);
+//		IP4_ADDR(&ip_info.gw,192,168,monton[2]+1,1);
+//		IP4_ADDR(&ip_info.netmask,255,255,255,0);
+//		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+//		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
 		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
-		delay(400);
 		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
-	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 	}
+//	if(sysConfig.mode==REPEATER){//Repeater mode
+//		tcpip_adapter_ip_info_t ip_info;
+//		//From STA ipconfig make the AP config by adding one to the 3 byte
+//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+//		u8 monton[4];
+//		memcpy(&monton,(void*)&ip_info.ip.addr,4);
+//		monton[3]=0;
+//		memcpy(&downstream,&monton,4);
+//		monton[2]+=1;//one more for the address like 192.168.(x+1).1
+//		memcpy(&upstream,&monton,4);
+//		upstream=upstream<<8;
+//		downstream=downstream<<8;
+//
+//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+//		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+//		IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
+//		IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
+//		IP4_ADDR(&ip_info.netmask,255,255,255,0);
+//		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
+//		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+//		//Create repeater task with new IP given
+//		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
+//		delay(400);
+//		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
+//	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
+//	}
 }
 
 void station_disconnected(system_event_t *event)
@@ -861,8 +877,9 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		//Fix setup as 0=AP SSID and 1 as STA ssid. If 1 is not active, AP will be already working and
 		// we only need to connect to try to engage with STA SSID.
 		// if we need to change the STA SSID name, I guess
-		if(!rebootf)
-			station_disconnected(event);
+		//if(!rebootf)
+		//	station_disconnected(event);
+		rebootf=true;
 		esp_wifi_connect();
 		break;
 
@@ -871,6 +888,10 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
 #endif
+		if(sysConfig.mode==REPEATER && rebootf)
+		{
+			printf("Must send relogin cmd\n");
+		}
 		sysConfig.lastSSID=curSSID;
 		write_to_flash(true);
 		break;
@@ -1930,6 +1951,20 @@ void repeater(void *pArg) //connected to the STA
     u32			me;
     tcpip_adapter_ip_info_t 	ip_info ;
 
+	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+	u8 monton[4];
+	memcpy(&monton,(void*)&ip_info.ip.addr,4);
+	monton[3]=0;
+	memcpy(&downstream,&monton,4);
+	downstream=downstream<<8;
+
+	// very important for the repeater to decide if its up or downstream. Down if for the AP section
+	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+	memcpy(&monton,(void*)&ip_info.ip.addr,4);
+	monton[3]=0;
+	memcpy(&upstream,&monton,4);
+	upstream=upstream<<8;
+
 	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
 	me=ip_info.ip.addr;
 
@@ -2085,10 +2120,26 @@ void initWiFi()
 		strcpy((char*)configap.ap.ssid,textl);
 		strcpy((char*)configap.ap.password,textl);
 	}
+
+	srand(time(NULL));   // Initialization, should only be called once.
+//	int r = rand() % 200; //for AP address
+	uint16_t r=esp_random() % 200;
+
 	configap.ap.ssid_len=strlen((char *)configap.ap.ssid);
 	configap.ap.authmode=WIFI_AUTH_WPA_PSK;
 	configap.ap.ssid_hidden=false;
 	configap.ap.max_connection=14;
+	if(sysConfig.mode==REPEATER)
+	{
+		tcpip_adapter_ip_info_t ip_info;
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+		IP4_ADDR(&ip_info.ip,192,168,r,1);
+		IP4_ADDR(&ip_info.gw,192,168,r,1);
+		IP4_ADDR(&ip_info.netmask,255,255,255,0);
+		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+	}
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
 	ESP_ERROR_CHECK(esp_wifi_start());
 	//STA section below. Due to problmes with autoconnect, must do it manually

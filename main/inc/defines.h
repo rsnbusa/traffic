@@ -4,7 +4,7 @@
 
 #define UDP_PORT 							3333
 #define MULTICAST_TTL 						5
-#define MULTICAST_IPV4_ADDR 				"232.10.11.12"
+#define MULTICAST_IPV4_ADDR 			 	"232.10.11.12"
 
 #define SENDLED								23
 #define RXLED								22
