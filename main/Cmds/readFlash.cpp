@@ -269,6 +269,7 @@ void print_operation_section(u8 full)
 			for (int i=0; i<wifi_sta_list.num; i++)
 				printf("TLight[%d]->MAC[" MACSTR "]-IP{" IPSTR "}\n",i,MAC2STR(wifi_sta_list.sta[i].mac),IP2STR(&tcpip_adapter_sta_list.sta[i].ip));
 
+			printf("\n========== Logins ===========\n");
 			printf("Logins %d\n",numLogins);
 			printf("Controller Street %d Station %d %s\n",sysConfig.whoami,sysConfig.stationid,sysConfig.stationName);
 			for (int a=0;a<numLogins;a++){
@@ -293,7 +294,7 @@ void print_general_section(u8 full)
 		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 		int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
 		if(sysConfig.mode==SERVER)
-			printf("RxTxf %d Timef %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
+			printf("RxTxf %d Timef %d  RTCF %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,rtcf,totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
 		ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
 		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
 		printf("%s\n",textl);

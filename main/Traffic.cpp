@@ -404,6 +404,9 @@ void initialize_sntp(void *args)
 	int retry = 0;
 	struct tm timeinfo;
 
+	if (sntpf)
+		vTaskDelete(NULL);
+
 	sntp_setoperatingmode(SNTP_OPMODE_POLL);
 	sntp_setservername(0, (char*)"pool.ntp.org");
 	sntp_init();
@@ -787,6 +790,9 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		}
 		//Repeater task will be started by STA_GOT_IP so we can change the DHCP address.
 
+		break;
+	case SYSTEM_EVENT_AP_STOP:
+		esp_wifi_start();
 		break;
 
 	case SYSTEM_EVENT_STA_START:
@@ -1939,6 +1945,60 @@ void repeater(void *pArg) //connected to the STA
 	}
 }
 
+bool findNetwork(char *cualnet)
+{
+	wifi_scan_config_t scan_config = {
+		.ssid = 0,
+		.bssid = 0,
+		.channel = 0,
+	    .show_hidden = true
+	};
+
+	int err=esp_wifi_scan_start(&scan_config, true);
+	if (err!=ESP_OK){
+		printf("Error scan %x %x\n",err,ESP_ERR_WIFI_NOT_INIT);
+		return ESP_FAIL;
+	}
+	uint16_t ap_num =10;
+	wifi_ap_record_t ap_records[10];
+	esp_wifi_scan_get_ap_records(&ap_num, ap_records);
+	for(int i = 0; i < ap_num; i++)
+	{
+		if(strcmp((char*)ap_records[i].ssid,cualnet)==0)
+			return ESP_OK;
+	}
+
+	return ESP_FAIL;
+
+}
+void connectInternet(void *pArg)
+{
+	wifi_config_t 		configap;
+
+	while(true)
+	{
+		if(string(sysConfig.ssid[1])!="") //1 is in Controller=MQTT server and in Repeater=Controller
+		{
+			bool quefue=findNetwork(sysConfig.ssid[1]);
+			if(!quefue)
+			{
+#ifdef DEBUGSYS
+				if(sysConfig.traceflag & (1<<WIFID))
+					printf("[WIFID]Found %s\n",sysConfig.ssid[1]);
+#endif
+				memset(&configap,0,sizeof(configap));
+				strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
+				strcpy((char *)configap.sta.password, sysConfig.pass[1]);
+				ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
+				ESP_ERROR_CHECK(esp_wifi_connect());
+
+				vTaskDelete(NULL);
+			}
+			delay(10000);
+		}
+	}
+}
+
 void initWiFi()
 {
 	wifi_init_config_t 	cfg=WIFI_INIT_CONFIG_DEFAULT();
@@ -1954,15 +2014,8 @@ void initWiFi()
 
 	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
 	esp_wifi_get_mac(ESP_IF_WIFI_STA, (uint8_t*)&mac);
-
 	memset(&configap,0,sizeof(configap));
-
-	if(string(sysConfig.ssid[1])!="") //1 is in Controller=MQTT server and in Repeater=Controller
-	{
-		strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
-		strcpy((char *)configap.sta.password, sysConfig.pass[1]);
-		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
-	}
+//AP section done
 	if(string(sysConfig.ssid[0])!="") //in Controller and Repeater is SSID name
 	{
 		strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
@@ -1981,6 +2034,9 @@ void initWiFi()
 	configap.ap.max_connection=14;
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
 	ESP_ERROR_CHECK(esp_wifi_start());
+	//STA section below. Due to problmes with autoconnect, must do it manually
+	xTaskCreate(&connectInternet,"internet",4096,NULL, 5, NULL);									// If we are a Controller
+
 }
 
 void initWiFiSta()
@@ -2065,6 +2121,8 @@ void initVars()
 	globalWalk=false;
 	numLogins=0;
 	semaphoresOff=false;
+	sntpf=false;
+	rtcf=false;
 
 	//clear activity stats
 	for (int a=0;a<20;a++){
@@ -2300,7 +2358,8 @@ void initRtc()
 	yearg=algo.year();
 	if(oldMesg>12 || oldDiag>31 || oldHorag>23) //Sanity check
 		oldMesg=oldDiag=1;
-//	rtcf=true;
+	rtcf=true;
+	TODAY=1<<algo.dayOfWeek();
 
 	//Now load system time for internal use
 
@@ -2453,6 +2512,7 @@ bool loadScheduler()
 	u32 faltan=86400; //secs in a day. Should be Zero when finished
 	time_t now;
 	time(&now);
+	printf("Today %d\n",TODAY);
 	 for (int a=0;a<sysSequence.numSequences;a++)
 	 {
 		 if (sysSequence.sequences[a].weekDay & TODAY)
@@ -2730,14 +2790,15 @@ int este,cual;
 time_t now;
 struct tm timeinfo ;
 
-	while(!timef || !rxtxf) //wait for all Logins and the Timer Flag
-		delay(100);
+	while(!(timef || rtcf) || !rxtxf) //wait for all Logins and the Timer Flag
+		delay(1000);
 
 	if(!loadScheduler())
 	{
 		printf("Scheduler not enabled.\n");
 		vTaskDelete(NULL);
 	}
+
 
 //	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
 	now=time(NULL)-5*3600;
