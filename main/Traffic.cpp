@@ -791,12 +791,161 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 {
 	system_event_ap_staconnected_t 			*conap;
 	string 									local="Closed";
+
+	conap=(system_event_ap_staconnected_t*)&event->event_info;
+	printf("Event Client\n");
+
+	switch(event->event_id)
+	{
+	case SYSTEM_EVENT_STA_GOT_IP:
+		station_setup(event);
+		break;
+
+	case SYSTEM_EVENT_STA_START:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]STA Start firmware %s\n",firmwf?"Y":"N");
+#endif
+		esp_wifi_connect();
+		break;
+
+	case SYSTEM_EVENT_STA_STOP:
+		connf=false;
+		gpio_set_level((gpio_num_t)RXLED, 0);
+		gpio_set_level((gpio_num_t)SENDLED, 0);
+		gpio_set_level((gpio_num_t)MQTTLED, 0);
+		gpio_set_level((gpio_num_t)WIFILED, 0);
+		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+		break;
+
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+	case SYSTEM_EVENT_ETH_DISCONNECTED:
+		esp_wifi_connect();
+		break;
+
+	case SYSTEM_EVENT_STA_CONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]STA Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
+#endif
+		sysConfig.lastSSID=curSSID;
+		write_to_flash(true);
+		break;
+
+	default:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Client default WiFi %d\n",event->event_id);
+#endif
+		break;
+	}
+	return ESP_OK;
+} // wifi_event_handler
+
+esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
+{
+	system_event_ap_staconnected_t 			*conap;
+	string 									local="Closed";
 	wifi_sta_list_t 						station_list;
 	wifi_sta_info_t 						*stations ;
 	ip4_addr_t 								addr;
 	tcpip_adapter_ip_info_t 				ip_info;
 
 	conap=(system_event_ap_staconnected_t*)&event->event_info;
+	printf("Event Server\n");
+
+	switch(event->event_id)
+	{
+    case SYSTEM_EVENT_AP_STADISCONNECTED:
+//      	ESP_LOGI(TAG,"Station disconnected %02x:%02x:%02x:%02x:%02x:%02x",conap->mac[0],conap->mac[1],
+//      			conap->mac[2],conap->mac[3],conap->mac[4],conap->mac[5]);
+    	dhcp_search_ip_on_mac(conap->mac , &addr);//this IP died. Do something
+    	esp_wifi_ap_get_sta_list(&station_list);
+    	totalConnected=station_list.num;
+      	//must send a warning message. TL is now down for a street. Actually STOP
+      	break;
+
+    case SYSTEM_EVENT_AP_STAIPASSIGNED:
+    	esp_wifi_ap_get_sta_list(&station_list);
+    	stations=(wifi_sta_info_t*)station_list.sta;
+    	dhcp_search_ip_on_mac(stations[station_list.num-1].mac , &addr);
+    	connectedToAp[station_list.num-1]=addr.addr;
+    	totalConnected=station_list.num;
+    	break;
+
+	case SYSTEM_EVENT_STA_GOT_IP:
+		station_setup(event);
+		break;
+
+	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+		localIp=ip_info.ip;
+		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+		break;
+
+	case SYSTEM_EVENT_AP_STOP:
+		esp_wifi_start();
+		break;
+
+	case SYSTEM_EVENT_STA_START:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]STA Connect firmware %s\n",firmwf?"Y":"N");
+#endif
+		esp_wifi_connect();
+		break;
+
+	case SYSTEM_EVENT_STA_STOP:
+		connf=false;
+		gpio_set_level((gpio_num_t)RXLED, 0);
+		gpio_set_level((gpio_num_t)SENDLED, 0);
+		gpio_set_level((gpio_num_t)MQTTLED, 0);
+		gpio_set_level((gpio_num_t)WIFILED, 0);
+		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+		break;
+
+	case SYSTEM_EVENT_AP_STACONNECTED:
+	//	staconnected = &event->event_info.sta_connected;
+	//	printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
+		//		staconnected->mac[4],staconnected->mac[5]);
+		break;
+
+	case SYSTEM_EVENT_STA_DISCONNECTED:
+	case SYSTEM_EVENT_ETH_DISCONNECTED:
+		esp_wifi_connect();
+		break;
+
+	case SYSTEM_EVENT_STA_CONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
+#endif
+		sysConfig.lastSSID=curSSID;
+		write_to_flash(true);
+		break;
+
+	default:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]default WiFi %d\n",event->event_id);
+#endif
+		break;
+	}
+	return ESP_OK;
+} // wifi_event_handler
+
+
+esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
+{
+	system_event_ap_staconnected_t 			*conap;
+	string 									local="Closed";
+	wifi_sta_list_t 						station_list;
+	wifi_sta_info_t 						*stations ;
+	ip4_addr_t 								addr;
+	tcpip_adapter_ip_info_t 				ip_info;
+
+	conap=(system_event_ap_staconnected_t*)&event->event_info;
+	printf("Event Repeater\n");
 
 	switch(event->event_id)
 	{
@@ -905,7 +1054,6 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 	}
 	return ESP_OK;
 } // wifi_event_handler
-
 
 void initI2C()
 {
@@ -2099,7 +2247,12 @@ void initWiFi()
 	char 				textl[20];
 
 	tcpip_adapter_init();
-	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
+	if(sysConfig.mode==SERVER)
+		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Server, NULL));
+	if(sysConfig.mode==REPEATER)
+		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Repeater, NULL));
+	if(sysConfig.mode==CLIENT)
+		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
