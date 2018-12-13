@@ -585,6 +585,8 @@ void httpTask(void* pArg)
 
 void login(void *pArg)
 {
+	int van=0;
+
 	while(1)
 	{
 		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
@@ -596,9 +598,13 @@ void login(void *pArg)
 				printf("[WIFID]Login Acked\n");
 #endif
 			loginf=true;
+			loginHandle=NULL;
 			vTaskDelete(NULL);
 		}
 		printf("Time out semaphore loginack\n");
+		van++;
+//		if(van>10)
+//			vTaskDelete(NULL);
 	}
 }
 void station_setup(system_event_t *event)
@@ -655,58 +661,13 @@ void station_setup(system_event_t *event)
 	// Main routine for Commands
 	if(sysConfig.mode==CLIENT ){
 		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
-	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 	}
 
-	if(sysConfig.mode==REPEATER)
-	{
-		printf("Got Ip Repeater\n");
-//		tcpip_adapter_ip_info_t ip_info;
-//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-//		u8 monton[4];
-//		memcpy(&monton,(void*)&ip_info.ip.addr,4);
-//
-//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-//		IP4_ADDR(&ip_info.ip,192,168,monton[2]+1,1);
-//		IP4_ADDR(&ip_info.gw,192,168,monton[2]+1,1);
-//		IP4_ADDR(&ip_info.netmask,255,255,255,0);
-//		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-//		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
-		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
-	}
-//	if(sysConfig.mode==REPEATER){//Repeater mode
-//		tcpip_adapter_ip_info_t ip_info;
-//		//From STA ipconfig make the AP config by adding one to the 3 byte
-//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-//		u8 monton[4];
-//		memcpy(&monton,(void*)&ip_info.ip.addr,4);
-//		monton[3]=0;
-//		memcpy(&downstream,&monton,4);
-//		monton[2]+=1;//one more for the address like 192.168.(x+1).1
-//		memcpy(&upstream,&monton,4);
-//		upstream=upstream<<8;
-//		downstream=downstream<<8;
-//
-//		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-//		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-//		IP4_ADDR(&ip_info.ip,192,168,monton[2],1);
-//		IP4_ADDR(&ip_info.gw,192,168,monton[2],1);
-//		IP4_ADDR(&ip_info.netmask,255,255,255,0);
-//		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //set static IP
-//		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-//		//Create repeater task with new IP given
-//		xTaskCreate(&repeater, "repeater", 4096,NULL, 4, &rxHandle); //Once all established, start yoursel. Beter like this in case no WIFI
-//		delay(400);
-//		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
-//	//	sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
-//	}
 }
 
 void station_disconnected(system_event_t *event)
 {
-	wifi_config_t 		config;
 	string temp;
 
 	connf=false;
@@ -714,51 +675,44 @@ void station_disconnected(system_event_t *event)
 	gpio_set_level((gpio_num_t)SENDLED, 0);
 	gpio_set_level((gpio_num_t)MQTTLED, 0);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
+	printf("RunHandle\n");
 	if(runHandle)
 	{
 		vTaskDelete(runHandle);
 		runHandle=NULL;
 	}
 
-	if(sysConfig.mode!=REPEATER)
+	printf("Client rxHandle\n");
+	if(sysConfig.mode==CLIENT)
 	{
+		printf("Kill rxHandle\n");
 		if(rxHandle){
-//			close(theSock);
+			printf("Rxhandle killed\n");
 			vTaskDelete(rxHandle);
 			rxHandle=NULL;
 		}
 	}
 
-	if(blinkHandle){
-		vTaskDelete(blinkHandle);
-		blinkHandle=NULL;
-		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
-	}
-	else
-	{
-		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
-	}
+//	if(blinkHandle){
+//		vTaskDelete(blinkHandle);
+//		blinkHandle=NULL;
+//		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
+//	}
+//	else
+//	{
+//		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+//	}
 
+	printf("Cyclehandle \n");
 	if(cycleHandle)
 	{
 		vTaskDelete(cycleHandle);
 		cycleHandle=NULL;
 	}
+	printf("Done handles\n");
+
 		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
-
-	if(sysConfig.mode==REPEATER && !rebootf)
-	{
-		rebootf=true;
-		esp_wifi_get_config(ESP_IF_WIFI_AP,&config);
-		esp_wifi_get_config(ESP_IF_WIFI_STA,&config);
-		ESP_ERROR_CHECK(esp_wifi_stop());
-		delay(500);
-		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
-		ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &config));
-		ESP_ERROR_CHECK(esp_wifi_start());
-		//Must do a Stop then a Start again
-	}
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<WIFID))
@@ -787,29 +741,33 @@ void station_disconnected(system_event_t *event)
 //	xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
 }
 
-esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
+esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
 {
-	system_event_ap_staconnected_t 			*conap;
 	string 									local="Closed";
-
-	conap=(system_event_ap_staconnected_t*)&event->event_info;
-	printf("Event Client\n");
 
 	switch(event->event_id)
 	{
 	case SYSTEM_EVENT_STA_GOT_IP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Client Got IP\n");
+#endif
 		station_setup(event);
 		break;
 
 	case SYSTEM_EVENT_STA_START:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]STA Start firmware %s\n",firmwf?"Y":"N");
+			printf("[WIFID]Client STA Start\n");
 #endif
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_STOP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Client STA Stop\n");
+#endif
 		connf=false;
 		gpio_set_level((gpio_num_t)RXLED, 0);
 		gpio_set_level((gpio_num_t)SENDLED, 0);
@@ -820,13 +778,18 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Client STA Disconnected\n");
+#endif
+		station_disconnected(event);
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]STA Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
+			printf("[WIFID]Client STA Connected \n");
 #endif
 		sysConfig.lastSSID=curSSID;
 		write_to_flash(true);
@@ -840,32 +803,28 @@ esp_err_t wifi_event_handler(void *ctx, system_event_t *event)
 		break;
 	}
 	return ESP_OK;
-} // wifi_event_handler
+}
 
 esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 {
-	system_event_ap_staconnected_t 			*conap;
-	string 									local="Closed";
 	wifi_sta_list_t 						station_list;
 	wifi_sta_info_t 						*stations ;
 	ip4_addr_t 								addr;
-	tcpip_adapter_ip_info_t 				ip_info;
-
-	conap=(system_event_ap_staconnected_t*)&event->event_info;
-	printf("Event Server\n");
 
 	switch(event->event_id)
 	{
     case SYSTEM_EVENT_AP_STADISCONNECTED:
-//      	ESP_LOGI(TAG,"Station disconnected %02x:%02x:%02x:%02x:%02x:%02x",conap->mac[0],conap->mac[1],
-//      			conap->mac[2],conap->mac[3],conap->mac[4],conap->mac[5]);
-    	dhcp_search_ip_on_mac(conap->mac , &addr);//this IP died. Do something
-    	esp_wifi_ap_get_sta_list(&station_list);
-    	totalConnected=station_list.num;
-      	//must send a warning message. TL is now down for a street. Actually STOP
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server AP Disco\n");
+#endif
       	break;
 
     case SYSTEM_EVENT_AP_STAIPASSIGNED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server AP Ip Assigned\n");
+#endif
     	esp_wifi_ap_get_sta_list(&station_list);
     	stations=(wifi_sta_info_t*)station_list.sta;
     	dhcp_search_ip_on_mac(stations[station_list.num-1].mac , &addr);
@@ -874,28 +833,46 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
     	break;
 
 	case SYSTEM_EVENT_STA_GOT_IP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server Got Ip\n");
+#endif
 		station_setup(event);
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		localIp=ip_info.ip;
-		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server AP Start\n");
+#endif
+		if(!rxmessagef)
+		{
+			printf("Launch Rxmessage %d\n",rxmessagef);
+			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+		}
 		break;
 
 	case SYSTEM_EVENT_AP_STOP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server AP Stopped\n");
+#endif
 		esp_wifi_start();
 		break;
 
 	case SYSTEM_EVENT_STA_START:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]STA Connect firmware %s\n",firmwf?"Y":"N");
+			printf("[WIFID]Server STA Connect \n");
 #endif
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_STOP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server STA Stopped\n");
+#endif
 		connf=false;
 		gpio_set_level((gpio_num_t)RXLED, 0);
 		gpio_set_level((gpio_num_t)SENDLED, 0);
@@ -905,20 +882,26 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 		break;
 
 	case SYSTEM_EVENT_AP_STACONNECTED:
-	//	staconnected = &event->event_info.sta_connected;
-	//	printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
-		//		staconnected->mac[4],staconnected->mac[5]);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server AP STA Connected\n");
+#endif
 		break;
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Server STA Disconnected\n");
+#endif
+		station_disconnected(event);
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
+			printf("[WIFID]Server STA Connected \n");
 #endif
 		sysConfig.lastSSID=curSSID;
 		write_to_flash(true);
@@ -927,86 +910,123 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 	default:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]default WiFi %d\n",event->event_id);
+			printf("[WIFID]Server default WiFi %d\n",event->event_id);
 #endif
 		break;
 	}
 	return ESP_OK;
 } // wifi_event_handler
 
+void setup_repeater_ap()
+{
+	//Now that we have the Controller connected, start the AP
+	wifi_config_t 				configap;
+	tcpip_adapter_ip_info_t 	ip_info;
+
+	//Connected to the Controller. Send our Login and verify answer
+	xTaskCreate(&login, "login", 4096, NULL, 4, &loginHandle);
+
+	if(string(sysConfig.ssid[0])!="") //in Controller and Repeater is SSID name
+	{
+		strcpy((char *)configap.ap.ssid,sysConfig.ssid[0]);
+		strcpy((char *)configap.ap.password,sysConfig.pass[0]);
+	}
+	else
+	{
+		strcpy((char *)configap.ap.ssid,"Repeater");
+		strcpy((char *)configap.ap.password,"2345678");
+	}
+
+	srand(time(NULL));   // Initialization, should only be called once.
+	uint16_t r=esp_random() % 200;
+
+	configap.ap.ssid_len=			strlen((char *)configap.ap.ssid);
+	configap.ap.authmode=			WIFI_AUTH_WPA_PSK;
+	configap.ap.ssid_hidden=		false;
+	configap.ap.max_connection=		14;
+
+	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+	tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
+	IP4_ADDR(&ip_info.ip,192,168,r,1);
+	IP4_ADDR(&ip_info.gw,192,168,r,1);
+	IP4_ADDR(&ip_info.netmask,255,255,255,0);
+	tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+	tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
+
+	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
+	ESP_ERROR_CHECK(esp_wifi_connect());
+	printf("Repeater AP set connect\n");
+}
 
 esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 {
-	system_event_ap_staconnected_t 			*conap;
-	string 									local="Closed";
+	wifi_config_t 							config;
 	wifi_sta_list_t 						station_list;
 	wifi_sta_info_t 						*stations ;
 	ip4_addr_t 								addr;
-	tcpip_adapter_ip_info_t 				ip_info;
+	system_event_sta_got_ip_t				elvent=(system_event_sta_got_ip_t)event->event_info.got_ip;
 
-	conap=(system_event_ap_staconnected_t*)&event->event_info;
-	printf("Event Repeater\n");
 
 	switch(event->event_id)
 	{
-    case SYSTEM_EVENT_AP_STADISCONNECTED:
-//      	ESP_LOGI(TAG,"Station disconnected %02x:%02x:%02x:%02x:%02x:%02x",conap->mac[0],conap->mac[1],
-//      			conap->mac[2],conap->mac[3],conap->mac[4],conap->mac[5]);
-    	dhcp_search_ip_on_mac(conap->mac , &addr);//this IP died. Do something
-    	esp_wifi_ap_get_sta_list(&station_list);
-    	totalConnected=station_list.num;
-      	//must send a warning message. TL is now down for a street. Actually STOP
-      	break;
-
     case SYSTEM_EVENT_AP_STAIPASSIGNED:
     	esp_wifi_ap_get_sta_list(&station_list);
     	stations=(wifi_sta_info_t*)station_list.sta;
     	dhcp_search_ip_on_mac(stations[station_list.num-1].mac , &addr);
     	connectedToAp[station_list.num-1]=addr.addr;
     	totalConnected=station_list.num;
+
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater Station IP Assigned %s. Total %d\n",inet_ntoa(addr.addr),totalConnected);
+#endif
+
     	break;
 
 	case SYSTEM_EVENT_STA_GOT_IP:
-		station_setup(event);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater Got Ip from Controller %s\n",inet_ntoa(elvent.ip_info.ip.addr));
+#endif
+		setup_repeater_ap(); //Start the AP
+		//Repeater now active. Start our relayer
+		if(!repeaterConf)
+			xTaskCreate(&repeater, "repeater", 8092, (void*)0, 4, &rxHandle);
+		repeaterConf=true;
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		localIp=ip_info.ip;
-		if(sysConfig.mode==SERVER)
-		{
-			if(!mongf)
-			{
-				//printf("Mongoose Start AP\n");
-		//		mongf=true;
-		//		xTaskCreate(&httpTask, "mongooseTask", 10240, NULL, 5, NULL);
-			//	xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
-			}
-		}
-		if(sysConfig.mode!=REPEATER)
-		{
-			if(!rxmessagef)
-			{
-			//	printf("Launch Rxmessage %d\n",rxmessagef);
-				xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
-			}
-		}
-		//Repeater task will be started by STA_GOT_IP so we can change the DHCP address.
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater AP Started\n");
+#endif
+		break;
 
-		break;
 	case SYSTEM_EVENT_AP_STOP:
-		esp_wifi_start();
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater AP Stopped\n");
+#endif
+		//kill our relayer
+//		if(rxHandle)
+//			vTaskDelete(rxHandle);
+	//	esp_wifi_start();
 		break;
+
 
 	case SYSTEM_EVENT_STA_START:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Connect firmware %s\n",firmwf?"Y":"N");
+			printf("[WIFID]Repeater STA start Connect to Controller \n");
 #endif
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_STOP:
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater STA Stopped from Controller\n");
+#endif
 		connf=false;
 		gpio_set_level((gpio_num_t)RXLED, 0);
 		gpio_set_level((gpio_num_t)SENDLED, 0);
@@ -1016,44 +1036,73 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		break;
 
 	case SYSTEM_EVENT_AP_STACONNECTED:
-	//	staconnected = &event->event_info.sta_connected;
-	//	printf("AP Sta connect MAC %02x:%02x:%02x:%02x:%02x:%02x\n", staconnected->mac[0],staconnected->mac[1],staconnected->mac[2],staconnected->mac[3],
-		//		staconnected->mac[4],staconnected->mac[5]);
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater Station Connected\n");
+#endif
 		break;
 
 	case SYSTEM_EVENT_STA_DISCONNECTED:
 	case SYSTEM_EVENT_ETH_DISCONNECTED:
-		//Fix setup as 0=AP SSID and 1 as STA ssid. If 1 is not active, AP will be already working and
-		// we only need to connect to try to engage with STA SSID.
-		// if we need to change the STA SSID name, I guess
-		//if(!rebootf)
-		//	station_disconnected(event);
-		rebootf=true;
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<WIFID))
+			printf("[WIFID]Repeater Controller Disconnected\n");
+#endif
+		if(repeaterConf)
+		{
+			repeaterConf=false;
+			if(rxHandle) //Repeater active? kill it
+			{
+				vTaskDelete(rxHandle);
+				rxHandle=NULL;
+				printf("Kill Repeater Task\n");
+			}
+			// are we trying to login In? Kill it
+			if(loginHandle)
+			{
+				vTaskDelete(loginHandle);
+				loginHandle=NULL;
+			}
+
+			rebootf=true;
+			station_disconnected(event);
+//			if(!rebootf)
+//			{ //First time the Controller is detected down
+//				// stop the AP section so that they send Login
+//				rebootf=true;
+//				esp_wifi_get_config(ESP_IF_WIFI_AP,&config);
+//				esp_wifi_get_config(ESP_IF_WIFI_STA,&config);
+//				ESP_ERROR_CHECK(esp_wifi_stop());
+//				delay(500);
+//				ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
+//				ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &config));
+//				ESP_ERROR_CHECK(esp_wifi_start());
+//				//Must do a Stop then a Start again
+//			}
+		}
 		esp_wifi_connect();
 		break;
 
 	case SYSTEM_EVENT_STA_CONNECTED:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Connected SSID[%d]=%s\n",curSSID,sysConfig.ssid[curSSID]);
+			printf("[WIFID]Repeater Controller Connected \n");
 #endif
-		if(sysConfig.mode==REPEATER && rebootf)
+		if(rebootf)
 		{
-			printf("Must send relogin cmd\n");
+			printf("Must send login again\n");
 		}
-		sysConfig.lastSSID=curSSID;
-		write_to_flash(true);
 		break;
 
 	default:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]default WiFi %d\n",event->event_id);
+			printf("[WIFID]Repeater default WiFi %d\n",event->event_id);
 #endif
 		break;
 	}
 	return ESP_OK;
-} // wifi_event_handler
+}
 
 void initI2C()
 {
@@ -1806,27 +1855,17 @@ void runLight(void * pArg)
 }
 
 
-static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool ap)
+static int socket_add_ipv4_multicast_group(int sock,int ap)
 {
     struct ip_mreq 				imreq ;
-    struct in_addr 				iaddr;
+    struct in_addr 				iaddr,localInterface;
     int 						err = 0;
     tcpip_adapter_ip_info_t 	ip_info ;
+
 
     memset(&imreq,0,sizeof(imreq));
     memset(&iaddr,0,sizeof(iaddr));
     memset(&ip_info,0,sizeof(ip_info));
-
-  //  printf("Configuring Multicast for %s = ",ap?"AP":"STA");
-    if(!ap)
-    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-    else
-    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to get IP address info. Error 0x%x", err);
-        return err;
-    }
 
 	imreq.imr_multiaddr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
 
@@ -1837,50 +1876,82 @@ static int socket_add_ipv4_multicast_group(int sock, bool assign_source_if,bool 
 		ESP_LOGE(TAG, "Failed to set IP_ADD_MEMBERSHIP. Error %d", errno);
 		return err;
 	 }
-	return err;
+
+    if(ap==CLIENT || ap==SERVER) //Client and Server only in one direction
+    {
+        if(ap==CLIENT)  //Client always to STA
+        	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+        else //Server to AP
+        	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
+		localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+		{
+			printf("Setting local interface %d %s\n",errno,strerror(errno));
+			close(sock);
+			return err;
+		  }
+    }
+    else
+    {
+    	//Repeater in both directions
+    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+		localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+		{
+			printf("Setting local interface %d %s\n",errno,strerror(errno));
+			close(sock);
+			return err;
+		  }
+    	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+		localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
+		if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+		{
+			printf("Setting local interface %d %s\n",errno,strerror(errno));
+			close(sock);
+			return err;
+		  }
+    }
+	return ESP_OK;
 }
 
-int create_multicast_ipv4_socket(int port,bool ap)
+int create_multicast_ipv4_socket(int port,int ap)
 {
-    tcpip_adapter_ip_info_t ip_info;
     struct sockaddr_in saddr;
     memset(&saddr,0,sizeof(saddr));
 
-   // printf("Create MultiSocket Port %d AP %d\n",port,ap);
+    printf("Create MultiSocket Port %d AP %d\n",port,ap);
     int sock = -1;
     int err = 0;
 
-    if(!ap)
-      	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
-      else
-      	err = tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-
     sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
     if (sock < 0) {
-        ESP_LOGE(TAG, "Failed to create socket. Error %d %s", errno,strerror(errno));
+        printf("Failed to create socket. Error %d %s\n", errno,strerror(errno));
         return -1;
     }
  //  printf("Socket Address %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
 
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
+    {
         printf("setsockopt(SO_REUSEADDR) failed\n");
+        return ESP_FAIL;
+    }
+
     // Bind the socket to any address
     saddr.sin_family = PF_INET;
     saddr.sin_port = htons(port);
     saddr.sin_addr.s_addr = htonl(INADDR_ANY);
- //   saddr.sin_addr.s_addr = ip_info.ip.addr;
     err = bind(sock, (struct sockaddr *)&saddr, sizeof(struct sockaddr_in));
     if (err < 0) {
-        ESP_LOGE(TAG, "Failed to bind socket. Error %d %s", errno,strerror(errno));
+        printf("Failed to bind socket. Error %d %s\n", errno,strerror(errno));
         goto err;
     }
-
-    err = socket_add_ipv4_multicast_group(sock, true,ap);
+printf("Binded\n");
+    err = socket_add_ipv4_multicast_group(sock,ap);
     if (err < 0) {
-    	ESP_LOGE(TAG, "Error group %d %s", errno,strerror(errno));
+    	printf("Error group %d %s\n", errno,strerror(errno));
         goto err;
     }
-
+printf("Done create socket\n");
     // All set, socket is configured for sending and receiving
     return sock;
 
@@ -1915,7 +1986,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]SendMsg %s towho %d\n",tcmds[cmd],aquien);
+		printf("[CMDD]%s(%d) SendMsg(%s) towho %d\n",sysConfig.stationName,sysConfig.stationid,tcmds[cmd],aquien);
 #endif
 	memset(&answer.buff,0,sizeof(answer.buff));
 	if(que && (len>0))
@@ -1954,7 +2025,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("SendMsg to Ip %d:%d:%d:%d",IP2STR(&ip_info.ip));
+		printf("SendMsg to Ip %d:%d:%d:%d\n",IP2STR(&ip_info.ip));
 #endif
 
 	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
@@ -1987,7 +2058,7 @@ void rxMessage(void *pArg)
     int 		theSock;
 
     rxmessagef=true;
-	theSock = create_multicast_ipv4_socket(UDP_PORT,false);
+	theSock = create_multicast_ipv4_socket(UDP_PORT,sysConfig.mode);
 	if (theSock < 0) {
 		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
 	}
@@ -2099,7 +2170,9 @@ void repeater(void *pArg) //connected to the STA
     u32			me;
     tcpip_adapter_ip_info_t 	ip_info ;
 
+    printf("Repeater started\n");
 	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
+	me=ip_info.ip.addr;
 	u8 monton[4];
 	memcpy(&monton,(void*)&ip_info.ip.addr,4);
 	monton[3]=0;
@@ -2113,28 +2186,29 @@ void repeater(void *pArg) //connected to the STA
 	memcpy(&upstream,&monton,4);
 	upstream=upstream<<8;
 
-	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
-	me=ip_info.ip.addr;
-
-	theSock = create_multicast_ipv4_socket(UDP_PORT,true);
+	theSock = create_multicast_ipv4_socket(UDP_PORT,sysConfig.mode);
 	if (theSock < 0)
-		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
+	{
+		printf("RX Failed to create IPv4 multicast socket\n");
+		vTaskDelete(NULL);
+	}
 
 	xTaskCreate(&streamTask,"upstream",4096,(void*)1, 5, NULL);
 	xTaskCreate(&streamTask,"downstream",4096,(void*)0, 5, NULL);
-
+	repeaterConf=true;
 	while(1)
 	{
-
 		socklen_t socklen = sizeof(raddr);
 		int len = recvfrom(theSock,(void*)&comando, sizeof(comando), MSG_WAITALL,(struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0)
 		{
-			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
+			printf("multicast recvfrom failed: errno %d\n", errno);
 			exit(1);
 		}
 
+		if (comando.centinel==THECENTINEL)
+		{
 		entrats=millis()-lastts;
 		lastts=millis();
 
@@ -2182,6 +2256,9 @@ void repeater(void *pArg) //connected to the STA
 					process_cmd(comando);
 			}
 		}
+	}
+		else
+			printf("Invalid Centinel\n");
 	}
 }
 
@@ -2246,13 +2323,10 @@ void initWiFi()
 	u8 					mac[6];
 	char 				textl[20];
 
+	printf("Starting Server handler\n");
 	tcpip_adapter_init();
-	if(sysConfig.mode==SERVER)
-		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Server, NULL));
-	if(sysConfig.mode==REPEATER)
-		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Repeater, NULL));
-	if(sysConfig.mode==CLIENT)
-		ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
+
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Server, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
@@ -2273,40 +2347,49 @@ void initWiFi()
 		strcpy((char*)configap.ap.ssid,textl);
 		strcpy((char*)configap.ap.password,textl);
 	}
-
-	srand(time(NULL));   // Initialization, should only be called once.
-//	int r = rand() % 200; //for AP address
-	uint16_t r=esp_random() % 200;
-
 	configap.ap.ssid_len=strlen((char *)configap.ap.ssid);
 	configap.ap.authmode=WIFI_AUTH_WPA_PSK;
 	configap.ap.ssid_hidden=false;
 	configap.ap.max_connection=14;
-	if(sysConfig.mode==REPEATER)
-	{
-		tcpip_adapter_ip_info_t ip_info;
-		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		tcpip_adapter_dhcps_stop(TCPIP_ADAPTER_IF_AP);
-		IP4_ADDR(&ip_info.ip,192,168,r,1);
-		IP4_ADDR(&ip_info.gw,192,168,r,1);
-		IP4_ADDR(&ip_info.netmask,255,255,255,0);
-		tcpip_adapter_set_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info);
-		tcpip_adapter_dhcps_start(TCPIP_ADAPTER_IF_AP);
-	}
 	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &configap));
 	ESP_ERROR_CHECK(esp_wifi_start());
-	//STA section below. Due to problmes with autoconnect, must do it manually
+	//STA section below. Due to problems with autoconnect, must do it manually
 	xTaskCreate(&connectInternet,"internet",4096,NULL, 5, NULL);									// If we are a Controller
 
 }
 
+void initWiFiRepeater()
+{
+	wifi_init_config_t 	cfg=WIFI_INIT_CONFIG_DEFAULT();
+	wifi_config_t 		configap;
+	u8 					mac[6];
+
+	printf("Staring Repeater Handler\n");
+	// Start by Connecting to Controller. When established, start the AP via the event_handler
+	tcpip_adapter_init();
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_Repeater, NULL));
+	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
+	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
+	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
+
+	ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_APSTA));
+	esp_wifi_get_mac(ESP_IF_WIFI_STA, (uint8_t*)&mac);
+	memset(&configap,0,sizeof(configap));
+	strcpy((char *)configap.sta.ssid , sysConfig.ssid[1]);
+	strcpy((char *)configap.sta.password, sysConfig.pass[1]);
+	ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &configap));
+	ESP_ERROR_CHECK(esp_wifi_start());
+}
+
+
 void initWiFiSta()
 {
+	printf("Starting Client Light\n");
 	wifi_init_config_t 	cfg=WIFI_INIT_CONFIG_DEFAULT();
 	wifi_config_t sta_config;
 
 	tcpip_adapter_init();
-	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler, NULL));
+	ESP_ERROR_CHECK( esp_event_loop_init(wifi_event_handler_client, NULL));
 	ESP_ERROR_CHECK(esp_wifi_init(&cfg));
 	ESP_ERROR_CHECK(esp_wifi_set_storage(WIFI_STORAGE_RAM));
 	esp_wifi_set_ps(WIFI_PS_NONE); //otherwise multicast does not work well or at all
@@ -2325,7 +2408,6 @@ void initWiFiSta()
 		printf("Station has no Controller/Repeater configured\n");
 
 	// WiFi led
-//	gpio_set_direction((gpio_num_t)WIFILED, GPIO_MODE_OUTPUT);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
 }
 
@@ -2372,12 +2454,14 @@ void initVars()
 		FACTOR2=1000;
 
 	// Task handles to NULL
-	runHandle=NULL;
-	cycleHandle=NULL;
-	blinkHandle=NULL;
-	mongoHandle=NULL;
-	mdnsHandle=NULL;
-	mqttHandle=NULL;
+	runHandle		=NULL;
+	cycleHandle		=NULL;
+	blinkHandle		=NULL;
+	mongoHandle		=NULL;
+	mdnsHandle		=NULL;
+	mqttHandle		=NULL;
+	rxHandle		=NULL;
+	loginHandle		=NULL;
 
 	rxmessagef=false;
 	kalive=true;
@@ -2388,6 +2472,7 @@ void initVars()
 	rtcf=false;
 	rebootf=false;
 	loginf=false;
+	repeaterConf=false;
 
 	//clear activity stats
 	for (int a=0;a<MAXNODES;a++){
@@ -3351,12 +3436,11 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
 
 	if(sysConfig.mode==CLIENT)
-		if(string(sysConfig.ssid[0])=="")
-			initWiFi();
-		else
 			initWiFiSta();
-	else
-	    initWiFi();
+	if(sysConfig.mode==SERVER)
+			initWiFi();
+	if(sysConfig.mode==REPEATER)
+	    initWiFiRepeater();
 
 	if(sysConfig.mode==SERVER){
 		xTaskCreate(&controller,"controller",10240,NULL, 5, NULL);									// If we are a Controller
