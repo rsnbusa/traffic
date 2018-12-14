@@ -682,34 +682,29 @@ void station_disconnected(system_event_t *event)
 		runHandle=NULL;
 	}
 
-	printf("Client rxHandle\n");
 	if(sysConfig.mode==CLIENT)
 	{
-		printf("Kill rxHandle\n");
 		if(rxHandle){
-			printf("Rxhandle killed\n");
 			vTaskDelete(rxHandle);
 			rxHandle=NULL;
 		}
 	}
 
-//	if(blinkHandle){
-//		vTaskDelete(blinkHandle);
-//		blinkHandle=NULL;
-//		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
-//	}
-//	else
-//	{
-//		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
-//	}
+	if(blinkHandle){
+		vTaskDelete(blinkHandle);
+		blinkHandle=NULL;
+		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
+	}
+	else
+	{
+		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+	}
 
-	printf("Cyclehandle \n");
 	if(cycleHandle)
 	{
 		vTaskDelete(cycleHandle);
 		cycleHandle=NULL;
 	}
-	printf("Done handles\n");
 
 		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
@@ -960,7 +955,6 @@ void setup_repeater_ap()
 
 esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 {
-	wifi_config_t 							config;
 	wifi_sta_list_t 						station_list;
 	wifi_sta_info_t 						*stations ;
 	ip4_addr_t 								addr;
@@ -2986,51 +2980,6 @@ void cycleManager(void * pArg)
 
 		st=millis();
 
-/*		while(true)
-		{
-			if( xQueueReceive( cola, &soyYo, portMAX_DELAY ))
-			{
-				if(soyYo==intersections.nodeid[voy])
-				{
-					gCycleTime=-1;
-					xTimerStop(doneTimer,0);
-					ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
-					if(ulCount)
-					{
-#ifdef DEBUGSYS
-						if(sysConfig.traceflag & (1<<TRAFFICD))
-							printf("[TRAFFICD]DONE timeout %d\n",ulCount);
-#endif
-						vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out
-						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0);
-						//Log timeout, send waring if x times,etc
-					}
-
-					fueron=millis()-st;
-#ifdef DEBUGSYS
-					if(sysConfig.traceflag & (1<<TRAFFICD))
-						printf("[TRAFFICD]DONE received %d\n",fueron);
-#endif
-					break;
-				}
-				else
-				{
-					if(soyYo>30){
-						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-						break;
-					}
-					else
-						printf("Talking out of turn %d. Possible configuration problem\n",soyYo);
-				}
-			}
-		}
-
-		voy++;
-		if (voy>=intersections.howmany)
-			voy=0;
-	}*/
-
-
 		while(true)
 		{
 			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
@@ -3038,21 +2987,17 @@ void cycleManager(void * pArg)
 				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
 				{
 					gCycleTime=-1;
-			//		if(xTimerIsTimerActive(doneTimer)!=pdFALSE)
-			//		{ //this should be time out
-						//xTimerStop(doneTimer,0);
-						//reconfirm timeout
-						internal_stats.timeout[esteCycle][soyYo]++;
-						ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
-						if(ulCount)
-						{
-	#ifdef DEBUGSYS
-							if(sysConfig.traceflag & (1<<TRAFFICD))
-								printf("[TRAFFICD]DONE timeout %d\n",ulCount);
-	#endif
-							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-							//Log timeout, send warning if x times,etc
-						}
+
+//						ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
+//						if(ulCount)
+//						{
+//	#ifdef DEBUGSYS
+//							if(sysConfig.traceflag & (1<<TRAFFICD))
+//								printf("[TRAFFICD]DONE timeout %d\n",ulCount);
+//	#endif
+//							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+//							//Log timeout, send warning if x times,etc
+//						}
 				//	}
 						internal_stats.confirmed[esteCycle][soyYo]++;
 
@@ -3066,6 +3011,8 @@ void cycleManager(void * pArg)
 				else
 				{
 					if(soyYo>30){
+						internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
+						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
 						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
 						break;
 					}
