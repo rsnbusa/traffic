@@ -55,7 +55,7 @@
 #define MAXSEQUENCES						30	 //change here will require to ERASE flash etc due to record size change
 #define MAXLIGHTS							6    //change here will require to ERASE flash etc due to record size change
 #define NUMCOLORS							7
-#define MAXCMDS             				7
+#define MAXCMDS             				8
 #define MAXDEVS             				3
 #define u8									uint8_t
 #define u16									uint16_t

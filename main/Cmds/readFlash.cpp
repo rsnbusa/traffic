@@ -9,6 +9,7 @@
 extern const char *byte_to_binary(uint32_t x);
 extern string byte_to_binarytxt(uint32_t x);
 extern string byte_to_binary_porttxt(uint32_t x);
+extern void load_stats();
 
 string makeDateString(time_t t)
 {
@@ -135,9 +136,36 @@ void print_hardware_section(time_t now)
 
 void print_id_section()
 {
+	char textl[10];
+	switch(vmstate)
+	{
+	case VMOFF:
+		strcpy(textl,"OFF");
+		break;
+	case VMBOOT:
+		strcpy(textl,"Boot");
+		break;
+	case VMWIFI:
+		strcpy(textl,"WiFi");
+		break;
+	case VMLOGIN:
+		strcpy(textl,"Login");
+		break;
+	case VMREADY:
+		strcpy(textl,"Ready");
+		break;
+	case VMRUN:
+		strcpy(textl,"Running");
+		break;
+	default:
+		strcpy(textl,"UNKNOWN");
+		break;
+	}
 	printf("\n========== Identification ===========\n");
 
-	printf("Station Id:%d NodeId:%d Clone:%s Name %s Login %d\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",sysConfig.stationName,loginf);
+
+	printf("Station Id:%d NodeId:%d Clone:%s Name %s Login %d State %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",
+						sysConfig.stationName,loginf,textl);
 	printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 
 }
@@ -254,7 +282,7 @@ void print_operation_section(u8 full)
 			printf("\n========== Operation ===========\n");
 
 			printf("Active Nodes\n");
-			for (int a=0;a<20;a++)
+			for (int a=0;a<MAXNODES;a++)
 			{
 				if(activeNodes.nodesReported[a]!=-1)
 				{
@@ -350,7 +378,7 @@ void print_stats_section(u8 full)
 		printf("\n========== Statistics ===========\n");
 		local=internal_stats.session_start;
 		localtime_r(&local, &ts);
-		printf("System with %d schedules completed started at %s",internal_stats.schedule_changes,asctime(&ts));
+		printf("System with %d cycles completed %d reboots last start at %s",internal_stats.schedule_changes,internal_stats.boots,asctime(&ts));
 
 		for (int a=0;a<MAXCYCLES;a++)
 		{
@@ -365,7 +393,8 @@ void print_stats_section(u8 full)
 
 				for (int b=0;b<MAXNODES;b++)
 					if(internal_stats.started[a][b]>0)
-						printf("Node %d Started %d Confirmed %d Timeout %d\n",b,internal_stats.started[a][b],internal_stats.confirmed[a][b],internal_stats.timeout[a][b]);
+						printf("Street(%d) %s Started %d Confirmed %d Timeout %d Killed %d\n",b,sysConfig.calles[b],internal_stats.started[a][b],internal_stats.confirmed[a][b],
+								internal_stats.timeout[a][b],internal_stats.killed);
 			}
 		}
 	}

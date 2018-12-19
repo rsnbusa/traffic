@@ -11,5 +11,6 @@ void set_reset(void *pArg);               // FOTA of latest firmware
 void set_run(void *pArg);               // FOTA of latest firmware
 void set_leds(void *pArg);               // FOTA of latest firmware
 void set_walk(void *pArg);               // FOTA of latest firmware
+void set_emergency(void *pArg);               // FOTA of latest firmware
 
 #endif

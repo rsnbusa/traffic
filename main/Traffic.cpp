@@ -22,6 +22,8 @@ void runLight(void * pArg);
 void rxMessage(void * pArg);
 void repeater(void * pArg);
 void blinkLight(void *pArg);
+void controller(void *pArg);
+void write_stats();
 
 using namespace std;
 
@@ -586,7 +588,7 @@ void httpTask(void* pArg)
 void login(void *pArg)
 {
 	int van=0;
-
+	vmstate=VMLOGIN;
 	while(1)
 	{
 		sendMsg(LOGIN,EVERYBODY,sysConfig.nodeid,sysConfig.stationid,sysConfig.stationName,strlen(sysConfig.stationName));
@@ -597,6 +599,7 @@ void login(void *pArg)
 			if(sysConfig.traceflag&(1<<WIFID))
 				printf("[WIFID]Login Acked\n");
 #endif
+			vmstate=VMREADY;
 			loginf=true;
 			loginHandle=NULL;
 			vTaskDelete(NULL);
@@ -610,7 +613,6 @@ void login(void *pArg)
 void station_setup(system_event_t *event)
 {
 	gpio_set_level((gpio_num_t)WIFILED, 1);
-	connf=true;
 	localIp=event->event_info.got_ip.ip_info.ip;
 	get_traffic_name();
 #ifdef DEBUGSYS
@@ -675,12 +677,12 @@ void station_disconnected(system_event_t *event)
 	gpio_set_level((gpio_num_t)SENDLED, 0);
 	gpio_set_level((gpio_num_t)MQTTLED, 0);
 	gpio_set_level((gpio_num_t)WIFILED, 0);
-	printf("RunHandle\n");
-	if(runHandle)
-	{
-		vTaskDelete(runHandle);
-		runHandle=NULL;
-	}
+//	printf("RunHandle\n");
+//	if(runHandle)
+//	{
+//		vTaskDelete(runHandle);
+//		runHandle=NULL;
+//	}
 
 	if(sysConfig.mode==CLIENT)
 	{
@@ -693,11 +695,11 @@ void station_disconnected(system_event_t *event)
 	if(blinkHandle){
 		vTaskDelete(blinkHandle);
 		blinkHandle=NULL;
-		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
+		xTaskCreate(&blinkLight, "blink", 1024, (void*)sysLights.defaultLight,(UBaseType_t) 3, &blinkHandle); //will get date
 	}
 	else
 	{
-		xTaskCreate(&blinkLight, "blink", 4096, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+		xTaskCreate(&blinkLight, "blink", 1024, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
 	}
 
 	if(cycleHandle)
@@ -748,6 +750,7 @@ esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
 			printf("[WIFID]Client Got IP\n");
 #endif
 		station_setup(event);
+		connf=true;
 		break;
 
 	case SYSTEM_EVENT_STA_START:
@@ -778,6 +781,7 @@ esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
 			printf("[WIFID]Client STA Disconnected\n");
 #endif
 		station_disconnected(event);
+		connf=false;
 		esp_wifi_connect();
 		break;
 
@@ -1049,7 +1053,6 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 			{
 				vTaskDelete(rxHandle);
 				rxHandle=NULL;
-				printf("Kill Repeater Task\n");
 			}
 			// are we trying to login In? Kill it
 			if(loginHandle)
@@ -1060,19 +1063,6 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 
 			rebootf=true;
 			station_disconnected(event);
-//			if(!rebootf)
-//			{ //First time the Controller is detected down
-//				// stop the AP section so that they send Login
-//				rebootf=true;
-//				esp_wifi_get_config(ESP_IF_WIFI_AP,&config);
-//				esp_wifi_get_config(ESP_IF_WIFI_STA,&config);
-//				ESP_ERROR_CHECK(esp_wifi_stop());
-//				delay(500);
-//				ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_STA, &config));
-//				ESP_ERROR_CHECK(esp_wifi_set_config(ESP_IF_WIFI_AP, &config));
-//				ESP_ERROR_CHECK(esp_wifi_start());
-//				//Must do a Stop then a Start again
-//			}
 		}
 		esp_wifi_connect();
 		break;
@@ -1320,6 +1310,8 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 
    if(runHandle!=NULL) //do not duplicate task
    {
+	   internal_stats.killed++;
+	   write_stats();
 	   vTaskDelete(runHandle),
 	   runHandle=NULL;
    }
@@ -1587,6 +1579,90 @@ void cmd_acklogin(cmd_struct cual)
 
 }
 
+void cmd_emergency(cmd_struct cual)
+{
+#ifdef DEBUGSYS
+		   if(sysConfig.traceflag & (1<<WIFID))
+			   printf("[WIFID]Emergency %d Station(%d)\n",cual.fromwho,cual.free1);
+#endif
+		   // clear all lights
+			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+
+
+		   if(sysConfig.mode==SERVER)
+		   {
+			   if(runHandle)
+			   {
+				   vTaskDelete(runHandle);
+				   runHandle=NULL;
+			   }
+			   if(cycleHandle)
+			   {
+				   vTaskDelete(cycleHandle);
+				   cycleHandle=NULL;
+				   xTimerStop(doneTimer,0);
+			   }
+			   if(controllerHandle)
+			   {
+				   vTaskDelete(controllerHandle);
+				   controllerHandle=NULL;
+			   }
+			   if(cual.free1==sysConfig.stationid)
+			   {
+				   printf("Its for me Duration %d\n",cual.free2);
+				   xTaskCreate(&blinkLight,"blinke",1024,(void*)sysLights.outPorts[2], 5, &blinkHandle);
+
+			   }
+			   else
+			   {
+				   //blink RED LIGHT
+				   xTaskCreate(&blinkLight,"blinke",1024,(void*)sysLights.outPorts[0], 5, &blinkHandle);
+
+			   }
+			   delay(cual.free2*1000);//in ms
+			   vTaskDelete(blinkHandle);
+			   blinkHandle=NULL;
+			   //done. we are ready to start receiving run cmds again. Set defualt light
+				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+				REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[sysLights.numLuces-1].ioports);//set last light state
+				//restart the controller task which will begin everything again.
+				xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);
+
+
+		   }
+		   else
+		   { //client and repeater
+			   if(runHandle)
+			   {
+				   vTaskDelete(runHandle);
+				   runHandle=NULL;
+			   }
+			   if(cual.free1==sysConfig.stationid)
+			   {
+				   printf("Its for me Duration %d\n",cual.free2);
+				   //blink green light
+				   xTaskCreate(&blinkLight,"blinke",1024,(void*)sysLights.outPorts[2], 5, &blinkHandle);
+
+			   }
+			   else
+			   {
+				   //blink RED LIGHT
+				   xTaskCreate(&blinkLight,"blinke",1024,(void*)sysLights.outPorts[0], 5, &blinkHandle);
+
+			   }
+			   delay(cual.free2*1000);//in ms
+			   vTaskDelete(blinkHandle);
+			   blinkHandle=NULL;
+			   //done. we are ready to start receiving run cmds again. Set defualt light
+				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+				REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[sysLights.numLuces-1].ioports);//set last light state
+				//we are cool. Saved a life hopefully
+		   }
+
+
+}
+
+
 void process_cmd(cmd_struct cual)
 {
 
@@ -1675,6 +1751,9 @@ void process_cmd(cmd_struct cual)
 		   case ACKL:
 			   cmd_acklogin(cual);
 			   break;
+		   case EMERGENCY:
+			   cmd_emergency(cual);
+			   break;
 		   default:
 			   printf("Invalid incoming Command %d\n",cual.cmd);
 			   break;
@@ -1728,6 +1807,7 @@ void runLight(void * pArg)
 
 	cuantoDura=(int)pArg*FACTOR2;
 
+	vmstate=VMRUN;
 	for (int a=0;a<sysLights.numLuces;a++)
 	{
 		if (!sysLights.lasLuces[a].typ)
@@ -1845,6 +1925,7 @@ void runLight(void * pArg)
 		sendMsg(DONE,EVERYBODY,0,0,NULL,0);
 	globalWalk=false;
 	runHandle=NULL;
+	vmstate=VMREADY;
 	vTaskDelete(NULL);
 }
 
@@ -2448,15 +2529,17 @@ void initVars()
 		FACTOR2=1000;
 
 	// Task handles to NULL
-	runHandle		=NULL;
-	cycleHandle		=NULL;
-	blinkHandle		=NULL;
-	mongoHandle		=NULL;
-	mdnsHandle		=NULL;
-	mqttHandle		=NULL;
-	rxHandle		=NULL;
-	loginHandle		=NULL;
+	runHandle			=NULL;
+	cycleHandle			=NULL;
+	blinkHandle			=NULL;
+	mongoHandle			=NULL;
+	mdnsHandle			=NULL;
+	mqttHandle			=NULL;
+	rxHandle			=NULL;
+	loginHandle			=NULL;
+	controllerHandle	=NULL;
 
+	vmstate=VMOFF;
 	rxmessagef=false;
 	kalive=true;
 	globalWalk=false;
@@ -2639,6 +2722,8 @@ void initVars()
 	theCode[5]=set_leds;
 	strcpy(cmdName[6],"/tf_walk");
 	theCode[6]=set_walk;
+	strcpy(cmdName[7],"/tf_emergency");
+	theCode[7]=set_emergency;
 	//Load the Http uri structure and our cmds structures with commands
 	for (int a=0;a<MAXCMDS;a++)
 	{
@@ -2920,7 +3005,7 @@ void cycleManager(void * pArg)
 	char textl[20];
 	time_t now;
 	u16 soyYo; //Street Number like 0,1,2. Should not skip one, ex, 0,2,3
-	u32 st,ulCount,fueron;
+	u32 st,fueron;
 
 	cual=(int)pArg; //cycle to use
 	esteCycle=sysSequence.sequences[cual].cycleId;
@@ -3024,7 +3109,10 @@ void cycleManager(void * pArg)
 
 		voy++;
 		if (voy>=intersections.howmany)
+		{
 			voy=0;
+			write_stats();
+		}
 	}
 }
 
@@ -3159,7 +3247,7 @@ struct tm timeinfo ;
 		printf("Failed to create timer\n");
 	else
 		xTimerStart(scheduleTimer,0);
-
+	controllerHandle=NULL;
 	vTaskDelete(NULL);//done
 }
 
@@ -3300,6 +3388,29 @@ void load_lights()
 	}
 }
 
+void write_stats()
+{
+	int q=nvs_set_blob(backhandle,"stats",&internal_stats,sizeof(internal_stats));
+	if (q !=ESP_OK)
+	{
+		printf("Error write Stats Boot %d\n",q);
+
+	}
+}
+
+void load_stats()
+{
+	size_t largo=sizeof(internal_stats);
+	int q=nvs_get_blob(backhandle,"stats",&internal_stats,&largo);
+	if(q!=ESP_OK)
+	{
+		printf("Error loading Stats\n");
+		memset(&internal_stats,0,sizeof(internal_stats));
+	}
+	time(&internal_stats.session_start);
+	internal_stats.boots++;
+	write_stats();
+}
 
 //main
 void app_main(void)
@@ -3344,6 +3455,9 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	nvs_commit(nvshandle);
 	erase_config();
 }
+
+if(sysConfig.mode==SERVER)
+	load_stats();
 	printf("VersionEsp32-1.0.1\n");
 
 	curSSID=sysConfig.lastSSID;
@@ -3374,6 +3488,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	write_to_flash_lights(false);
 	write_to_flash(true);
 
+	vmstate=VMBOOT;
 	rxtxf=false; //default stop
 	memset(&answer,0,sizeof(answer));
 	// Start Main Tasks
@@ -3381,6 +3496,8 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 		xTaskCreate(&timerManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
 	xTaskCreate(&kbd,"kbd",8192,NULL, MGOS_TASK_PRIORITY, NULL);								// User interface while in development. Erased in RELEASE
 	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
+
+	vmstate=VMWIFI;
 
 	if(sysConfig.mode==CLIENT)
 			initWiFiSta();
@@ -3390,6 +3507,6 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	    initWiFiRepeater();
 
 	if(sysConfig.mode==SERVER){
-		xTaskCreate(&controller,"controller",10240,NULL, 5, NULL);									// If we are a Controller
+		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
 	}
 }

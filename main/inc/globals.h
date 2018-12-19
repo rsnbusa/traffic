@@ -61,7 +61,7 @@ using namespace std;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
  EXTERN cmd_struct 						answer;
  EXTERN scheduler_struct				scheduler;
- EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle,loginHandle;
+ EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,mongoHandle,mdnsHandle,loginHandle,controllerHandle;
  EXTERN sta_status						activeNodes;
  EXTERN cmdRecord 						cmds[MAXCMDS];
  EXTERN login_struct					logins[20];
@@ -71,6 +71,7 @@ using namespace std;
  EXTERN functp							theCode[MAXCMDS];
  EXTERN statistics_struct				internal_stats;
  EXTERN SemaphoreHandle_t 				loginSemaphore;
+ EXTERN vmstate_type					vmstate;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							rxmessagef,llogf,connf,mongf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,
