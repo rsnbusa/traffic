@@ -15,6 +15,8 @@ extern void write_to_flash_cycles(bool andRecovery);
 extern string makeDateString(time_t t);
 extern void cycleManager(void *pArg);
 extern void delay(uint32_t cuanto);
+extern void write_stats();
+
 
 string byte_to_binarytxt(uint32_t x,bool outp);
 
@@ -1296,9 +1298,17 @@ void kbd(void *arg) {
 				printf("Tx %d Rx %d\n",salen,entran);
 				break;
 
+				time_t session_start;
+				u32 schedule_changes,killed;
+				u16 boots;
+				u32 started[MAXCYCLES][MAXNODES],confirmed[MAXCYCLES][MAXNODES],timeout[MAXCYCLES][MAXNODES];
+
 			case ZEROc:
 				salen=entran=0;
-				printf("Zero Counters\n");
+				memset(&internal_stats,0,sizeof(internal_stats));
+				time(&internal_stats.session_start);
+				write_stats();
+				printf("Zero Counters and Stats\n");
 				break;
 
 			case DISPLAYc:

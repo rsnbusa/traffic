@@ -3406,145 +3406,145 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  44 .literal._Z12kbd_schedule11uart_port_t 00000130  00000000  00000000  00000d38  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 45 .literal._Z3kbdPv 000001b8  00000000  00000000  00000e68  2**2
+ 45 .literal._Z3kbdPv 000001c8  00000000  00000000  00000e68  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .text         00000000  00000000  00000000  00001020  2**0
+ 46 .text         00000000  00000000  00000000  00001030  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 47 .data         00000000  00000000  00000000  00001020  2**0
+ 47 .data         00000000  00000000  00000000  00001030  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 48 .bss          00000000  00000000  00000000  00001020  2**0
+ 48 .bss          00000000  00000000  00000000  00001030  2**0
                   ALLOC
- 49 .rodata.str1.1 00000844  00000000  00000000  00001020  2**0
+ 49 .rodata.str1.1 0000084e  00000000  00000000  00001030  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 50 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$24 00000051  00000000  00000000  00001864  2**2
+ 50 .text._ZNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEC2EPKcRKS3_$isra$24 00000051  00000000  00000000  00001880  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 51 .text._Z13keyfromstringPc 0000002a  00000000  00000000  000018b8  2**2
+ 51 .text._Z13keyfromstringPc 0000002a  00000000  00000000  000018d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 52 .text._Z13cmdfromstringNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000007a  00000000  00000000  000018e4  2**2
+ 52 .text._Z13cmdfromstringNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000007a  00000000  00000000  00001900  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 53 .text._Z10get_stringB5cxx1111uart_port_thb 0000007f  00000000  00000000  00001960  2**2
+ 53 .text._Z10get_stringB5cxx1111uart_port_thb 0000007f  00000000  00000000  0000197c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .text._Z8findPorti 00000025  00000000  00000000  000019e0  2**2
+ 54 .text._Z8findPorti 00000025  00000000  00000000  000019fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 55 .text._Z11confirmPorti 00000016  00000000  00000000  00001a08  2**2
+ 55 .text._Z11confirmPorti 00000016  00000000  00000000  00001a24  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .text._Z11makeInPortsNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000007e  00000000  00000000  00001a20  2**2
+ 56 .text._Z11makeInPortsNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000007e  00000000  00000000  00001a3c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 57 .text._Z14strbitsConfirmNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 00000062  00000000  00000000  00001aa0  2**2
+ 57 .text._Z14strbitsConfirmNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 00000062  00000000  00000000  00001abc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 58 .text._Z11getNodeTimeNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000004e  00000000  00000000  00001b04  2**2
+ 58 .text._Z11getNodeTimeNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEE 0000004e  00000000  00000000  00001b20  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 59 .text._Z7strbitsNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEbb 0000008f  00000000  00000000  00001b54  2**2
+ 59 .text._Z7strbitsNSt7__cxx1112basic_stringIcSt11char_traitsIcESaIcEEEbb 0000008f  00000000  00000000  00001b70  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 60 .text._Z14byte_to_binaryj 00000051  00000000  00000000  00001be4  2**2
+ 60 .text._Z14byte_to_binaryj 00000051  00000000  00000000  00001c00  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 61 .text._Z17byte_to_binarytxtB5cxx11jb 00000063  00000000  00000000  00001c38  2**2
+ 61 .text._Z17byte_to_binarytxtB5cxx11jb 00000063  00000000  00000000  00001c54  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 62 .text._Z22byte_to_binary_porttxtB5cxx11j 000000ae  00000000  00000000  00001c9c  2**2
+ 62 .text._Z22byte_to_binary_porttxtB5cxx11j 000000ae  00000000  00000000  00001cb8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 63 .text._Z9findColorPc 00000024  00000000  00000000  00001d4c  2**2
+ 63 .text._Z9findColorPc 00000024  00000000  00000000  00001d68  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 64 .text._Z9kbd_blink11uart_port_t 0000003d  00000000  00000000  00001d70  2**2
+ 64 .text._Z9kbd_blink11uart_port_t 0000003d  00000000  00000000  00001d8c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 65 .text._Z13kbd_connected11uart_port_t 0000007a  00000000  00000000  00001db0  2**2
+ 65 .text._Z13kbd_connected11uart_port_t 0000007a  00000000  00000000  00001dcc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 66 .text._Z11kbd_showlog11uart_port_t 0000009f  00000000  00000000  00001e2c  2**2
+ 66 .text._Z11kbd_showlog11uart_port_t 0000009f  00000000  00000000  00001e48  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 67 .text._Z11kbd_rualive11uart_port_t 00000023  00000000  00000000  00001ecc  2**2
+ 67 .text._Z11kbd_rualive11uart_port_t 00000023  00000000  00000000  00001ee8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 68 .text._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000016  00000000  00000000  00001ef0  2**2
+ 68 .text._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000016  00000000  00000000  00001f0c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 69 .text._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000017  00000000  00000000  00001f08  2**2
+ 69 .text._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000017  00000000  00000000  00001f24  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 70 .text._Z15kbd_accessPoint11uart_port_t 00000173  00000000  00000000  00001f20  2**2
+ 70 .text._Z15kbd_accessPoint11uart_port_t 00000173  00000000  00000000  00001f3c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 71 .text._Z9kbd_newid11uart_port_t 000000fc  00000000  00000000  00002094  2**2
+ 71 .text._Z9kbd_newid11uart_port_t 000000fc  00000000  00000000  000020b0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 72 .text._Z9kbd_alive11uart_port_t 0000007f  00000000  00000000  00002190  2**2
+ 72 .text._Z9kbd_alive11uart_port_t 0000007f  00000000  00000000  000021ac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 73 .text._Z9kbd_reset11uart_port_t 0000007f  00000000  00000000  00002210  2**2
+ 73 .text._Z9kbd_reset11uart_port_t 0000007f  00000000  00000000  0000222c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 74 .text._Z8kbd_ping11uart_port_t 0000007f  00000000  00000000  00002290  2**2
+ 74 .text._Z8kbd_ping11uart_port_t 0000007f  00000000  00000000  000022ac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 75 .text._Z12kbd_bulbTest11uart_port_t 000000a6  00000000  00000000  00002310  2**2
+ 75 .text._Z12kbd_bulbTest11uart_port_t 000000a6  00000000  00000000  0000232c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 76 .text._Z12kbd_loglevel11uart_port_t 000000e0  00000000  00000000  000023b8  2**2
+ 76 .text._Z12kbd_loglevel11uart_port_t 000000e0  00000000  00000000  000023d4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 77 .rodata._Z12kbd_loglevel11uart_port_t 00000018  00000000  00000000  00002498  2**2
+ 77 .rodata._Z12kbd_loglevel11uart_port_t 00000018  00000000  00000000  000024b4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 78 .text._Z9kbd_cycle11uart_port_t 000001a0  00000000  00000000  000024b0  2**2
+ 78 .text._Z9kbd_cycle11uart_port_t 000001a0  00000000  00000000  000024cc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 79 .text._Z18kbd_light_sequence11uart_port_t 000003c7  00000000  00000000  00002650  2**2
+ 79 .text._Z18kbd_light_sequence11uart_port_t 000003c7  00000000  00000000  0000266c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 80 .text._Z9kbd_ports11uart_port_t 000003b6  00000000  00000000  00002a18  2**2
+ 80 .text._Z9kbd_ports11uart_port_t 000003b6  00000000  00000000  00002a34  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 81 .text._Z10kbd_factor11uart_port_t 00000170  00000000  00000000  00002dd0  2**2
+ 81 .text._Z10kbd_factor11uart_port_t 00000170  00000000  00000000  00002dec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 82 .text._Z6kbd_id11uart_port_t 0000021b  00000000  00000000  00002f40  2**2
+ 82 .text._Z6kbd_id11uart_port_t 0000021b  00000000  00000000  00002f5c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 83 .text._Z12kbd_firmware11uart_port_t 0000012c  00000000  00000000  0000315c  2**2
+ 83 .text._Z12kbd_firmware11uart_port_t 0000012c  00000000  00000000  00003178  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 84 .text._Z12kbd_clearlog11uart_port_t 000000a5  00000000  00000000  00003288  2**2
+ 84 .text._Z12kbd_clearlog11uart_port_t 000000a5  00000000  00000000  000032a4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 85 .text._Z9kbd_quiet11uart_port_t 000000eb  00000000  00000000  00003330  2**2
+ 85 .text._Z9kbd_quiet11uart_port_t 000000eb  00000000  00000000  0000334c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 86 .text._Z9kbd_trace11uart_port_t 0000014b  00000000  00000000  0000341c  2**2
+ 86 .text._Z9kbd_trace11uart_port_t 0000014b  00000000  00000000  00003438  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 87 .text._Z8kbd_mode11uart_port_t 000001f6  00000000  00000000  00003568  2**2
+ 87 .text._Z8kbd_mode11uart_port_t 000001f6  00000000  00000000  00003584  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 88 .text._Z10kbd_street11uart_port_t 000000d7  00000000  00000000  00003760  2**2
+ 88 .text._Z10kbd_street11uart_port_t 000000d7  00000000  00000000  0000377c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 89 .text._Z10kbd_kalive11uart_port_t 0000009c  00000000  00000000  00003838  2**2
+ 89 .text._Z10kbd_kalive11uart_port_t 0000009c  00000000  00000000  00003854  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 90 .text._Z8kbd_date11uart_port_t 000002fb  00000000  00000000  000038d4  2**2
+ 90 .text._Z8kbd_date11uart_port_t 000002fb  00000000  00000000  000038f0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 91 .text._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 0000003e  00000000  00000000  00003bd0  2**2
+ 91 .text._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 0000003e  00000000  00000000  00003bec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 92 .text._Z12kbd_schedule11uart_port_t 0000038a  00000000  00000000  00003c10  2**2
+ 92 .text._Z12kbd_schedule11uart_port_t 0000038a  00000000  00000000  00003c2c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 93 .rodata       00000018  00000000  00000000  00003f9c  2**2
+ 93 .rodata       00000018  00000000  00000000  00003fb8  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 94 .text._Z3kbdPv 00000591  00000000  00000000  00003fb4  2**2
+ 94 .text._Z3kbdPv 000005ad  00000000  00000000  00003fd0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 95 .rodata._Z3kbdPv 0000008c  00000000  00000000  00004548  2**2
+ 95 .rodata._Z3kbdPv 0000008c  00000000  00000000  00004580  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 96 .bss._ZZ14byte_to_binaryjE1b 00000021  00000000  00000000  000045d4  2**0
+ 96 .bss._ZZ14byte_to_binaryjE1b 00000021  00000000  00000000  0000460c  2**0
                   ALLOC
- 97 .debug_frame  00000418  00000000  00000000  000045d4  2**2
+ 97 .debug_frame  00000418  00000000  00000000  0000460c  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 98 .debug_info   000134fd  00000000  00000000  000049ec  2**0
+ 98 .debug_info   0001364d  00000000  00000000  00004a24  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 99 .debug_abbrev 00000a4a  00000000  00000000  00017ee9  2**0
+ 99 .debug_abbrev 00000a5a  00000000  00000000  00018071  2**0
                   CONTENTS, READONLY, DEBUGGING
-100 .debug_loc    0000b75e  00000000  00000000  00018933  2**0
+100 .debug_loc    0000b75e  00000000  00000000  00018acb  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-101 .debug_aranges 00000170  00000000  00000000  00024091  2**0
+101 .debug_aranges 00000170  00000000  00000000  00024229  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-102 .debug_ranges 00000988  00000000  00000000  00024201  2**0
+102 .debug_ranges 00000988  00000000  00000000  00024399  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-103 .debug_line   00002d79  00000000  00000000  00024b89  2**0
+103 .debug_line   00002d90  00000000  00000000  00024d21  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-104 .debug_str    000090c2  00000000  00000000  00027902  2**0
+104 .debug_str    0000915f  00000000  00000000  00027ab1  2**0
                   CONTENTS, READONLY, DEBUGGING
-105 .comment      0000003b  00000000  00000000  000309c4  2**0
+105 .comment      0000003b  00000000  00000000  00030c10  2**0
                   CONTENTS, READONLY
-106 .xtensa.info  00000038  00000000  00000000  000309ff  2**0
+106 .xtensa.info  00000038  00000000  00000000  00030c4b  2**0
                   CONTENTS, READONLY
-107 .xt.lit       00000140  00000000  00000000  00030a37  2**0
+107 .xt.lit       00000140  00000000  00000000  00030c83  2**0
                   CONTENTS, RELOC, READONLY
-108 .xt.lit._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000008  00000000  00000000  00030b77  2**0
+108 .xt.lit._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000008  00000000  00000000  00030dc3  2**0
                   CONTENTS, RELOC, READONLY
-109 .xt.lit._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000008  00000000  00000000  00030b7f  2**0
+109 .xt.lit._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000008  00000000  00000000  00030dcb  2**0
                   CONTENTS, RELOC, READONLY
-110 .xt.lit._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000008  00000000  00000000  00030b87  2**0
+110 .xt.lit._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000008  00000000  00000000  00030dd3  2**0
                   CONTENTS, RELOC, READONLY
-111 .xt.prop      0000150c  00000000  00000000  00030b8f  2**0
+111 .xt.prop      0000150c  00000000  00000000  00030ddb  2**0
                   CONTENTS, RELOC, READONLY
-112 .xt.prop._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000030  00000000  00000000  0003209b  2**0
+112 .xt.prop._ZSteqIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000030  00000000  00000000  000322e7  2**0
                   CONTENTS, RELOC, READONLY
-113 .xt.prop._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000030  00000000  00000000  000320cb  2**0
+113 .xt.prop._ZStneIcSt11char_traitsIcESaIcEEbRKNSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_ 00000030  00000000  00000000  00032317  2**0
                   CONTENTS, RELOC, READONLY
-114 .xt.prop._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000030  00000000  00000000  000320fb  2**0
+114 .xt.prop._ZStplIcSt11char_traitsIcESaIcEENSt7__cxx1112basic_stringIT_T0_T1_EEPKS5_RKS8_ 00000030  00000000  00000000  00032347  2**0
                   CONTENTS, RELOC, READONLY
 
 logManager.o:     file format elf32-xtensa-le
