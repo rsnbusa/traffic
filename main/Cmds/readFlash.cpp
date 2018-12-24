@@ -164,8 +164,8 @@ void print_id_section()
 	printf("\n========== Identification ===========\n");
 
 
-	printf("Station Id:%d NodeId:%d Clone:%s Name %s Login %d State %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",
-						sysConfig.stationName,loginf,textl);
+	printf("Station Id:%d NodeId:%d Clone:%s Name %s Login %d State %s Connf %s\n",sysConfig.whoami,sysConfig.nodeid,sysConfig.clone?"Yes":"No",
+						sysConfig.stationName,loginf,textl,connf?"yes":"no");
 	printf("[DispMgrTimer %d] Factor %d Leds %d HeartBeat %d\n",sysConfig.DISPTIME,FACTOR,sysConfig.showLeds,kalive);
 
 }

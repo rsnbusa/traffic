@@ -628,43 +628,86 @@ void station_setup(system_event_t *event)
 	   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
    }
 
-	if(sysConfig.mode==SERVER) //Server Mode Only
-	{
-		if(!mqttf)
-		{
-#ifdef DEBUGSYS
-			if(sysConfig.traceflag&(1<<BOOTD))
-				printf("[BOOTD]Connect to mqtt\n");
-#endif
-			xTaskCreate(&mqttmanager,"mgr",10240,NULL,  5, &mqttHandle);		// User interface while in development. Erased in RELEASE
-
-			clientCloud = esp_mqtt_client_init(&settings);
-			 if(clientCloud)
-				esp_mqtt_client_start(clientCloud);
-			 else
-			 {
-				 printf("Fail mqtt initCloud\n");
-				 vTaskDelete(mqttHandle);
-			 }
-		}
-
-		if(!mongf)
-		{
-#ifdef DEBUGSYS
-			if(sysConfig.traceflag&(1<<BOOTD))
-				printf("[BOOTD]Start Mongoose\n");
-#endif
-			setLogo("Traffic");
-			xTaskCreate(&httpTask, "mongooseTask", 10240, NULL, 5, &mongoHandle); //  web commands Interface controller
-			xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
-		}
-	}
-
 	// Main routine for Commands
 	if(sysConfig.mode==CLIENT ){
 		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
 	}
+
+}
+
+void station_setup_server(system_event_t *event)
+{
+	gpio_set_level((gpio_num_t)WIFILED, 1);
+	localIp=event->event_info.got_ip.ip_info.ip;
+	get_traffic_name();
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag&(1<<BOOTD))
+		printf( "[BOOTD]Server Got IP: %d.%d.%d.%d \n", IP2STR(&event->event_info.got_ip.ip_info.ip));
+#endif
+	gpio_set_level((gpio_num_t)WIFILED, 1);
+
+	if(blinkHandle)
+   {
+	   vTaskDelete(blinkHandle);
+	   blinkHandle=NULL;
+	   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
+   }
+
+	connf=true;
+	if(!mqttf)
+	{
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<BOOTD))
+			printf("[BOOTD]Connect to mqtt\n");
+#endif
+		xTaskCreate(&mqttmanager,"mgr",10240,NULL,  5, &mqttHandle);		// User interface while in development. Erased in RELEASE
+
+		clientCloud = esp_mqtt_client_init(&settings);
+		 if(clientCloud)
+			esp_mqtt_client_start(clientCloud);
+		 else
+		 {
+			 printf("Fail mqtt initCloud\n");
+			 vTaskDelete(mqttHandle);
+		 }
+	}
+
+	if(!httpf)
+	{
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag&(1<<BOOTD))
+			printf("[BOOTD]Start HTTPserver\n");
+#endif
+		setLogo("Traffic");
+		xTaskCreate(&httpTask, "httpTask", 10240, NULL, 5, &httpHandle); //  web commands Interface controller
+		xTaskCreate(&initialize_sntp, "sntp", 2048, NULL, 3, NULL); //will get date
+	}
+}
+
+void station_disconnected_server(system_event_t *event)
+{
+	string temp;
+
+	if(!connf)
+		return; //already done this
+
+	connf=false;
+	gpio_set_level((gpio_num_t)RXLED, 0);
+	gpio_set_level((gpio_num_t)SENDLED, 0);
+	gpio_set_level((gpio_num_t)MQTTLED, 0);
+	gpio_set_level((gpio_num_t)WIFILED, 0);
+
+	if(blinkHandle)
+		vTaskDelete(blinkHandle);
+	xTaskCreate(&blinkLight, "blink", 1024, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
+
+	REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<WIFID))
+		printf("[WIFID]Server Reconnect %d\n",curSSID);
+#endif
 
 }
 
@@ -702,11 +745,11 @@ void station_disconnected(system_event_t *event)
 		xTaskCreate(&blinkLight, "blink", 1024, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
 	}
 
-	if(cycleHandle)
-	{
-		vTaskDelete(cycleHandle);
-		cycleHandle=NULL;
-	}
+//	if(cycleHandle)
+//	{
+//		vTaskDelete(cycleHandle);
+//		cycleHandle=NULL;
+//	}
 
 		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
@@ -815,14 +858,14 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
     case SYSTEM_EVENT_AP_STADISCONNECTED:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Server AP Disco\n");
+			printf("[WIFID]Server AP Disconnected\n");
 #endif
       	break;
 
     case SYSTEM_EVENT_AP_STAIPASSIGNED:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Server AP Ip Assigned\n");
+			printf("[WIFID]Server AP Ip Assigned to Client\n");
 #endif
     	esp_wifi_ap_get_sta_list(&station_list);
     	stations=(wifi_sta_info_t*)station_list.sta;
@@ -834,9 +877,9 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 	case SYSTEM_EVENT_STA_GOT_IP:
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<WIFID))
-			printf("[WIFID]Server Got Ip\n");
+			printf("[WIFID]Server STA Got Ip\n");
 #endif
-		station_setup(event);
+		station_setup_server(event);
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
@@ -893,7 +936,7 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Server STA Disconnected\n");
 #endif
-		station_disconnected(event);
+		station_disconnected_server(event);
 		esp_wifi_connect();
 		break;
 
@@ -902,8 +945,6 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Server STA Connected \n");
 #endif
-		sysConfig.lastSSID=curSSID;
-		write_to_flash(true);
 		break;
 
 	default:
@@ -990,7 +1031,7 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		//Repeater now active. Start our relayer
 		if(!repeaterConf)
 			xTaskCreate(&repeater, "repeater", 8092, (void*)0, 4, &rxHandle);
-		repeaterConf=true;
+		connf=repeaterConf=true;
 		break;
 
 	case SYSTEM_EVENT_AP_START:  // Handle the AP start event
@@ -1025,7 +1066,7 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Repeater STA Stopped from Controller\n");
 #endif
-		connf=false;
+		connf=repeaterConf=false;
 		gpio_set_level((gpio_num_t)RXLED, 0);
 		gpio_set_level((gpio_num_t)SENDLED, 0);
 		gpio_set_level((gpio_num_t)MQTTLED, 0);
@@ -1048,7 +1089,7 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 #endif
 		if(repeaterConf)
 		{
-			repeaterConf=false;
+			connf=repeaterConf=false;
 			if(rxHandle) //Repeater active? kill it
 			{
 				vTaskDelete(rxHandle);
@@ -1421,10 +1462,10 @@ void cmd_firmware(cmd_struct cual)
 	   mqttHandle=NULL;
 	}
 
-	if(mongoHandle)
+	if(httpHandle)
 	{
-	   vTaskDelete(mongoHandle);
-	   mongoHandle=NULL;
+	   vTaskDelete(httpHandle);
+	   httpHandle=NULL;
 	}
 
 	if(mdnsHandle)
@@ -2532,7 +2573,7 @@ void initVars()
 	runHandle			=NULL;
 	cycleHandle			=NULL;
 	blinkHandle			=NULL;
-	mongoHandle			=NULL;
+	httpHandle			=NULL;
 	mdnsHandle			=NULL;
 	mqttHandle			=NULL;
 	rxHandle			=NULL;
@@ -2744,7 +2785,7 @@ void initVars()
 	barH[2]=15;
 
 	displayf=true;
-	mongf=false;
+	httpf=false;
 	//compile_date[] = __DATE__ " " __TIME__;
 
 	logText[0]="System booted";
