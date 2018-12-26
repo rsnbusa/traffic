@@ -393,8 +393,8 @@ void print_stats_section(u8 full)
 
 				for (int b=0;b<MAXNODES;b++)
 					if(internal_stats.started[a][b]>0)
-						printf("Street(%d) %s Started %d Confirmed %d Timeout %d Killed %d\n",b,sysConfig.calles[b],internal_stats.started[a][b],internal_stats.confirmed[a][b],
-								internal_stats.timeout[a][b],internal_stats.killed);
+						printf("Street(%d) %s Started %d Confirmed %d Timeout %d\n",b,sysConfig.calles[b],internal_stats.started[a][b],internal_stats.confirmed[a][b],
+								internal_stats.timeout[a][b]);
 			}
 		}
 	}

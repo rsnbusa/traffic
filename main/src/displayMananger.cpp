@@ -208,7 +208,7 @@ void timerManager(void *arg) {
 				time(&t);
 				internal_stats.session_start=t;
 				localtime_r(&t, &timeinfo);
-				sprintf(textl,"Boot Complete for %s at %s %d stations joined",sysConfig.lightName,asctime(&timeinfo),sysConfig.totalLights-1);
+				sprintf(textl,"Boot Complete for %s  %d stations joined at %s",sysConfig.lightName,sysConfig.totalLights-1,asctime(&timeinfo));
 				while(!mqttf && tryMqtt)
 				{
 					tryMqtt--;

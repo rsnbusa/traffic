@@ -466,7 +466,6 @@ void initialize_sntp(void *args)
 
 void ConfigSystem(void *pArg)
 {
-//	uint32_t del=(uint32_t)pArg;
 	while(FOREVER)
 	{
 		gpio_set_level((gpio_num_t)WIFILED, 1);
@@ -1027,6 +1026,8 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Repeater Got Ip from Controller %s\n",inet_ntoa(elvent.ip_info.ip.addr));
 #endif
+		if(blinkHandle)
+			vTaskDelete(blinkHandle);
 		setup_repeater_ap(); //Start the AP
 		//Repeater now active. Start our relayer
 		if(!repeaterConf)
@@ -1257,8 +1258,17 @@ void cmd_ack(cmd_struct cual)
 #ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
 				   printf("[TRAFFICD][%d-%d]ACK received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
-
 #endif
+		   if(uxSemaphoreGetCount(ackSemaphore)==0) //its free
+			   {
+				   if(xSemaphoreGive(ackSemaphore)!= pdTRUE)
+#ifdef DEBUGSYS
+			   if(sysConfig.traceflag & (1<<TRAFFICD))
+				   printf("[TRAFFICD]Ack semaphore failed\n");
+#else
+				   cual.alignn=cual.alignn; //for debugiff condition
+#endif
+			  }
 }
 
 void cmd_nak(cmd_struct cual)
@@ -1277,6 +1287,8 @@ void cmd_done(cmd_struct cual)
 		   if(sysConfig.traceflag & (1<<TRAFFICD))
 			   printf("[TRAFFICD][%d-%d]DONE received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
 #endif
+			sendMsg(ACK,cual.fromwho,0,0,NULL,0);
+
 		   xQueueSend( cola, ( void * ) &cual.fromwho,( TickType_t ) 0 );
 	   }
 }
@@ -1351,8 +1363,6 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 
    if(runHandle!=NULL) //do not duplicate task
    {
-	   internal_stats.killed++;
-	   write_stats();
 	   vTaskDelete(runHandle),
 	   runHandle=NULL;
    }
@@ -1846,6 +1856,9 @@ void runLight(void * pArg)
 	u32 					ledStatus,tempread;
 	bool 					qfue;
 
+	if(!sysConfig.clone)
+		sendMsg(ACK,EVERYBODY,0,0,NULL,0);
+
 	cuantoDura=(int)pArg*FACTOR2;
 
 	vmstate=VMRUN;
@@ -1962,8 +1975,24 @@ void runLight(void * pArg)
 #endif
 		}
 	}
-	if(!sysConfig.clone) // If not a clone send DONE for the whole CLONE Group
-		sendMsg(DONE,EVERYBODY,0,0,NULL,0);
+	int retry=10;
+
+	if(!sysConfig.clone)
+	{// If not a clone send DONE for the whole CLONE Group
+		while(retry--)
+		{
+			sendMsg(DONE,EVERYBODY,0,0,NULL,0);
+			if(sysConfig.mode!=SERVER) //when server its guaranteed to received its own
+			{
+				if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again
+					break;
+			}
+			else
+				break;
+		}
+	}
+	if(retry==0)
+		printf("Failed to received Ack from controller\n");
 	globalWalk=false;
 	runHandle=NULL;
 	vmstate=VMREADY;
@@ -2035,7 +2064,10 @@ int create_multicast_ipv4_socket(int port,int ap)
     struct sockaddr_in saddr;
     memset(&saddr,0,sizeof(saddr));
 
-    printf("Create MultiSocket Port %d AP %d\n",port,ap);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+	    printf("[CMDD]Create MultiSocket Port %d AP %d\n",port,ap);
+#endif
     int sock = -1;
     int err = 0;
 
@@ -2044,7 +2076,6 @@ int create_multicast_ipv4_socket(int port,int ap)
         printf("Failed to create socket. Error %d %s\n", errno,strerror(errno));
         return -1;
     }
- //  printf("Socket Address %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
 
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0)
     {
@@ -2061,13 +2092,11 @@ int create_multicast_ipv4_socket(int port,int ap)
         printf("Failed to bind socket. Error %d %s\n", errno,strerror(errno));
         goto err;
     }
-printf("Binded\n");
     err = socket_add_ipv4_multicast_group(sock,ap);
     if (err < 0) {
     	printf("Error group %d %s\n", errno,strerror(errno));
         goto err;
     }
-printf("Done create socket\n");
     // All set, socket is configured for sending and receiving
     return sock;
 
@@ -2141,7 +2170,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("SendMsg to Ip %d:%d:%d:%d\n",IP2STR(&ip_info.ip));
+		printf("[CMDD]SendMsg to Ip %d:%d:%d:%d\n",IP2STR(&ip_info.ip));
 #endif
 
 	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
@@ -2555,6 +2584,12 @@ void initVars()
 	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
 
 	loginSemaphore= xSemaphoreCreateBinary();
+	if(loginSemaphore)
+		xSemaphoreGive(loginSemaphore);
+
+	ackSemaphore= xSemaphoreCreateBinary();
+	if(ackSemaphore)
+		xSemaphoreGive(ackSemaphore);
 
 	sonUid=0;
 
@@ -2983,8 +3018,8 @@ bool loadScheduler()
 	u32 faltan=86400; //secs in a day. Should be Zero when finished
 	time_t now;
 	time(&now);
-	printf("Today %d\n",TODAY);
-	 for (int a=0;a<sysSequence.numSequences;a++)
+
+	for (int a=0;a<sysSequence.numSequences;a++)
 	 {
 		 if (sysSequence.sequences[a].weekDay & TODAY)
 		 {
@@ -3041,7 +3076,7 @@ void doneCallback( TimerHandle_t xTimer )
 void cycleManager(void * pArg)
 {
 	char theNodes[50];
-	int voy=0,cual,esteCycle;
+	int voy=0,cual,esteCycle,vanv,vanc=0;
 	node_struct intersections;
 	char textl[20];
 	time_t now;
@@ -3051,6 +3086,8 @@ void cycleManager(void * pArg)
 	cual=(int)pArg; //cycle to use
 	esteCycle=sysSequence.sequences[cual].cycleId;
 
+
+	// review this idea
 	while(!rxtxf)
 	{
 		cycleHandle=NULL;
@@ -3086,8 +3123,15 @@ void cycleManager(void * pArg)
 				eraseMainScreen();
 				drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
 				drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				vanv=internal_stats.started[esteCycle][intersections.nodeid[voy]];
+				sprintf(textl,"%d",vanv);
+				drawString(110, 38, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				vanv=internal_stats.timeout[esteCycle][intersections.nodeid[voy]];
+				sprintf(textl,"%d",vanv);
+				drawString(110, 20, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				display.drawLine(0,18,127,18);
 				display.drawLine(0,50,127,50);
+				display.display();
 				xSemaphoreGive(I2CSem);
 			}
 		}
@@ -3097,53 +3141,62 @@ void cycleManager(void * pArg)
 		time(&now);
 		internal_stats.schedule_changes++;
 		internal_stats.started[esteCycle][intersections.nodeid[voy]]++;
-		sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
-		if(intersections.timeval[voy]<5)
-			printf("TIMER Fault %d\n",intersections.timeval[voy]);
-
-		vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
-		xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+2)*FACTOR,0,0);//MUST wait for done so 2 secs more and no timeout
-
-		st=millis();
-
-		while(true)
-		{
-			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
-			{
-				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
-				{
-					gCycleTime=-1;
-
-//						ulCount = ( uint32_t ) pvTimerGetTimerID( doneTimer );
-//						if(ulCount)
-//						{
-//	#ifdef DEBUGSYS
-//							if(sysConfig.traceflag & (1<<TRAFFICD))
-//								printf("[TRAFFICD]DONE timeout %d\n",ulCount);
-//	#endif
-//							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-//							//Log timeout, send warning if x times,etc
-//						}
-				//	}
-						internal_stats.confirmed[esteCycle][soyYo]++;
-
-					fueron=millis()-st;
 #ifdef DEBUGSYS
 					if(sysConfig.traceflag & (1<<TRAFFICD))
-						printf("[TRAFFICD]DONE received %d\n",fueron);
+						printf("[TRAFFICD]RUN Node %d delay %d\n",intersections.nodeid[voy],intersections.timeval[voy]);
 #endif
-					break; //next in cycle
-				}
-				else
+		int retry=10;
+		while(retry--)
+		{
+			sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
+			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again
+				break;
+		}
+		if (retry==0)
+			printf("[TRAFFID] Could Not Send RUN to %d for %d secs\n",intersections.nodeid[voy],intersections.timeval[voy]);
+		else
+		{
+			if(intersections.timeval[voy]<5)
+				printf("TIMER Fault %d\n",intersections.timeval[voy]);
+
+			vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
+			xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+3)*FACTOR,0,0);//MUST wait for done so 2 secs more and no timeout
+			xTimerStart(doneTimer,0);
+
+			st=millis();
+
+			while(true)
+			{
+				if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 				{
-					if(soyYo>30){
-						internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
-						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-						printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-						break;
+					xTimerStop(doneTimer,0); //just in case
+
+					if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
+					{
+						gCycleTime=-1;
+						internal_stats.confirmed[esteCycle][soyYo]++;
+						fueron=millis()-st;
+	#ifdef DEBUGSYS
+						if(sysConfig.traceflag & (1<<TRAFFICD))
+							printf("[TRAFFICD]DONE received %d\n",fueron);
+	#endif
+						break; //next in cycle
 					}
 					else
-						printf("Talking out of turn %d. Possible configuration problem\n",soyYo);
+					{
+						if(soyYo==100){
+							internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
+							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+							printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
+							break;
+						}
+
+	#ifdef DEBUGSYS
+						else
+						if(sysConfig.traceflag & (1<<TRAFFICD))
+							printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
+	#endif
+					}
 				}
 			}
 		}
@@ -3152,7 +3205,12 @@ void cycleManager(void * pArg)
 		if (voy>=intersections.howmany)
 		{
 			voy=0;
-			write_stats();
+			vanc++;
+			if(vanc > 20) //every 20 full cycles
+			{
+				write_stats();
+				vanc=0;
+			}
 		}
 	}
 }

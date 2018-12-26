@@ -171,6 +171,14 @@ typedef struct {
 	u32 started[MAXCYCLES][MAXNODES],confirmed[MAXCYCLES][MAXNODES],timeout[MAXCYCLES][MAXNODES];
 } statistics_struct;
 
+typedef struct {
+	u16 controllerid;
+	u8 node;
+	u16 stationid;
+	u8 seqnum;
+	u16 outports,inports,delay;
+} trace_struct;
+
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
 enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD};
 
