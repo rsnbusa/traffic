@@ -2063,91 +2063,91 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  50 .text.eap_deinit_prev_method 0000001e  00000000  00000000  00000494  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 51 .rodata.str1.1 000000a5  00000000  00000000  000004b2  2**0
+ 51 .rodata.str1.1 0000008f  00000000  00000000  000004b2  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 52 .text.eap_sm_build_identity_resp 000000a0  00000000  00000000  00000558  2**2
+ 52 .text.eap_sm_build_identity_resp 000000a0  00000000  00000000  00000544  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 53 .text.eap_sm_build_nak 00000129  00000000  00000000  000005f8  2**2
+ 53 .text.eap_sm_build_nak 00000129  00000000  00000000  000005e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .text.eap_peer_config_init 000000f0  00000000  00000000  00000724  2**2
+ 54 .text.eap_peer_config_init 000000f0  00000000  00000000  00000710  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 55 .text.eap_peer_config_deinit 0000003a  00000000  00000000  00000814  2**2
+ 55 .text.eap_peer_config_deinit 0000003a  00000000  00000000  00000800  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .text.eap_peer_blob_init 000000b8  00000000  00000000  00000850  2**2
+ 56 .text.eap_peer_blob_init 000000b8  00000000  00000000  0000083c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 57 .text.eap_peer_blob_deinit 00000039  00000000  00000000  00000908  2**2
+ 57 .text.eap_peer_blob_deinit 00000039  00000000  00000000  000008f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 58 .text.eap_sm_abort 00000013  00000000  00000000  00000944  2**2
+ 58 .text.eap_sm_abort 00000013  00000000  00000000  00000930  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 59 .text.eap_get_config 00000008  00000000  00000000  00000958  2**2
+ 59 .text.eap_get_config 00000008  00000000  00000000  00000944  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 60 .text.eap_get_config_identity 00000016  00000000  00000000  00000960  2**2
+ 60 .text.eap_get_config_identity 00000016  00000000  00000000  0000094c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 61 .text.eap_get_config_password 00000016  00000000  00000000  00000978  2**2
+ 61 .text.eap_get_config_password 00000016  00000000  00000000  00000964  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 62 .text.eap_get_config_password2 00000022  00000000  00000000  00000990  2**2
+ 62 .text.eap_get_config_password2 00000022  00000000  00000000  0000097c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 63 .text.eap_get_config_new_password 00000016  00000000  00000000  000009b4  2**2
+ 63 .text.eap_get_config_new_password 00000016  00000000  00000000  000009a0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 64 .text.eap_get_config_blob 00000034  00000000  00000000  000009cc  2**2
+ 64 .text.eap_get_config_blob 00000034  00000000  00000000  000009b8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 65 .text.esp_wifi_sta_wpa2_ent_set_cert_key 00000046  00000000  00000000  00000a00  2**2
+ 65 .text.esp_wifi_sta_wpa2_ent_set_cert_key 00000046  00000000  00000000  000009ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 66 .text.esp_wifi_sta_wpa2_ent_clear_cert_key 0000002b  00000000  00000000  00000a48  2**2
+ 66 .text.esp_wifi_sta_wpa2_ent_clear_cert_key 0000002b  00000000  00000000  00000a34  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 67 .text.esp_wifi_sta_wpa2_ent_set_ca_cert 0000001c  00000000  00000000  00000a74  2**2
+ 67 .text.esp_wifi_sta_wpa2_ent_set_ca_cert 0000001c  00000000  00000000  00000a60  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 68 .text.esp_wifi_sta_wpa2_ent_clear_ca_cert 00000011  00000000  00000000  00000a90  2**2
+ 68 .text.esp_wifi_sta_wpa2_ent_clear_ca_cert 00000011  00000000  00000000  00000a7c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 69 .text.esp_wifi_sta_wpa2_ent_set_identity 00000044  00000000  00000000  00000aa4  2**2
+ 69 .text.esp_wifi_sta_wpa2_ent_set_identity 00000044  00000000  00000000  00000a90  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 70 .text.esp_wifi_sta_wpa2_ent_clear_identity 0000001d  00000000  00000000  00000ae8  2**2
+ 70 .text.esp_wifi_sta_wpa2_ent_clear_identity 0000001d  00000000  00000000  00000ad4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 71 .text.esp_wifi_sta_wpa2_ent_set_username 00000044  00000000  00000000  00000b08  2**2
+ 71 .text.esp_wifi_sta_wpa2_ent_set_username 00000044  00000000  00000000  00000af4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 72 .text.esp_wifi_sta_wpa2_ent_clear_username 0000001d  00000000  00000000  00000b4c  2**2
+ 72 .text.esp_wifi_sta_wpa2_ent_clear_username 0000001d  00000000  00000000  00000b38  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 73 .text.esp_wifi_sta_wpa2_ent_set_password 00000040  00000000  00000000  00000b6c  2**2
+ 73 .text.esp_wifi_sta_wpa2_ent_set_password 00000040  00000000  00000000  00000b58  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 74 .text.esp_wifi_sta_wpa2_ent_clear_password 0000001d  00000000  00000000  00000bac  2**2
+ 74 .text.esp_wifi_sta_wpa2_ent_clear_password 0000001d  00000000  00000000  00000b98  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 75 .text.esp_wifi_sta_wpa2_ent_set_new_password 00000040  00000000  00000000  00000bcc  2**2
+ 75 .text.esp_wifi_sta_wpa2_ent_set_new_password 00000040  00000000  00000000  00000bb8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 76 .text.esp_wifi_sta_wpa2_ent_clear_new_password 0000001d  00000000  00000000  00000c0c  2**2
+ 76 .text.esp_wifi_sta_wpa2_ent_clear_new_password 0000001d  00000000  00000000  00000bf8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 77 .text.esp_wifi_sta_wpa2_ent_set_disable_time_check 0000000d  00000000  00000000  00000c2c  2**2
+ 77 .text.esp_wifi_sta_wpa2_ent_set_disable_time_check 0000000d  00000000  00000000  00000c18  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 78 .text.wifi_sta_get_enterprise_disable_time_check 0000000b  00000000  00000000  00000c3c  2**2
+ 78 .text.wifi_sta_get_enterprise_disable_time_check 0000000b  00000000  00000000  00000c28  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 79 .text.esp_wifi_sta_wpa2_ent_get_disable_time_check 00000010  00000000  00000000  00000c48  2**2
+ 79 .text.esp_wifi_sta_wpa2_ent_get_disable_time_check 00000010  00000000  00000000  00000c34  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 80 .bss.eap_methods 00000004  00000000  00000000  00000c58  2**2
+ 80 .bss.eap_methods 00000004  00000000  00000000  00000c44  2**2
                   ALLOC
- 81 .data.gl_disable_time_check 00000001  00000000  00000000  00000c58  2**0
+ 81 .data.gl_disable_time_check 00000001  00000000  00000000  00000c44  2**0
                   CONTENTS, ALLOC, LOAD, DATA
- 82 .debug_frame  000003e8  00000000  00000000  00000c5c  2**2
+ 82 .debug_frame  000003e8  00000000  00000000  00000c48  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 83 .debug_info   000021b9  00000000  00000000  00001044  2**0
+ 83 .debug_info   000021b9  00000000  00000000  00001030  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 84 .debug_abbrev 000004c6  00000000  00000000  000031fd  2**0
+ 84 .debug_abbrev 000004c6  00000000  00000000  000031e9  2**0
                   CONTENTS, READONLY, DEBUGGING
- 85 .debug_loc    000009fb  00000000  00000000  000036c3  2**0
+ 85 .debug_loc    000009fb  00000000  00000000  000036af  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 86 .debug_aranges 00000160  00000000  00000000  000040be  2**0
+ 86 .debug_aranges 00000160  00000000  00000000  000040aa  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 87 .debug_ranges 000001a0  00000000  00000000  0000421e  2**0
+ 87 .debug_ranges 000001a0  00000000  00000000  0000420a  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 88 .debug_line   0000105d  00000000  00000000  000043be  2**0
+ 88 .debug_line   0000105d  00000000  00000000  000043aa  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 89 .debug_str    00001465  00000000  00000000  0000541b  2**0
+ 89 .debug_str    00001465  00000000  00000000  00005407  2**0
                   CONTENTS, READONLY, DEBUGGING
- 90 .comment      0000003b  00000000  00000000  00006880  2**0
+ 90 .comment      0000003b  00000000  00000000  0000686c  2**0
                   CONTENTS, READONLY
- 91 .xtensa.info  00000038  00000000  00000000  000068bb  2**0
+ 91 .xtensa.info  00000038  00000000  00000000  000068a7  2**0
                   CONTENTS, READONLY
- 92 .xt.lit       00000118  00000000  00000000  000068f3  2**0
+ 92 .xt.lit       00000118  00000000  00000000  000068df  2**0
                   CONTENTS, RELOC, READONLY
- 93 .xt.prop      00000c18  00000000  00000000  00006a0b  2**0
+ 93 .xt.prop      00000c18  00000000  00000000  000069f7  2**0
                   CONTENTS, RELOC, READONLY
 
 eap_common.o:     file format elf32-xtensa-le
@@ -2229,35 +2229,35 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  11 .text.eap_mschapv2_init 0000001e  00000000  00000000  00000264  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .rodata.str1.1 000001bf  00000000  00000000  00000282  2**0
+ 12 .rodata.str1.1 0000017d  00000000  00000000  00000282  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 13 .text.eap_mschapv2_process 00000728  00000000  00000000  00000444  2**2
+ 13 .text.eap_mschapv2_process 00000728  00000000  00000000  00000400  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 14 .text.eap_peer_mschapv2_register 00000048  00000000  00000000  00000b6c  2**2
+ 14 .text.eap_peer_mschapv2_register 00000048  00000000  00000000  00000b28  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 15 .debug_frame  000000a0  00000000  00000000  00000bb4  2**2
+ 15 .debug_frame  000000a0  00000000  00000000  00000b70  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 16 .debug_info   0000264b  00000000  00000000  00000c54  2**0
+ 16 .debug_info   0000264b  00000000  00000000  00000c10  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 17 .debug_abbrev 0000040c  00000000  00000000  0000329f  2**0
+ 17 .debug_abbrev 0000040c  00000000  00000000  0000325b  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_loc    00001223  00000000  00000000  000036ab  2**0
+ 18 .debug_loc    00001223  00000000  00000000  00003667  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_aranges 00000048  00000000  00000000  000048ce  2**0
+ 19 .debug_aranges 00000048  00000000  00000000  0000488a  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 20 .debug_ranges 000000e8  00000000  00000000  00004916  2**0
+ 20 .debug_ranges 000000e8  00000000  00000000  000048d2  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_line   00000b18  00000000  00000000  000049fe  2**0
+ 21 .debug_line   00000b18  00000000  00000000  000049ba  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 22 .debug_str    000015c7  00000000  00000000  00005516  2**0
+ 22 .debug_str    000015c7  00000000  00000000  000054d2  2**0
                   CONTENTS, READONLY, DEBUGGING
- 23 .comment      0000003b  00000000  00000000  00006add  2**0
+ 23 .comment      0000003b  00000000  00000000  00006a99  2**0
                   CONTENTS, READONLY
- 24 .xtensa.info  00000038  00000000  00000000  00006b18  2**0
+ 24 .xtensa.info  00000038  00000000  00000000  00006ad4  2**0
                   CONTENTS, READONLY
- 25 .xt.lit       00000028  00000000  00000000  00006b50  2**0
+ 25 .xt.lit       00000028  00000000  00000000  00006b0c  2**0
                   CONTENTS, RELOC, READONLY
- 26 .xt.prop      000004e0  00000000  00000000  00006b78  2**0
+ 26 .xt.prop      000004e0  00000000  00000000  00006b34  2**0
                   CONTENTS, RELOC, READONLY
 
 eap_peap.o:     file format elf32-xtensa-le
@@ -2310,53 +2310,53 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  22 .text.eap_peap_has_reauth_data 0000001e  00000000  00000000  00000490  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .rodata.str1.1 0000043c  00000000  00000000  000004ae  2**0
+ 23 .rodata.str1.1 00000410  00000000  00000000  000004ae  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 24 .text.eap_peap_get_status 0000003a  00000000  00000000  000008ec  2**2
+ 24 .text.eap_peap_get_status 0000003a  00000000  00000000  000008c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 25 .rodata       00000002  00000000  00000000  00000926  2**0
+ 25 .rodata       00000002  00000000  00000000  000008fa  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 26 .text.eap_peap_getKey 00000092  00000000  00000000  00000928  2**2
+ 26 .text.eap_peap_getKey 00000092  00000000  00000000  000008fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.wpabuf_put_data 0000001c  00000000  00000000  000009bc  2**2
+ 27 .text.wpabuf_put_data 0000001c  00000000  00000000  00000990  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .text.wpabuf_put_u8 00000012  00000000  00000000  000009d8  2**2
+ 28 .text.wpabuf_put_u8 00000012  00000000  00000000  000009ac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .text.wpabuf_put_be16 00000018  00000000  00000000  000009ec  2**2
+ 29 .text.wpabuf_put_be16 00000018  00000000  00000000  000009c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .text.eap_peap_deinit 00000052  00000000  00000000  00000a04  2**2
+ 30 .text.eap_peap_deinit 00000052  00000000  00000000  000009d8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text.eap_peap_init 0000011a  00000000  00000000  00000a58  2**2
+ 31 .text.eap_peap_init 0000011a  00000000  00000000  00000a2c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text.eap_peap_decrypt 00000aea  00000000  00000000  00000b74  2**2
+ 32 .text.eap_peap_decrypt 00000aea  00000000  00000000  00000b48  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text.eap_peap_process 000001a5  00000000  00000000  00001660  2**2
+ 33 .text.eap_peap_process 000001a5  00000000  00000000  00001634  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text.eap_peer_peap_register 00000064  00000000  00000000  00001808  2**2
+ 34 .text.eap_peer_peap_register 00000064  00000000  00000000  000017dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .debug_frame  00000190  00000000  00000000  0000186c  2**2
+ 35 .debug_frame  00000190  00000000  00000000  00001840  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 36 .debug_info   0000363a  00000000  00000000  000019fc  2**0
+ 36 .debug_info   0000363a  00000000  00000000  000019d0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 37 .debug_abbrev 00000425  00000000  00000000  00005036  2**0
+ 37 .debug_abbrev 00000425  00000000  00000000  0000500a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 38 .debug_loc    000010bd  00000000  00000000  0000545b  2**0
+ 38 .debug_loc    000010bd  00000000  00000000  0000542f  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 39 .debug_aranges 00000098  00000000  00000000  00006518  2**0
+ 39 .debug_aranges 00000098  00000000  00000000  000064ec  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 40 .debug_ranges 000000d0  00000000  00000000  000065b0  2**0
+ 40 .debug_ranges 000000d0  00000000  00000000  00006584  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 41 .debug_line   00001329  00000000  00000000  00006680  2**0
+ 41 .debug_line   00001329  00000000  00000000  00006654  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 42 .debug_str    000017c8  00000000  00000000  000079a9  2**0
+ 42 .debug_str    000017c8  00000000  00000000  0000797d  2**0
                   CONTENTS, READONLY, DEBUGGING
- 43 .comment      0000003b  00000000  00000000  00009171  2**0
+ 43 .comment      0000003b  00000000  00000000  00009145  2**0
                   CONTENTS, READONLY
- 44 .xtensa.info  00000038  00000000  00000000  000091ac  2**0
+ 44 .xtensa.info  00000038  00000000  00000000  00009180  2**0
                   CONTENTS, READONLY
- 45 .xt.lit       00000070  00000000  00000000  000091e4  2**0
+ 45 .xt.lit       00000070  00000000  00000000  000091b8  2**0
                   CONTENTS, RELOC, READONLY
- 46 .xt.prop      000008e8  00000000  00000000  00009254  2**0
+ 46 .xt.prop      000008e8  00000000  00000000  00009228  2**0
                   CONTENTS, RELOC, READONLY
 
 eap_peap_common.o:     file format elf32-xtensa-le
@@ -2422,39 +2422,39 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
   9 .text.eap_tls_getKey 00000026  00000000  00000000  000000ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .rodata.str1.1 000000a1  00000000  00000000  00000112  2**0
+ 10 .rodata.str1.1 00000096  00000000  00000000  00000112  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 11 .text.eap_tls_process 0000014c  00000000  00000000  000001b4  2**2
+ 11 .text.eap_tls_process 0000014c  00000000  00000000  000001a8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .text.eap_tls_deinit 0000002a  00000000  00000000  00000300  2**2
+ 12 .text.eap_tls_deinit 0000002a  00000000  00000000  000002f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 13 .text.eap_tls_init 00000051  00000000  00000000  0000032c  2**2
+ 13 .text.eap_tls_init 00000051  00000000  00000000  00000320  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 14 .text.eap_peer_tls_register 00000048  00000000  00000000  00000380  2**2
+ 14 .text.eap_peer_tls_register 00000048  00000000  00000000  00000374  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 15 .debug_frame  000000a0  00000000  00000000  000003c8  2**2
+ 15 .debug_frame  000000a0  00000000  00000000  000003bc  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 16 .debug_info   000015e1  00000000  00000000  00000468  2**0
+ 16 .debug_info   000015e1  00000000  00000000  0000045c  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 17 .debug_abbrev 000002e2  00000000  00000000  00001a49  2**0
+ 17 .debug_abbrev 000002e2  00000000  00000000  00001a3d  2**0
                   CONTENTS, READONLY, DEBUGGING
- 18 .debug_loc    000001fa  00000000  00000000  00001d2b  2**0
+ 18 .debug_loc    000001fa  00000000  00000000  00001d1f  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_aranges 00000048  00000000  00000000  00001f25  2**0
+ 19 .debug_aranges 00000048  00000000  00000000  00001f19  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 20 .debug_ranges 00000050  00000000  00000000  00001f6d  2**0
+ 20 .debug_ranges 00000050  00000000  00000000  00001f61  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_line   000005a9  00000000  00000000  00001fbd  2**0
+ 21 .debug_line   000005a9  00000000  00000000  00001fb1  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 22 .debug_str    0000118c  00000000  00000000  00002566  2**0
+ 22 .debug_str    0000118c  00000000  00000000  0000255a  2**0
                   CONTENTS, READONLY, DEBUGGING
- 23 .comment      0000003b  00000000  00000000  000036f2  2**0
+ 23 .comment      0000003b  00000000  00000000  000036e6  2**0
                   CONTENTS, READONLY
- 24 .xtensa.info  00000038  00000000  00000000  0000372d  2**0
+ 24 .xtensa.info  00000038  00000000  00000000  00003721  2**0
                   CONTENTS, READONLY
- 25 .xt.lit       00000028  00000000  00000000  00003765  2**0
+ 25 .xt.lit       00000028  00000000  00000000  00003759  2**0
                   CONTENTS, RELOC, READONLY
- 26 .xt.prop      000001d4  00000000  00000000  0000378d  2**0
+ 26 .xt.prop      000001d4  00000000  00000000  00003781  2**0
                   CONTENTS, RELOC, READONLY
 
 eap_tls_common.o:     file format elf32-xtensa-le
@@ -2503,69 +2503,69 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
  20 .bss          00000000  00000000  00000000  00000204  2**0
                   ALLOC
- 21 .rodata.str1.1 0000017b  00000000  00000000  00000204  2**0
+ 21 .rodata.str1.1 00000165  00000000  00000000  00000204  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 22 .text.eap_tls_check_blob 00000046  00000000  00000000  00000380  2**2
+ 22 .text.eap_tls_check_blob 00000046  00000000  00000000  0000036c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .text.eap_peer_tls_ssl_init 000001b2  00000000  00000000  000003c8  2**2
+ 23 .text.eap_peer_tls_ssl_init 000001b2  00000000  00000000  000003b4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 24 .text.eap_peer_tls_derive_key 000000ba  00000000  00000000  0000057c  2**2
+ 24 .text.eap_peer_tls_derive_key 000000ba  00000000  00000000  00000568  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 25 .text.eap_peer_tls_derive_session_id 00000066  00000000  00000000  00000638  2**2
+ 25 .text.eap_peer_tls_derive_session_id 00000066  00000000  00000000  00000624  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 26 .text.eap_peer_tls_build_ack 00000036  00000000  00000000  000006a0  2**2
+ 26 .text.eap_peer_tls_build_ack 00000036  00000000  00000000  0000068c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.eap_peer_tls_status 00000032  00000000  00000000  000006d8  2**2
+ 27 .text.eap_peer_tls_status 00000032  00000000  00000000  000006c4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .text.eap_peer_tls_process_init 000000bf  00000000  00000000  0000070c  2**2
+ 28 .text.eap_peer_tls_process_init 000000bf  00000000  00000000  000006f8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .text.eap_peer_tls_reset_input 00000015  00000000  00000000  000007cc  2**2
+ 29 .text.eap_peer_tls_reset_input 00000015  00000000  00000000  000007b8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .text.eap_peer_tls_data_reassemble 00000088  00000000  00000000  000007e4  2**2
+ 30 .text.eap_peer_tls_data_reassemble 00000088  00000000  00000000  000007d0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text.eap_peer_tls_reset_output 00000014  00000000  00000000  0000086c  2**2
+ 31 .text.eap_peer_tls_reset_output 00000014  00000000  00000000  00000858  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text.eap_peer_tls_ssl_deinit 0000001f  00000000  00000000  00000880  2**2
+ 32 .text.eap_peer_tls_ssl_deinit 0000001f  00000000  00000000  0000086c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text.eap_tls_process_output 0000010e  00000000  00000000  000008a0  2**2
+ 33 .text.eap_tls_process_output 0000010e  00000000  00000000  0000088c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text.eap_peer_tls_process_helper 0000010a  00000000  00000000  000009b0  2**2
+ 34 .text.eap_peer_tls_process_helper 0000010a  00000000  00000000  0000099c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text.eap_peer_tls_reauth_init 00000022  00000000  00000000  00000abc  2**2
+ 35 .text.eap_peer_tls_reauth_init 00000022  00000000  00000000  00000aa8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .text.eap_peer_tls_decrypt 00000042  00000000  00000000  00000ae0  2**2
+ 36 .text.eap_peer_tls_decrypt 00000042  00000000  00000000  00000acc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 37 .text.eap_peer_tls_encrypt 00000044  00000000  00000000  00000b24  2**2
+ 37 .text.eap_peer_tls_encrypt 00000044  00000000  00000000  00000b10  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text.eap_peer_select_phase2_methods 0000012c  00000000  00000000  00000b68  2**2
+ 38 .text.eap_peer_select_phase2_methods 0000012c  00000000  00000000  00000b54  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text.eap_peer_tls_phase2_nak 00000061  00000000  00000000  00000c94  2**2
+ 39 .text.eap_peer_tls_phase2_nak 00000061  00000000  00000000  00000c80  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .rodata.__func__$4680 00000013  00000000  00000000  00000cf5  2**0
+ 40 .rodata.__func__$4680 00000013  00000000  00000000  00000ce1  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 41 .debug_frame  000001c0  00000000  00000000  00000d08  2**2
+ 41 .debug_frame  000001c0  00000000  00000000  00000cf4  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 42 .debug_info   00002b00  00000000  00000000  00000ec8  2**0
+ 42 .debug_info   00002b00  00000000  00000000  00000eb4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 43 .debug_abbrev 0000049b  00000000  00000000  000039c8  2**0
+ 43 .debug_abbrev 0000049b  00000000  00000000  000039b4  2**0
                   CONTENTS, READONLY, DEBUGGING
- 44 .debug_loc    000010f9  00000000  00000000  00003e63  2**0
+ 44 .debug_loc    000010f9  00000000  00000000  00003e4f  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 45 .debug_aranges 000000a8  00000000  00000000  00004f5c  2**0
+ 45 .debug_aranges 000000a8  00000000  00000000  00004f48  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 46 .debug_ranges 00000128  00000000  00000000  00005004  2**0
+ 46 .debug_ranges 00000128  00000000  00000000  00004ff0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 47 .debug_line   00000ef1  00000000  00000000  0000512c  2**0
+ 47 .debug_line   00000ef1  00000000  00000000  00005118  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 48 .debug_str    0000180a  00000000  00000000  0000601d  2**0
+ 48 .debug_str    0000180a  00000000  00000000  00006009  2**0
                   CONTENTS, READONLY, DEBUGGING
- 49 .comment      0000003b  00000000  00000000  00007827  2**0
+ 49 .comment      0000003b  00000000  00000000  00007813  2**0
                   CONTENTS, READONLY
- 50 .xtensa.info  00000038  00000000  00000000  00007862  2**0
+ 50 .xtensa.info  00000038  00000000  00000000  0000784e  2**0
                   CONTENTS, READONLY
- 51 .xt.lit       00000090  00000000  00000000  0000789a  2**0
+ 51 .xt.lit       00000090  00000000  00000000  00007886  2**0
                   CONTENTS, RELOC, READONLY
- 52 .xt.prop      000007e0  00000000  00000000  0000792a  2**0
+ 52 .xt.prop      000007e0  00000000  00000000  00007916  2**0
                   CONTENTS, RELOC, READONLY
 
 eap_ttls.o:     file format elf32-xtensa-le
@@ -2610,49 +2610,49 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  18 .text.eap_ttls_has_reauth_data 0000001d  00000000  00000000  00000390  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 19 .rodata.str1.1 00000829  00000000  00000000  000003ad  2**0
+ 19 .rodata.str1.1 00000716  00000000  00000000  000003ad  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 20 .text.eap_ttls_get_status 0000005b  00000000  00000000  00000bd8  2**2
+ 20 .text.eap_ttls_get_status 0000005b  00000000  00000000  00000ac4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 21 .text.eap_ttls_get_session_id 00000030  00000000  00000000  00000c34  2**2
+ 21 .text.eap_ttls_get_session_id 00000030  00000000  00000000  00000b20  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 22 .text.eap_ttls_getKey 0000002a  00000000  00000000  00000c64  2**2
+ 22 .text.eap_ttls_getKey 0000002a  00000000  00000000  00000b50  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .text.eap_ttls_deinit 00000056  00000000  00000000  00000c90  2**2
+ 23 .text.eap_ttls_deinit 00000056  00000000  00000000  00000b7c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 24 .text.eap_ttls_init 00000062  00000000  00000000  00000ce8  2**2
+ 24 .text.eap_ttls_init 00000062  00000000  00000000  00000bd4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 25 .text.eap_ttls_implicit_identity_request 000003c0  00000000  00000000  00000d4c  2**2
+ 25 .text.eap_ttls_implicit_identity_request 000003c0  00000000  00000000  00000c38  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 26 .text.eap_ttls_decrypt 000003d8  00000000  00000000  0000110c  2**2
+ 26 .text.eap_ttls_decrypt 000003d8  00000000  00000000  00000ff8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.eap_ttls_process 000001a4  00000000  00000000  000014e4  2**2
+ 27 .text.eap_ttls_process 000001a4  00000000  00000000  000013d0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .text.eap_peer_ttls_register 00000064  00000000  00000000  00001688  2**2
+ 28 .text.eap_peer_ttls_register 00000064  00000000  00000000  00001574  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .debug_frame  00000148  00000000  00000000  000016ec  2**2
+ 29 .debug_frame  00000148  00000000  00000000  000015d8  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 30 .debug_info   00003031  00000000  00000000  00001834  2**0
+ 30 .debug_info   00003031  00000000  00000000  00001720  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 31 .debug_abbrev 0000047a  00000000  00000000  00004865  2**0
+ 31 .debug_abbrev 0000047a  00000000  00000000  00004751  2**0
                   CONTENTS, READONLY, DEBUGGING
- 32 .debug_loc    00001d18  00000000  00000000  00004cdf  2**0
+ 32 .debug_loc    00001d18  00000000  00000000  00004bcb  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 33 .debug_aranges 00000080  00000000  00000000  000069f7  2**0
+ 33 .debug_aranges 00000080  00000000  00000000  000068e3  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 34 .debug_ranges 00000240  00000000  00000000  00006a77  2**0
+ 34 .debug_ranges 00000240  00000000  00000000  00006963  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 35 .debug_line   00000e74  00000000  00000000  00006cb7  2**0
+ 35 .debug_line   00000e74  00000000  00000000  00006ba3  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 36 .debug_str    00001827  00000000  00000000  00007b2b  2**0
+ 36 .debug_str    00001827  00000000  00000000  00007a17  2**0
                   CONTENTS, READONLY, DEBUGGING
- 37 .comment      0000003b  00000000  00000000  00009352  2**0
+ 37 .comment      0000003b  00000000  00000000  0000923e  2**0
                   CONTENTS, READONLY
- 38 .xtensa.info  00000038  00000000  00000000  0000938d  2**0
+ 38 .xtensa.info  00000038  00000000  00000000  00009279  2**0
                   CONTENTS, READONLY
- 39 .xt.lit       00000060  00000000  00000000  000093c5  2**0
+ 39 .xt.lit       00000060  00000000  00000000  000092b1  2**0
                   CONTENTS, RELOC, READONLY
- 40 .xt.prop      00000780  00000000  00000000  00009425  2**0
+ 40 .xt.prop      00000780  00000000  00000000  00009311  2**0
                   CONTENTS, RELOC, READONLY
 
 mschapv2.o:     file format elf32-xtensa-le
@@ -3019,35 +3019,35 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   3 .bss          00000000  00000000  00000000  000000d8  2**0
                   ALLOC
-  4 .rodata.str1.1 0000018a  00000000  00000000  000000d8  2**0
+  4 .rodata.str1.1 00000169  00000000  00000000  000000d8  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  5 .text.pkcs5_decrypt 0000036e  00000000  00000000  00000264  2**2
+  5 .text.pkcs5_decrypt 0000036e  00000000  00000000  00000244  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  6 .rodata.__FUNCTION__$4688 00000012  00000000  00000000  000005d2  2**0
+  6 .rodata.__FUNCTION__$4688 00000012  00000000  00000000  000005b2  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .debug_frame  00000028  00000000  00000000  000005e4  2**2
+  7 .debug_frame  00000028  00000000  00000000  000005c4  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
-  8 .debug_info   0000101f  00000000  00000000  0000060c  2**0
+  8 .debug_info   0000101f  00000000  00000000  000005ec  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-  9 .debug_abbrev 000002a6  00000000  00000000  0000162b  2**0
+  9 .debug_abbrev 000002a6  00000000  00000000  0000160b  2**0
                   CONTENTS, READONLY, DEBUGGING
- 10 .debug_loc    00000371  00000000  00000000  000018d1  2**0
+ 10 .debug_loc    00000371  00000000  00000000  000018b1  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 11 .debug_aranges 00000020  00000000  00000000  00001c42  2**0
+ 11 .debug_aranges 00000020  00000000  00000000  00001c22  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 12 .debug_ranges 00000050  00000000  00000000  00001c62  2**0
+ 12 .debug_ranges 00000050  00000000  00000000  00001c42  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 13 .debug_line   000005ae  00000000  00000000  00001cb2  2**0
+ 13 .debug_line   000005ae  00000000  00000000  00001c92  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 14 .debug_str    00000bae  00000000  00000000  00002260  2**0
+ 14 .debug_str    00000bae  00000000  00000000  00002240  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .comment      0000003b  00000000  00000000  00002e0e  2**0
+ 15 .comment      0000003b  00000000  00000000  00002dee  2**0
                   CONTENTS, READONLY
- 16 .xtensa.info  00000038  00000000  00000000  00002e49  2**0
+ 16 .xtensa.info  00000038  00000000  00000000  00002e29  2**0
                   CONTENTS, READONLY
- 17 .xt.lit       00000008  00000000  00000000  00002e81  2**0
+ 17 .xt.lit       00000008  00000000  00000000  00002e61  2**0
                   CONTENTS, RELOC, READONLY
- 18 .xt.prop      000001e0  00000000  00000000  00002e89  2**0
+ 18 .xt.prop      000001e0  00000000  00000000  00002e69  2**0
                   CONTENTS, RELOC, READONLY
 
 pkcs8.o:     file format elf32-xtensa-le
@@ -3491,41 +3491,41 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   7 .bss          00000000  00000000  00000000  000001b4  2**0
                   ALLOC
-  8 .rodata.str1.1 00000177  00000000  00000000  000001b4  2**0
+  8 .rodata.str1.1 00000161  00000000  00000000  000001b4  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  9 .text.tls_write_client_finished 0000010c  00000000  00000000  0000032c  2**2
+  9 .text.tls_write_client_finished 0000010c  00000000  00000000  00000318  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .text.tls_write_client_change_cipher_spec 0000004f  00000000  00000000  00000438  2**2
+ 10 .text.tls_write_client_change_cipher_spec 0000004f  00000000  00000000  00000424  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .text.tls_send_client_hello 00000180  00000000  00000000  00000488  2**2
+ 11 .text.tls_send_client_hello 00000180  00000000  00000000  00000474  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .text.tlsv1_client_handshake_write 0000063c  00000000  00000000  00000608  2**2
+ 12 .text.tlsv1_client_handshake_write 0000063c  00000000  00000000  000005f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 13 .text.tlsv1_client_send_alert 0000004d  00000000  00000000  00000c44  2**2
+ 13 .text.tlsv1_client_send_alert 0000004d  00000000  00000000  00000c30  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 14 .debug_frame  00000088  00000000  00000000  00000c94  2**2
+ 14 .debug_frame  00000088  00000000  00000000  00000c80  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 15 .debug_info   00002587  00000000  00000000  00000d1c  2**0
+ 15 .debug_info   00002587  00000000  00000000  00000d08  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 16 .debug_abbrev 000003e6  00000000  00000000  000032a3  2**0
+ 16 .debug_abbrev 000003e6  00000000  00000000  0000328f  2**0
                   CONTENTS, READONLY, DEBUGGING
- 17 .debug_loc    00000b41  00000000  00000000  00003689  2**0
+ 17 .debug_loc    00000b41  00000000  00000000  00003675  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 18 .debug_aranges 00000040  00000000  00000000  000041ca  2**0
+ 18 .debug_aranges 00000040  00000000  00000000  000041b6  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_ranges 00000060  00000000  00000000  0000420a  2**0
+ 19 .debug_ranges 00000060  00000000  00000000  000041f6  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 20 .debug_line   00000ca7  00000000  00000000  0000426a  2**0
+ 20 .debug_line   00000ca7  00000000  00000000  00004256  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_str    00001a2c  00000000  00000000  00004f11  2**0
+ 21 .debug_str    00001a2c  00000000  00000000  00004efd  2**0
                   CONTENTS, READONLY, DEBUGGING
- 22 .comment      0000003b  00000000  00000000  0000693d  2**0
+ 22 .comment      0000003b  00000000  00000000  00006929  2**0
                   CONTENTS, READONLY
- 23 .xtensa.info  00000038  00000000  00000000  00006978  2**0
+ 23 .xtensa.info  00000038  00000000  00000000  00006964  2**0
                   CONTENTS, READONLY
- 24 .xt.lit       00000028  00000000  00000000  000069b0  2**0
+ 24 .xt.lit       00000028  00000000  00000000  0000699c  2**0
                   CONTENTS, RELOC, READONLY
- 25 .xt.prop      00000504  00000000  00000000  000069d8  2**0
+ 25 .xt.prop      00000504  00000000  00000000  000069c4  2**0
                   CONTENTS, RELOC, READONLY
 
 tlsv1_common.o:     file format elf32-xtensa-le
@@ -3562,51 +3562,51 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  14 .text.tls_server_key_exchange_allowed 0000002c  00000000  00000000  0000011c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 15 .rodata.str1.1 00000076  00000000  00000000  00000148  2**0
+ 15 .rodata.str1.1 0000006b  00000000  00000000  00000148  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 16 .text.tls_parse_cert 0000006c  00000000  00000000  000001c0  2**2
+ 16 .text.tls_parse_cert 0000006c  00000000  00000000  000001b4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 17 .text.tls_verify_hash_add 00000060  00000000  00000000  0000022c  2**2
+ 17 .text.tls_verify_hash_add 00000060  00000000  00000000  00000220  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 18 .text.tls_verify_hash_free 0000005c  00000000  00000000  0000028c  2**2
+ 18 .text.tls_verify_hash_free 0000005c  00000000  00000000  00000280  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 19 .text.tls_verify_hash_init 00000092  00000000  00000000  000002e8  2**2
+ 19 .text.tls_verify_hash_init 00000092  00000000  00000000  000002dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 20 .text.tls_version_ok 00000014  00000000  00000000  0000037c  2**2
+ 20 .text.tls_version_ok 00000014  00000000  00000000  00000370  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, CODE
- 21 .text.tls_version_str 0000001b  00000000  00000000  00000390  2**2
+ 21 .text.tls_version_str 0000001b  00000000  00000000  00000384  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 22 .text.tls_prf 0000001d  00000000  00000000  000003ac  2**2
+ 22 .text.tls_prf 0000001d  00000000  00000000  000003a0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .rodata.CSWTCH$10 0000000c  00000000  00000000  000003cc  2**2
+ 23 .rodata.CSWTCH$10 0000000c  00000000  00000000  000003c0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 24 .rodata.tls_ciphers 000000a8  00000000  00000000  000003d8  2**2
+ 24 .rodata.tls_ciphers 000000a8  00000000  00000000  000003cc  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 25 .rodata.tls_cipher_suites 000000c0  00000000  00000000  00000480  2**2
+ 25 .rodata.tls_cipher_suites 000000c0  00000000  00000000  00000474  2**2
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 26 .debug_frame  00000100  00000000  00000000  00000540  2**2
+ 26 .debug_frame  00000100  00000000  00000000  00000534  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 27 .debug_info   00001304  00000000  00000000  00000640  2**0
+ 27 .debug_info   00001304  00000000  00000000  00000634  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 28 .debug_abbrev 000002c7  00000000  00000000  00001944  2**0
+ 28 .debug_abbrev 000002c7  00000000  00000000  00001938  2**0
                   CONTENTS, READONLY, DEBUGGING
- 29 .debug_loc    000001d5  00000000  00000000  00001c0b  2**0
+ 29 .debug_loc    000001d5  00000000  00000000  00001bff  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 30 .debug_aranges 00000068  00000000  00000000  00001de0  2**0
+ 30 .debug_aranges 00000068  00000000  00000000  00001dd4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 31 .debug_ranges 00000058  00000000  00000000  00001e48  2**0
+ 31 .debug_ranges 00000058  00000000  00000000  00001e3c  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 32 .debug_line   00000690  00000000  00000000  00001ea0  2**0
+ 32 .debug_line   00000690  00000000  00000000  00001e94  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 33 .debug_str    000011d9  00000000  00000000  00002530  2**0
+ 33 .debug_str    000011d9  00000000  00000000  00002524  2**0
                   CONTENTS, READONLY, DEBUGGING
- 34 .comment      0000003b  00000000  00000000  00003709  2**0
+ 34 .comment      0000003b  00000000  00000000  000036fd  2**0
                   CONTENTS, READONLY
- 35 .xtensa.info  00000038  00000000  00000000  00003744  2**0
+ 35 .xtensa.info  00000038  00000000  00000000  00003738  2**0
                   CONTENTS, READONLY
- 36 .xt.lit       00000048  00000000  00000000  0000377c  2**0
+ 36 .xt.lit       00000048  00000000  00000000  00003770  2**0
                   CONTENTS, RELOC, READONLY
- 37 .xt.prop      000002c4  00000000  00000000  000037c4  2**0
+ 37 .xt.prop      000002c4  00000000  00000000  000037b8  2**0
                   CONTENTS, RELOC, READONLY
 
 tlsv1_cred.o:     file format elf32-xtensa-le
@@ -3708,43 +3708,43 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
   8 .text.tlsv1_record_set_cipher_suite 0000005c  00000000  00000000  00000144  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  9 .rodata.str1.1 000003e9  00000000  00000000  000001a0  2**0
+  9 .rodata.str1.1 0000037b  00000000  00000000  000001a0  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 10 .text.tlsv1_record_change_write_cipher 00000092  00000000  00000000  0000058c  2**2
+ 10 .text.tlsv1_record_change_write_cipher 00000092  00000000  00000000  0000051c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .text.tlsv1_record_change_read_cipher 00000092  00000000  00000000  00000620  2**2
+ 11 .text.tlsv1_record_change_read_cipher 00000092  00000000  00000000  000005b0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .text.tlsv1_record_send 000001fb  00000000  00000000  000006b4  2**2
+ 12 .text.tlsv1_record_send 000001fb  00000000  00000000  00000644  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 13 .text.tlsv1_record_receive 000002b4  00000000  00000000  000008b0  2**2
+ 13 .text.tlsv1_record_receive 000002b4  00000000  00000000  00000840  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 14 .rodata.__FUNCTION__$4915 00000015  00000000  00000000  00000b64  2**0
+ 14 .rodata.__FUNCTION__$4915 00000015  00000000  00000000  00000af4  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 15 .rodata.__FUNCTION__$4890 00000012  00000000  00000000  00000b79  2**0
+ 15 .rodata.__FUNCTION__$4890 00000012  00000000  00000000  00000b09  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 16 .debug_frame  00000088  00000000  00000000  00000b8c  2**2
+ 16 .debug_frame  00000088  00000000  00000000  00000b1c  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 17 .debug_info   000013c7  00000000  00000000  00000c14  2**0
+ 17 .debug_info   000013c7  00000000  00000000  00000ba4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 18 .debug_abbrev 000002f3  00000000  00000000  00001fdb  2**0
+ 18 .debug_abbrev 000002f3  00000000  00000000  00001f6b  2**0
                   CONTENTS, READONLY, DEBUGGING
- 19 .debug_loc    00000761  00000000  00000000  000022ce  2**0
+ 19 .debug_loc    00000761  00000000  00000000  0000225e  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 20 .debug_aranges 00000040  00000000  00000000  00002a2f  2**0
+ 20 .debug_aranges 00000040  00000000  00000000  000029bf  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_ranges 00000058  00000000  00000000  00002a6f  2**0
+ 21 .debug_ranges 00000058  00000000  00000000  000029ff  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 22 .debug_line   000008fe  00000000  00000000  00002ac7  2**0
+ 22 .debug_line   000008fe  00000000  00000000  00002a57  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 23 .debug_str    000010b1  00000000  00000000  000033c5  2**0
+ 23 .debug_str    000010b1  00000000  00000000  00003355  2**0
                   CONTENTS, READONLY, DEBUGGING
- 24 .comment      0000003b  00000000  00000000  00004476  2**0
+ 24 .comment      0000003b  00000000  00000000  00004406  2**0
                   CONTENTS, READONLY
- 25 .xtensa.info  00000038  00000000  00000000  000044b1  2**0
+ 25 .xtensa.info  00000038  00000000  00000000  00004441  2**0
                   CONTENTS, READONLY
- 26 .xt.lit       00000028  00000000  00000000  000044e9  2**0
+ 26 .xt.lit       00000028  00000000  00000000  00004479  2**0
                   CONTENTS, RELOC, READONLY
- 27 .xt.prop      0000051c  00000000  00000000  00004511  2**0
+ 27 .xt.prop      0000051c  00000000  00000000  000044a1  2**0
                   CONTENTS, RELOC, READONLY
 
 tlsv1_server.o:     file format elf32-xtensa-le
@@ -3866,41 +3866,41 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   5 .bss          00000000  00000000  00000000  00000184  2**0
                   ALLOC
-  6 .rodata.str1.1 00000206  00000000  00000000  00000184  2**0
+  6 .rodata.str1.1 000001fb  00000000  00000000  00000184  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  7 .text.tls_process_client_key_exchange 0000021a  00000000  00000000  0000038c  2**2
+  7 .text.tls_process_client_key_exchange 0000021a  00000000  00000000  00000380  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  8 .text.tls_process_change_cipher_spec 0000003e  00000000  00000000  000005a8  2**2
+  8 .text.tls_process_change_cipher_spec 0000003e  00000000  00000000  0000059c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  9 .text.tlsv1_server_process_handshake 0000070c  00000000  00000000  000005e8  2**2
+  9 .text.tlsv1_server_process_handshake 0000070c  00000000  00000000  000005dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .rodata.tlsv1_server_process_handshake 0000002c  00000000  00000000  00000cf4  2**2
+ 10 .rodata.tlsv1_server_process_handshake 0000002c  00000000  00000000  00000ce8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 11 .rodata.CSWTCH$39 00000005  00000000  00000000  00000d20  2**0
+ 11 .rodata.CSWTCH$39 00000005  00000000  00000000  00000d14  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 12 .debug_frame  00000058  00000000  00000000  00000d28  2**2
+ 12 .debug_frame  00000058  00000000  00000000  00000d1c  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 13 .debug_info   000022b0  00000000  00000000  00000d80  2**0
+ 13 .debug_info   000022b0  00000000  00000000  00000d74  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 14 .debug_abbrev 00000383  00000000  00000000  00003030  2**0
+ 14 .debug_abbrev 00000383  00000000  00000000  00003024  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_loc    00000eb2  00000000  00000000  000033b3  2**0
+ 15 .debug_loc    00000eb2  00000000  00000000  000033a7  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 16 .debug_aranges 00000030  00000000  00000000  00004265  2**0
+ 16 .debug_aranges 00000030  00000000  00000000  00004259  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 17 .debug_ranges 00000020  00000000  00000000  00004295  2**0
+ 17 .debug_ranges 00000020  00000000  00000000  00004289  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 18 .debug_line   00000bdf  00000000  00000000  000042b5  2**0
+ 18 .debug_line   00000bdf  00000000  00000000  000042a9  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_str    00001a79  00000000  00000000  00004e94  2**0
+ 19 .debug_str    00001a79  00000000  00000000  00004e88  2**0
                   CONTENTS, READONLY, DEBUGGING
- 20 .comment      0000003b  00000000  00000000  0000690d  2**0
+ 20 .comment      0000003b  00000000  00000000  00006901  2**0
                   CONTENTS, READONLY
- 21 .xtensa.info  00000038  00000000  00000000  00006948  2**0
+ 21 .xtensa.info  00000038  00000000  00000000  0000693c  2**0
                   CONTENTS, READONLY
- 22 .xt.lit       00000018  00000000  00000000  00006980  2**0
+ 22 .xt.lit       00000018  00000000  00000000  00006974  2**0
                   CONTENTS, RELOC, READONLY
- 23 .xt.prop      000006a8  00000000  00000000  00006998  2**0
+ 23 .xt.prop      000006a8  00000000  00000000  0000698c  2**0
                   CONTENTS, RELOC, READONLY
 
 tlsv1_server_write.o:     file format elf32-xtensa-le
@@ -3921,39 +3921,39 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, DATA
   6 .bss          00000000  00000000  00000000  00000174  2**0
                   ALLOC
-  7 .rodata.str1.1 0000015a  00000000  00000000  00000174  2**0
+  7 .rodata.str1.1 00000139  00000000  00000000  00000174  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-  8 .text.tls_write_server_finished 0000010c  00000000  00000000  000002d0  2**2
+  8 .text.tls_write_server_finished 0000010c  00000000  00000000  000002b0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
-  9 .text.tls_write_server_change_cipher_spec 0000004f  00000000  00000000  000003dc  2**2
+  9 .text.tls_write_server_change_cipher_spec 0000004f  00000000  00000000  000003bc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 10 .text.tlsv1_server_handshake_write 000006a2  00000000  00000000  0000042c  2**2
+ 10 .text.tlsv1_server_handshake_write 000006a2  00000000  00000000  0000040c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .text.tlsv1_server_send_alert 0000004d  00000000  00000000  00000ad0  2**2
+ 11 .text.tlsv1_server_send_alert 0000004d  00000000  00000000  00000ab0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 12 .debug_frame  00000070  00000000  00000000  00000b20  2**2
+ 12 .debug_frame  00000070  00000000  00000000  00000b00  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 13 .debug_info   00002196  00000000  00000000  00000b90  2**0
+ 13 .debug_info   00002196  00000000  00000000  00000b70  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 14 .debug_abbrev 00000397  00000000  00000000  00002d26  2**0
+ 14 .debug_abbrev 00000397  00000000  00000000  00002d06  2**0
                   CONTENTS, READONLY, DEBUGGING
- 15 .debug_loc    00000907  00000000  00000000  000030bd  2**0
+ 15 .debug_loc    00000907  00000000  00000000  0000309d  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 16 .debug_aranges 00000038  00000000  00000000  000039c4  2**0
+ 16 .debug_aranges 00000038  00000000  00000000  000039a4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 17 .debug_ranges 00000058  00000000  00000000  000039fc  2**0
+ 17 .debug_ranges 00000058  00000000  00000000  000039dc  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 18 .debug_line   00000b64  00000000  00000000  00003a54  2**0
+ 18 .debug_line   00000b64  00000000  00000000  00003a34  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_str    00001915  00000000  00000000  000045b8  2**0
+ 19 .debug_str    00001915  00000000  00000000  00004598  2**0
                   CONTENTS, READONLY, DEBUGGING
- 20 .comment      0000003b  00000000  00000000  00005ecd  2**0
+ 20 .comment      0000003b  00000000  00000000  00005ead  2**0
                   CONTENTS, READONLY
- 21 .xtensa.info  00000038  00000000  00000000  00005f08  2**0
+ 21 .xtensa.info  00000038  00000000  00000000  00005ee8  2**0
                   CONTENTS, READONLY
- 22 .xt.lit       00000020  00000000  00000000  00005f40  2**0
+ 22 .xt.lit       00000020  00000000  00000000  00005f20  2**0
                   CONTENTS, RELOC, READONLY
- 23 .xt.prop      000003c0  00000000  00000000  00005f60  2**0
+ 23 .xt.prop      000003c0  00000000  00000000  00005f40  2**0
                   CONTENTS, RELOC, READONLY
 
 x509v3.o:     file format elf32-xtensa-le
@@ -4010,67 +4010,67 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  24 .text.x509_parse_algorithm_identifier 00000047  00000000  00000000  0000044c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 25 .rodata.str1.1 000001ca  00000000  00000000  00000493  2**0
+ 25 .rodata.str1.1 000001bf  00000000  00000000  00000493  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 26 .text.x509_parse_name 000001f0  00000000  00000000  00000660  2**2
+ 26 .text.x509_parse_name 000001f0  00000000  00000000  00000654  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.x509_str_compare 000000a4  00000000  00000000  00000850  2**2
+ 27 .text.x509_str_compare 000000a4  00000000  00000000  00000844  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .text.x509_parse_alt_name_uri$isra$5 00000046  00000000  00000000  000008f4  2**2
+ 28 .text.x509_parse_alt_name_uri$isra$5 00000046  00000000  00000000  000008e8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .text.x509_parse_ext_alt_name 000000fa  00000000  00000000  0000093c  2**2
+ 29 .text.x509_parse_ext_alt_name 000000fa  00000000  00000000  00000930  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .rodata.x509_parse_ext_alt_name 00000020  00000000  00000000  00000a38  2**2
+ 30 .rodata.x509_parse_ext_alt_name 00000020  00000000  00000000  00000a2c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 31 .text.x509_name_string$part$7 000000cd  00000000  00000000  00000a58  2**2
+ 31 .text.x509_name_string$part$7 000000cd  00000000  00000000  00000a4c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .rodata.x509_name_string$part$7 00000020  00000000  00000000  00000b28  2**2
+ 32 .rodata.x509_name_string$part$7 00000020  00000000  00000000  00000b1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 33 .text.x509_certificate_free 00000036  00000000  00000000  00000b48  2**2
+ 33 .text.x509_certificate_free 00000036  00000000  00000000  00000b3c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text.x509_certificate_chain_free 0000001b  00000000  00000000  00000b80  2**2
+ 34 .text.x509_certificate_chain_free 0000001b  00000000  00000000  00000b74  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text.x509_name_compare 00000078  00000000  00000000  00000b9c  2**2
+ 35 .text.x509_name_compare 00000078  00000000  00000000  00000b90  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .text.x509_name_string 00000013  00000000  00000000  00000c14  2**2
+ 36 .text.x509_name_string 00000013  00000000  00000000  00000c08  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 37 .text.x509_certificate_parse 000007c0  00000000  00000000  00000c28  2**2
+ 37 .text.x509_certificate_parse 000007c0  00000000  00000000  00000c1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text.x509_certificate_check_signature 000002da  00000000  00000000  000013e8  2**2
+ 38 .text.x509_certificate_check_signature 000002da  00000000  00000000  000013dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text.x509_certificate_chain_validate 00000122  00000000  00000000  000016c4  2**2
+ 39 .text.x509_certificate_chain_validate 00000122  00000000  00000000  000016b8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text.x509_certificate_get_subject 0000001e  00000000  00000000  000017e8  2**2
+ 40 .text.x509_certificate_get_subject 0000001e  00000000  00000000  000017dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text.x509_certificate_self_signed 0000001a  00000000  00000000  00001808  2**2
+ 41 .text.x509_certificate_self_signed 0000001a  00000000  00000000  000017fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .rodata.CSWTCH$79 00000009  00000000  00000000  00001822  2**0
+ 42 .rodata.CSWTCH$79 00000009  00000000  00000000  00001816  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 43 .bss.name_attr$4978 00000006  00000000  00000000  0000182b  2**0
+ 43 .bss.name_attr$4978 00000006  00000000  00000000  0000181f  2**0
                   ALLOC
- 44 .debug_frame  000001d8  00000000  00000000  0000182c  2**2
+ 44 .debug_frame  000001d8  00000000  00000000  00001820  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 45 .debug_info   00002e21  00000000  00000000  00001a04  2**0
+ 45 .debug_info   00002e21  00000000  00000000  000019f8  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 46 .debug_abbrev 000004c3  00000000  00000000  00004825  2**0
+ 46 .debug_abbrev 000004c3  00000000  00000000  00004819  2**0
                   CONTENTS, READONLY, DEBUGGING
- 47 .debug_loc    000014ab  00000000  00000000  00004ce8  2**0
+ 47 .debug_loc    000014ab  00000000  00000000  00004cdc  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 48 .debug_aranges 000000b0  00000000  00000000  00006193  2**0
+ 48 .debug_aranges 000000b0  00000000  00000000  00006187  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 49 .debug_ranges 000001e8  00000000  00000000  00006243  2**0
+ 49 .debug_ranges 000001e8  00000000  00000000  00006237  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 50 .debug_line   0000149b  00000000  00000000  0000642b  2**0
+ 50 .debug_line   0000149b  00000000  00000000  0000641f  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 51 .debug_str    0000128d  00000000  00000000  000078c6  2**0
+ 51 .debug_str    0000128d  00000000  00000000  000078ba  2**0
                   CONTENTS, READONLY, DEBUGGING
- 52 .comment      0000003b  00000000  00000000  00008b53  2**0
+ 52 .comment      0000003b  00000000  00000000  00008b47  2**0
                   CONTENTS, READONLY
- 53 .xtensa.info  00000038  00000000  00000000  00008b8e  2**0
+ 53 .xtensa.info  00000038  00000000  00000000  00008b82  2**0
                   CONTENTS, READONLY
- 54 .xt.lit       00000088  00000000  00000000  00008bc6  2**0
+ 54 .xt.lit       00000088  00000000  00000000  00008bba  2**0
                   CONTENTS, RELOC, READONLY
- 55 .xt.prop      00000e4c  00000000  00000000  00008c4e  2**0
+ 55 .xt.prop      00000e4c  00000000  00000000  00008c42  2**0
                   CONTENTS, RELOC, READONLY
 
 base64.o:     file format elf32-xtensa-le
@@ -4315,35 +4315,35 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  27 .text.wps_build_assoc_resp_ie 0000008c  00000000  00000000  000005dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .rodata.str1.1 00000124  00000000  00000000  00000668  2**0
+ 28 .rodata.str1.1 00000119  00000000  00000000  00000668  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 29 .text.wps_build_probe_req_ie 00000130  00000000  00000000  0000078c  2**2
+ 29 .text.wps_build_probe_req_ie 00000130  00000000  00000000  00000784  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .text.wps_attr_text 000001f3  00000000  00000000  000008bc  2**2
+ 30 .text.wps_attr_text 000001f3  00000000  00000000  000008b4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .debug_frame  00000148  00000000  00000000  00000ab0  2**2
+ 31 .debug_frame  00000148  00000000  00000000  00000aa8  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 32 .debug_info   00002ad6  00000000  00000000  00000bf8  2**0
+ 32 .debug_info   00002ad6  00000000  00000000  00000bf0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 33 .debug_abbrev 00000444  00000000  00000000  000036ce  2**0
+ 33 .debug_abbrev 00000444  00000000  00000000  000036c6  2**0
                   CONTENTS, READONLY, DEBUGGING
- 34 .debug_loc    00000756  00000000  00000000  00003b12  2**0
+ 34 .debug_loc    00000756  00000000  00000000  00003b0a  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 35 .debug_aranges 00000080  00000000  00000000  00004268  2**0
+ 35 .debug_aranges 00000080  00000000  00000000  00004260  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 36 .debug_ranges 00000088  00000000  00000000  000042e8  2**0
+ 36 .debug_ranges 00000088  00000000  00000000  000042e0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 37 .debug_line   00000b27  00000000  00000000  00004370  2**0
+ 37 .debug_line   00000b27  00000000  00000000  00004368  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 38 .debug_str    00001ad9  00000000  00000000  00004e97  2**0
+ 38 .debug_str    00001ad9  00000000  00000000  00004e8f  2**0
                   CONTENTS, READONLY, DEBUGGING
- 39 .comment      0000003b  00000000  00000000  00006970  2**0
+ 39 .comment      0000003b  00000000  00000000  00006968  2**0
                   CONTENTS, READONLY
- 40 .xtensa.info  00000038  00000000  00000000  000069ab  2**0
+ 40 .xtensa.info  00000038  00000000  00000000  000069a3  2**0
                   CONTENTS, READONLY
- 41 .xt.lit       00000068  00000000  00000000  000069e3  2**0
+ 41 .xt.lit       00000068  00000000  00000000  000069db  2**0
                   CONTENTS, RELOC, READONLY
- 42 .xt.prop      000006b4  00000000  00000000  00006a4b  2**0
+ 42 .xt.prop      000006b4  00000000  00000000  00006a43  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_attr_build.o:     file format elf32-xtensa-le
@@ -4408,71 +4408,71 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  28 .text.wpabuf_put_data 0000001c  00000000  00000000  00000268  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .rodata.str1.1 000000f1  00000000  00000000  00000284  2**0
+ 29 .rodata.str1.1 000000d0  00000000  00000000  00000284  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 30 .text.wps_build_public_key 00000124  00000000  00000000  00000378  2**2
+ 30 .text.wps_build_public_key 00000124  00000000  00000000  00000354  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text.wps_build_req_type 00000028  00000000  00000000  0000049c  2**2
+ 31 .text.wps_build_req_type 00000028  00000000  00000000  00000478  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text.wps_build_resp_type 00000028  00000000  00000000  000004c4  2**2
+ 32 .text.wps_build_resp_type 00000028  00000000  00000000  000004a0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text.wps_build_config_methods 00000029  00000000  00000000  000004ec  2**2
+ 33 .text.wps_build_config_methods 00000029  00000000  00000000  000004c8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text.wps_build_uuid_e 00000028  00000000  00000000  00000518  2**2
+ 34 .text.wps_build_uuid_e 00000028  00000000  00000000  000004f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text.wps_build_dev_password_id 00000029  00000000  00000000  00000540  2**2
+ 35 .text.wps_build_dev_password_id 00000029  00000000  00000000  0000051c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .text.wps_build_config_error 00000029  00000000  00000000  0000056c  2**2
+ 36 .text.wps_build_config_error 00000029  00000000  00000000  00000548  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 37 .text.wps_build_authenticator 00000086  00000000  00000000  00000598  2**2
+ 37 .text.wps_build_authenticator 00000086  00000000  00000000  00000574  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text.wps_build_version 00000026  00000000  00000000  00000620  2**2
+ 38 .text.wps_build_version 00000026  00000000  00000000  000005fc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text.wps_build_wfa_ext 000000cd  00000000  00000000  00000648  2**2
+ 39 .text.wps_build_wfa_ext 000000cd  00000000  00000000  00000624  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text.wps_build_msg_type 00000028  00000000  00000000  00000718  2**2
+ 40 .text.wps_build_msg_type 00000028  00000000  00000000  000006f4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .text.wps_build_enrollee_nonce 00000029  00000000  00000000  00000740  2**2
+ 41 .text.wps_build_enrollee_nonce 00000029  00000000  00000000  0000071c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 42 .text.wps_build_registrar_nonce 00000029  00000000  00000000  0000076c  2**2
+ 42 .text.wps_build_registrar_nonce 00000029  00000000  00000000  00000748  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 43 .text.wps_build_auth_type_flags 00000026  00000000  00000000  00000798  2**2
+ 43 .text.wps_build_auth_type_flags 00000026  00000000  00000000  00000774  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 44 .text.wps_build_encr_type_flags 00000026  00000000  00000000  000007c0  2**2
+ 44 .text.wps_build_encr_type_flags 00000026  00000000  00000000  0000079c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 45 .text.wps_build_conn_type_flags 00000026  00000000  00000000  000007e8  2**2
+ 45 .text.wps_build_conn_type_flags 00000026  00000000  00000000  000007c4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 46 .text.wps_build_assoc_state 00000026  00000000  00000000  00000810  2**2
+ 46 .text.wps_build_assoc_state 00000026  00000000  00000000  000007ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 47 .text.wps_build_key_wrap_auth 00000064  00000000  00000000  00000838  2**2
+ 47 .text.wps_build_key_wrap_auth 00000064  00000000  00000000  00000814  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 48 .text.wps_build_encr_settings 000000ba  00000000  00000000  0000089c  2**2
+ 48 .text.wps_build_encr_settings 000000ba  00000000  00000000  00000878  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 49 .text.wps_ie_encapsulate 00000082  00000000  00000000  00000958  2**2
+ 49 .text.wps_ie_encapsulate 00000082  00000000  00000000  00000934  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 50 .debug_frame  00000238  00000000  00000000  000009dc  2**2
+ 50 .debug_frame  00000238  00000000  00000000  000009b8  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 51 .debug_info   000027d1  00000000  00000000  00000c14  2**0
+ 51 .debug_info   000027d1  00000000  00000000  00000bf0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 52 .debug_abbrev 00000455  00000000  00000000  000033e5  2**0
+ 52 .debug_abbrev 00000455  00000000  00000000  000033c1  2**0
                   CONTENTS, READONLY, DEBUGGING
- 53 .debug_loc    00000580  00000000  00000000  0000383a  2**0
+ 53 .debug_loc    00000580  00000000  00000000  00003816  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 54 .debug_aranges 000000d0  00000000  00000000  00003dba  2**0
+ 54 .debug_aranges 000000d0  00000000  00000000  00003d96  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 55 .debug_ranges 00000138  00000000  00000000  00003e8a  2**0
+ 55 .debug_ranges 00000138  00000000  00000000  00003e66  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 56 .debug_line   00000a7a  00000000  00000000  00003fc2  2**0
+ 56 .debug_line   00000a7a  00000000  00000000  00003f9e  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 57 .debug_str    00001a21  00000000  00000000  00004a3c  2**0
+ 57 .debug_str    00001a21  00000000  00000000  00004a18  2**0
                   CONTENTS, READONLY, DEBUGGING
- 58 .comment      0000003b  00000000  00000000  0000645d  2**0
+ 58 .comment      0000003b  00000000  00000000  00006439  2**0
                   CONTENTS, READONLY
- 59 .xtensa.info  00000038  00000000  00000000  00006498  2**0
+ 59 .xtensa.info  00000038  00000000  00000000  00006474  2**0
                   CONTENTS, READONLY
- 60 .xt.lit       000000b8  00000000  00000000  000064d0  2**0
+ 60 .xt.lit       000000b8  00000000  00000000  000064ac  2**0
                   CONTENTS, RELOC, READONLY
- 61 .xt.prop      000005a0  00000000  00000000  00006588  2**0
+ 61 .xt.prop      000005a0  00000000  00000000  00006564  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_attr_parse.o:     file format elf32-xtensa-le
@@ -4544,41 +4544,41 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  10 .text.wps_workaround_cred_key 00000029  00000000  00000000  000000d8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .rodata.str1.1 000000aa  00000000  00000000  00000101  2**0
+ 11 .rodata.str1.1 00000094  00000000  00000000  00000101  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 12 .text.wps_process_cred_network_key 00000044  00000000  00000000  000001ac  2**2
+ 12 .text.wps_process_cred_network_key 00000044  00000000  00000000  00000198  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 13 .text.wps_process_authenticator 0000007e  00000000  00000000  000001f0  2**2
+ 13 .text.wps_process_authenticator 0000007e  00000000  00000000  000001dc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 14 .text.wps_process_key_wrap_auth 0000006a  00000000  00000000  00000270  2**2
+ 14 .text.wps_process_key_wrap_auth 0000006a  00000000  00000000  0000025c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 15 .text.wps_process_cred 000000ac  00000000  00000000  000002dc  2**2
+ 15 .text.wps_process_cred 000000ac  00000000  00000000  000002c8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 16 .text.wps_process_ap_settings 00000088  00000000  00000000  00000388  2**2
+ 16 .text.wps_process_ap_settings 00000088  00000000  00000000  00000374  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 17 .debug_frame  000000b8  00000000  00000000  00000410  2**2
+ 17 .debug_frame  000000b8  00000000  00000000  000003fc  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 18 .debug_info   00001d7a  00000000  00000000  000004c8  2**0
+ 18 .debug_info   00001d7a  00000000  00000000  000004b4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 19 .debug_abbrev 000003e0  00000000  00000000  00002242  2**0
+ 19 .debug_abbrev 000003e0  00000000  00000000  0000222e  2**0
                   CONTENTS, READONLY, DEBUGGING
- 20 .debug_loc    00000494  00000000  00000000  00002622  2**0
+ 20 .debug_loc    00000494  00000000  00000000  0000260e  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_aranges 00000050  00000000  00000000  00002ab6  2**0
+ 21 .debug_aranges 00000050  00000000  00000000  00002aa2  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 22 .debug_ranges 000000a0  00000000  00000000  00002b06  2**0
+ 22 .debug_ranges 000000a0  00000000  00000000  00002af2  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 23 .debug_line   00000607  00000000  00000000  00002ba6  2**0
+ 23 .debug_line   00000607  00000000  00000000  00002b92  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 24 .debug_str    0000125f  00000000  00000000  000031ad  2**0
+ 24 .debug_str    0000125f  00000000  00000000  00003199  2**0
                   CONTENTS, READONLY, DEBUGGING
- 25 .comment      0000003b  00000000  00000000  0000440c  2**0
+ 25 .comment      0000003b  00000000  00000000  000043f8  2**0
                   CONTENTS, READONLY
- 26 .xtensa.info  00000038  00000000  00000000  00004447  2**0
+ 26 .xtensa.info  00000038  00000000  00000000  00004433  2**0
                   CONTENTS, READONLY
- 27 .xt.lit       00000030  00000000  00000000  0000447f  2**0
+ 27 .xt.lit       00000030  00000000  00000000  0000446b  2**0
                   CONTENTS, RELOC, READONLY
- 28 .xt.prop      00000240  00000000  00000000  000044af  2**0
+ 28 .xt.prop      00000240  00000000  00000000  0000449b  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_common.o:     file format elf32-xtensa-le
@@ -4625,79 +4625,79 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   ALLOC
  19 .text.wpa_hexdump_buf_key 00000018  00000000  00000000  00000260  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 20 .rodata.str1.1 0000033e  00000000  00000000  00000278  2**0
+ 20 .rodata.str1.1 00000307  00000000  00000000  00000278  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 21 .text.wps_kdf 000000c4  00000000  00000000  000005b8  2**2
+ 21 .text.wps_kdf 000000c4  00000000  00000000  00000580  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 22 .text.wps_derive_keys 000001c5  00000000  00000000  0000067c  2**2
+ 22 .text.wps_derive_keys 000001c5  00000000  00000000  00000644  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 23 .text.wps_derive_psk 0000009e  00000000  00000000  00000844  2**2
+ 23 .text.wps_derive_psk 0000009e  00000000  00000000  0000080c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 24 .text.wps_decrypt_encr_settings 000000e0  00000000  00000000  000008e4  2**2
+ 24 .text.wps_decrypt_encr_settings 000000e0  00000000  00000000  000008ac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 25 .text.wps_pin_checksum 0000005d  00000000  00000000  000009c4  2**2
+ 25 .text.wps_pin_checksum 0000005d  00000000  00000000  0000098c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 26 .text.wps_pin_valid 00000029  00000000  00000000  00000a24  2**2
+ 26 .text.wps_pin_valid 00000029  00000000  00000000  000009ec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 27 .text.wps_generate_pin 00000038  00000000  00000000  00000a50  2**2
+ 27 .text.wps_generate_pin 00000038  00000000  00000000  00000a18  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 28 .text.wps_pin_str_valid 00000031  00000000  00000000  00000a88  2**2
+ 28 .text.wps_pin_str_valid 00000031  00000000  00000000  00000a50  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 29 .text.wps_fail_event 00000048  00000000  00000000  00000abc  2**2
+ 29 .text.wps_fail_event 00000048  00000000  00000000  00000a84  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 30 .text.wps_success_event 00000014  00000000  00000000  00000b04  2**2
+ 30 .text.wps_success_event 00000014  00000000  00000000  00000acc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 31 .text.wps_pwd_auth_fail_event 0000003c  00000000  00000000  00000b18  2**2
+ 31 .text.wps_pwd_auth_fail_event 0000003c  00000000  00000000  00000ae0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 32 .text.wps_pbc_overlap_event 00000014  00000000  00000000  00000b54  2**2
+ 32 .text.wps_pbc_overlap_event 00000014  00000000  00000000  00000b1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 33 .text.wps_pbc_timeout_event 00000014  00000000  00000000  00000b68  2**2
+ 33 .text.wps_pbc_timeout_event 00000014  00000000  00000000  00000b30  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 34 .text.wps_dev_type_str2bin 0000006d  00000000  00000000  00000b7c  2**2
+ 34 .text.wps_dev_type_str2bin 0000006d  00000000  00000000  00000b44  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 35 .text.wps_dev_type_bin2str 00000056  00000000  00000000  00000bec  2**2
+ 35 .text.wps_dev_type_bin2str 00000056  00000000  00000000  00000bb4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 36 .rodata       00000010  00000000  00000000  00000c42  2**0
+ 36 .rodata       00000010  00000000  00000000  00000c0a  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 37 .text.uuid_gen_mac_addr 0000005b  00000000  00000000  00000c54  2**2
+ 37 .text.uuid_gen_mac_addr 0000005b  00000000  00000000  00000c1c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 38 .text.wps_config_methods_str2bin 00000120  00000000  00000000  00000cb0  2**2
+ 38 .text.wps_config_methods_str2bin 00000120  00000000  00000000  00000c78  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 39 .text.wps_build_wsc_ack 0000006a  00000000  00000000  00000dd0  2**2
+ 39 .text.wps_build_wsc_ack 0000006a  00000000  00000000  00000d98  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 40 .text.wps_build_wsc_nack 0000007d  00000000  00000000  00000e3c  2**2
+ 40 .text.wps_build_wsc_nack 0000007d  00000000  00000000  00000e04  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 41 .rodata.__FUNCTION__$5770 0000001a  00000000  00000000  00000eb9  2**0
+ 41 .rodata.__FUNCTION__$5770 0000001a  00000000  00000000  00000e81  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 42 .rodata.__FUNCTION__$5759 0000000f  00000000  00000000  00000ed3  2**0
+ 42 .rodata.__FUNCTION__$5759 0000000f  00000000  00000000  00000e9b  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 43 .rodata.__FUNCTION__$5752 00000010  00000000  00000000  00000ee2  2**0
+ 43 .rodata.__FUNCTION__$5752 00000010  00000000  00000000  00000eaa  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 44 .rodata.__FUNCTION__$5738 00000008  00000000  00000000  00000ef2  2**0
+ 44 .rodata.__FUNCTION__$5738 00000008  00000000  00000000  00000eba  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 45 .debug_frame  000001f0  00000000  00000000  00000efc  2**2
+ 45 .debug_frame  000001f0  00000000  00000000  00000ec4  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 46 .debug_info   00002580  00000000  00000000  000010ec  2**0
+ 46 .debug_info   00002580  00000000  00000000  000010b4  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 47 .debug_abbrev 00000481  00000000  00000000  0000366c  2**0
+ 47 .debug_abbrev 00000481  00000000  00000000  00003634  2**0
                   CONTENTS, READONLY, DEBUGGING
- 48 .debug_loc    00000698  00000000  00000000  00003aed  2**0
+ 48 .debug_loc    00000698  00000000  00000000  00003ab5  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 49 .debug_aranges 000000b8  00000000  00000000  00004185  2**0
+ 49 .debug_aranges 000000b8  00000000  00000000  0000414d  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 50 .debug_ranges 000000c0  00000000  00000000  0000423d  2**0
+ 50 .debug_ranges 000000c0  00000000  00000000  00004205  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 51 .debug_line   00000b90  00000000  00000000  000042fd  2**0
+ 51 .debug_line   00000b90  00000000  00000000  000042c5  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 52 .debug_str    000011cd  00000000  00000000  00004e8d  2**0
+ 52 .debug_str    000011cd  00000000  00000000  00004e55  2**0
                   CONTENTS, READONLY, DEBUGGING
- 53 .comment      0000003b  00000000  00000000  0000605a  2**0
+ 53 .comment      0000003b  00000000  00000000  00006022  2**0
                   CONTENTS, READONLY
- 54 .xtensa.info  00000038  00000000  00000000  00006095  2**0
+ 54 .xtensa.info  00000038  00000000  00000000  0000605d  2**0
                   CONTENTS, READONLY
- 55 .xt.lit       00000080  00000000  00000000  000060cd  2**0
+ 55 .xt.lit       00000080  00000000  00000000  00006095  2**0
                   CONTENTS, RELOC, READONLY
- 56 .xt.prop      000006e4  00000000  00000000  0000614d  2**0
+ 56 .xt.prop      000006e4  00000000  00000000  00006115  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_dev_attr.o:     file format elf32-xtensa-le
@@ -4839,45 +4839,45 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  10 .text.wps_process_enrollee_nonce 00000022  00000000  00000000  00000434  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 11 .rodata.str1.1 000001c2  00000000  00000000  00000456  2**0
+ 11 .rodata.str1.1 000001ac  00000000  00000000  00000456  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 12 .text.wps_enrollee_get_msg 0000070e  00000000  00000000  00000618  2**2
+ 12 .text.wps_enrollee_get_msg 0000070e  00000000  00000000  00000604  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 13 .rodata.wps_enrollee_get_msg 00000034  00000000  00000000  00000d28  2**2
+ 13 .rodata.wps_enrollee_get_msg 00000034  00000000  00000000  00000d14  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 14 .text.wps_enrollee_process_msg 00000afc  00000000  00000000  00000d5c  2**2
+ 14 .text.wps_enrollee_process_msg 00000afc  00000000  00000000  00000d48  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 15 .rodata.wps_enrollee_process_msg 00000034  00000000  00000000  00001858  2**2
+ 15 .rodata.wps_enrollee_process_msg 00000034  00000000  00000000  00001844  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 16 .rodata.__FUNCTION__$6353 00000016  00000000  00000000  0000188c  2**0
+ 16 .rodata.__FUNCTION__$6353 00000016  00000000  00000000  00001878  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 17 .rodata.__FUNCTION__$6345 00000016  00000000  00000000  000018a2  2**0
+ 17 .rodata.__FUNCTION__$6345 00000016  00000000  00000000  0000188e  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 18 .rodata.__FUNCTION__$6241 00000011  00000000  00000000  000018b8  2**0
+ 18 .rodata.__FUNCTION__$6241 00000011  00000000  00000000  000018a4  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 19 .debug_frame  00000088  00000000  00000000  000018cc  2**2
+ 19 .debug_frame  00000088  00000000  00000000  000018b8  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 20 .debug_info   000048a8  00000000  00000000  00001954  2**0
+ 20 .debug_info   000048a8  00000000  00000000  00001940  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 21 .debug_abbrev 000004cf  00000000  00000000  000061fc  2**0
+ 21 .debug_abbrev 000004cf  00000000  00000000  000061e8  2**0
                   CONTENTS, READONLY, DEBUGGING
- 22 .debug_loc    000010ea  00000000  00000000  000066cb  2**0
+ 22 .debug_loc    000010ea  00000000  00000000  000066b7  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 23 .debug_aranges 00000040  00000000  00000000  000077b5  2**0
+ 23 .debug_aranges 00000040  00000000  00000000  000077a1  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 24 .debug_ranges 000001a8  00000000  00000000  000077f5  2**0
+ 24 .debug_ranges 000001a8  00000000  00000000  000077e1  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 25 .debug_line   00001272  00000000  00000000  0000799d  2**0
+ 25 .debug_line   00001272  00000000  00000000  00007989  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
- 26 .debug_str    000025d9  00000000  00000000  00008c0f  2**0
+ 26 .debug_str    000025d9  00000000  00000000  00008bfb  2**0
                   CONTENTS, READONLY, DEBUGGING
- 27 .comment      0000003b  00000000  00000000  0000b1e8  2**0
+ 27 .comment      0000003b  00000000  00000000  0000b1d4  2**0
                   CONTENTS, READONLY
- 28 .xtensa.info  00000038  00000000  00000000  0000b223  2**0
+ 28 .xtensa.info  00000038  00000000  00000000  0000b20f  2**0
                   CONTENTS, READONLY
- 29 .xt.lit       00000028  00000000  00000000  0000b25b  2**0
+ 29 .xt.lit       00000028  00000000  00000000  0000b247  2**0
                   CONTENTS, RELOC, READONLY
- 30 .xt.prop      00000b10  00000000  00000000  0000b283  2**0
+ 30 .xt.prop      00000b10  00000000  00000000  0000b26f  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_registrar.o:     file format elf32-xtensa-le
@@ -4988,125 +4988,125 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
  51 .text.wps_remove_pin 0000001f  00000000  00000000  00000924  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 52 .rodata.str1.1 000002d1  00000000  00000000  00000943  2**0
+ 52 .rodata.str1.1 000002c6  00000000  00000000  00000943  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 53 .text.wps_registrar_add_authorized_mac 00000056  00000000  00000000  00000c14  2**2
+ 53 .text.wps_registrar_add_authorized_mac 00000056  00000000  00000000  00000c0c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 54 .text.wps_registrar_remove_pbc_session 00000071  00000000  00000000  00000c6c  2**2
+ 54 .text.wps_registrar_remove_pbc_session 00000071  00000000  00000000  00000c64  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 55 .text.wpabuf_put_be16 00000018  00000000  00000000  00000ce0  2**2
+ 55 .text.wpabuf_put_be16 00000018  00000000  00000000  00000cd8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 56 .text.wps_build_sel_reg_dev_password_id 0000003e  00000000  00000000  00000cf8  2**2
+ 56 .text.wps_build_sel_reg_dev_password_id 0000003e  00000000  00000000  00000cf0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 57 .text.wpabuf_put_data 0000001c  00000000  00000000  00000d38  2**2
+ 57 .text.wpabuf_put_data 0000001c  00000000  00000000  00000d30  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 58 .text.wpabuf_put_buf 0000001a  00000000  00000000  00000d54  2**2
+ 58 .text.wpabuf_put_buf 0000001a  00000000  00000000  00000d4c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 59 .text.wps_registrar_remove_authorized_mac 00000062  00000000  00000000  00000d70  2**2
+ 59 .text.wps_registrar_remove_authorized_mac 00000062  00000000  00000000  00000d68  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 60 .text.wps_process_wsc_nack 000000b4  00000000  00000000  00000dd4  2**2
+ 60 .text.wps_process_wsc_nack 000000b4  00000000  00000000  00000dcc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 61 .text.wps_registrar_add_pbc_session$isra$13 000000a9  00000000  00000000  00000e88  2**2
+ 61 .text.wps_registrar_add_pbc_session$isra$13 000000a9  00000000  00000000  00000e80  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 62 .text.wps_build_sel_reg_config_methods$part$15 0000004a  00000000  00000000  00000f34  2**2
+ 62 .text.wps_build_sel_reg_config_methods$part$15 0000004a  00000000  00000000  00000f2c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 63 .text.wps_build_wps_state$isra$19 0000002c  00000000  00000000  00000f80  2**2
+ 63 .text.wps_build_wps_state$isra$19 0000002c  00000000  00000000  00000f78  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 64 .text.wps_process_wsc_ack$isra$26 00000011  00000000  00000000  00000fac  2**2
+ 64 .text.wps_process_wsc_ack$isra$26 00000011  00000000  00000000  00000fa4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 65 .text.wps_build_credential 000000f4  00000000  00000000  00000fc0  2**2
+ 65 .text.wps_build_credential 000000f4  00000000  00000000  00000fb8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 66 .text.wps_build_ap_setup_locked$isra$20 00000031  00000000  00000000  000010b4  2**2
+ 66 .text.wps_build_ap_setup_locked$isra$20 00000031  00000000  00000000  000010ac  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 67 .text.wps_build_selected_registrar$isra$22$part$23 00000029  00000000  00000000  000010e8  2**2
+ 67 .text.wps_build_selected_registrar$isra$22$part$23 00000029  00000000  00000000  000010e0  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 68 .text.wps_build_m2d 00000132  00000000  00000000  00001114  2**2
+ 68 .text.wps_build_m2d 00000132  00000000  00000000  0000110c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 69 .text.wps_device_store 000000d0  00000000  00000000  00001248  2**2
+ 69 .text.wps_device_store 000000d0  00000000  00000000  00001240  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 70 .text.wps_registrar_pbc_overlap 0000007e  00000000  00000000  00001318  2**2
+ 70 .text.wps_registrar_pbc_overlap 0000007e  00000000  00000000  00001310  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 71 .text.wps_authorized_macs 0000002f  00000000  00000000  00001398  2**2
+ 71 .text.wps_authorized_macs 0000002f  00000000  00000000  00001390  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 72 .rodata       0000000d  00000000  00000000  000013c7  2**0
+ 72 .rodata       0000000d  00000000  00000000  000013bf  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 73 .text.wps_set_ie 0000028d  00000000  00000000  000013d4  2**2
+ 73 .text.wps_set_ie 0000028d  00000000  00000000  000013cc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 74 .text.wps_registrar_deinit 0000005f  00000000  00000000  00001664  2**2
+ 74 .text.wps_registrar_deinit 0000005f  00000000  00000000  0000165c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 75 .text.wps_registrar_init 0000008e  00000000  00000000  000016c4  2**2
+ 75 .text.wps_registrar_init 0000008e  00000000  00000000  000016bc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 76 .text.wps_registrar_probe_req_rx 00000116  00000000  00000000  00001754  2**2
+ 76 .text.wps_registrar_probe_req_rx 00000116  00000000  00000000  0000174c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 77 .text.wps_build_credential_wrap 00000058  00000000  00000000  0000186c  2**2
+ 77 .text.wps_build_credential_wrap 00000058  00000000  00000000  00001864  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 78 .text.wps_build_cred 00000220  00000000  00000000  000018c4  2**2
+ 78 .text.wps_build_cred 00000220  00000000  00000000  000018bc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 79 .text.wps_registrar_update_ie 00000010  00000000  00000000  00001ae4  2**2
+ 79 .text.wps_registrar_update_ie 00000010  00000000  00000000  00001adc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 80 .text.wps_registrar_selected_registrar_changed 000000ab  00000000  00000000  00001af4  2**2
+ 80 .text.wps_registrar_selected_registrar_changed 000000ab  00000000  00000000  00001aec  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 81 .text.wps_registrar_remove_pin 0000003b  00000000  00000000  00001ba0  2**2
+ 81 .text.wps_registrar_remove_pin 0000003b  00000000  00000000  00001b98  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 82 .text.wps_registrar_invalidate_pin 0000004d  00000000  00000000  00001bdc  2**2
+ 82 .text.wps_registrar_invalidate_pin 0000004d  00000000  00000000  00001bd4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 83 .text.wps_registrar_unlock_pin 00000043  00000000  00000000  00001c2c  2**2
+ 83 .text.wps_registrar_unlock_pin 00000043  00000000  00000000  00001c24  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 84 .text.wps_registrar_invalidate_wildcard_pin 00000051  00000000  00000000  00001c70  2**2
+ 84 .text.wps_registrar_invalidate_wildcard_pin 00000051  00000000  00000000  00001c68  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 85 .text.wps_registrar_get_msg 000006aa  00000000  00000000  00001cc4  2**2
+ 85 .text.wps_registrar_get_msg 000006aa  00000000  00000000  00001cbc  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 86 .rodata.wps_registrar_get_msg 0000002c  00000000  00000000  00002370  2**2
+ 86 .rodata.wps_registrar_get_msg 0000002c  00000000  00000000  00002368  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, DATA
- 87 .text.wps_registrar_add_pin 000000e4  00000000  00000000  0000239c  2**2
+ 87 .text.wps_registrar_add_pin 000000e4  00000000  00000000  00002394  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 88 .text.wps_registrar_button_pushed 0000005d  00000000  00000000  00002480  2**2
+ 88 .text.wps_registrar_button_pushed 0000005d  00000000  00000000  00002478  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 89 .text.wps_registrar_stop_pbc 0000002e  00000000  00000000  000024e0  2**2
+ 89 .text.wps_registrar_stop_pbc 0000002e  00000000  00000000  000024d8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 90 .text.wps_process_wsc_done 0000019e  00000000  00000000  00002510  2**2
+ 90 .text.wps_process_wsc_done 0000019e  00000000  00000000  00002508  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 91 .text.wps_registrar_wps_cancel 0000003c  00000000  00000000  000026b0  2**2
+ 91 .text.wps_registrar_wps_cancel 0000003c  00000000  00000000  000026a8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 92 .text.wps_registrar_complete 00000067  00000000  00000000  000026ec  2**2
+ 92 .text.wps_registrar_complete 00000067  00000000  00000000  000026e4  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 93 .text.wps_process_wsc_msg 00000849  00000000  00000000  00002754  2**2
+ 93 .text.wps_process_wsc_msg 00000849  00000000  00000000  0000274c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 94 .text.wps_registrar_process_msg 00000094  00000000  00000000  00002fa0  2**2
+ 94 .text.wps_registrar_process_msg 00000094  00000000  00000000  00002f98  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 95 .text.wps_registrar_get_info 0000008a  00000000  00000000  00003034  2**2
+ 95 .text.wps_registrar_get_info 0000008a  00000000  00000000  0000302c  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 96 .text.wps_registrar_config_ap 00000048  00000000  00000000  000030c0  2**2
+ 96 .text.wps_registrar_config_ap 00000048  00000000  00000000  000030b8  2**2
                   CONTENTS, ALLOC, LOAD, RELOC, READONLY, CODE
- 97 .rodata.__FUNCTION__$6403 00000016  00000000  00000000  00003108  2**0
+ 97 .rodata.__FUNCTION__$6403 00000016  00000000  00000000  00003100  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 98 .rodata.__FUNCTION__$6395 00000016  00000000  00000000  0000311e  2**0
+ 98 .rodata.__FUNCTION__$6395 00000016  00000000  00000000  00003116  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
- 99 .rodata.__FUNCTION__$6262 00000011  00000000  00000000  00003134  2**0
+ 99 .rodata.__FUNCTION__$6262 00000011  00000000  00000000  0000312c  2**0
                   CONTENTS, ALLOC, LOAD, READONLY, DATA
-100 .debug_frame  00000490  00000000  00000000  00003148  2**2
+100 .debug_frame  00000490  00000000  00000000  00003140  2**2
                   CONTENTS, RELOC, READONLY, DEBUGGING
-101 .debug_info   00007564  00000000  00000000  000035d8  2**0
+101 .debug_info   00007564  00000000  00000000  000035d0  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-102 .debug_abbrev 000005e4  00000000  00000000  0000ab3c  2**0
+102 .debug_abbrev 000005e4  00000000  00000000  0000ab34  2**0
                   CONTENTS, READONLY, DEBUGGING
-103 .debug_loc    00002043  00000000  00000000  0000b120  2**0
+103 .debug_loc    00002043  00000000  00000000  0000b118  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-104 .debug_aranges 00000198  00000000  00000000  0000d163  2**0
+104 .debug_aranges 00000198  00000000  00000000  0000d15b  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-105 .debug_ranges 00000408  00000000  00000000  0000d2fb  2**0
+105 .debug_ranges 00000408  00000000  00000000  0000d2f3  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-106 .debug_line   00002656  00000000  00000000  0000d703  2**0
+106 .debug_line   00002656  00000000  00000000  0000d6fb  2**0
                   CONTENTS, RELOC, READONLY, DEBUGGING
-107 .debug_str    00002d9f  00000000  00000000  0000fd59  2**0
+107 .debug_str    00002d9f  00000000  00000000  0000fd51  2**0
                   CONTENTS, READONLY, DEBUGGING
-108 .comment      0000003b  00000000  00000000  00012af8  2**0
+108 .comment      0000003b  00000000  00000000  00012af0  2**0
                   CONTENTS, READONLY
-109 .xtensa.info  00000038  00000000  00000000  00012b33  2**0
+109 .xtensa.info  00000038  00000000  00000000  00012b2b  2**0
                   CONTENTS, READONLY
-110 .xt.lit       00000158  00000000  00000000  00012b6b  2**0
+110 .xt.lit       00000158  00000000  00000000  00012b63  2**0
                   CONTENTS, RELOC, READONLY
-111 .xt.prop      00001be4  00000000  00000000  00012cc3  2**0
+111 .xt.prop      00001be4  00000000  00000000  00012cbb  2**0
                   CONTENTS, RELOC, READONLY
 
 wps_validate.o:     file format elf32-xtensa-le

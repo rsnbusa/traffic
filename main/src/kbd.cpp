@@ -380,12 +380,12 @@ void kbd_factor(uart_port_t uart_num)
 	if (s1!="")
 		FACTOR=atoi(s1.c_str());
 	sysConfig.reserved=FACTOR;
-	printf("FactorLight(%d):",FACTOR2);
+	printf("TimeOutSpread(%d):",sysConfig.reserved2);
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10,true);
 	if (s1!="")
 		FACTOR2=atoi(s1.c_str());
-	sysConfig.reserved2=FACTOR2;
+	sysConfig.reserved2=gTIMESPREAD=FACTOR2;
 	printf("Show Leds(%s):",sysConfig.showLeds?"Y":"N");
 	fflush(stdout);
 	s1=get_string((uart_port_t)uart_num,10,true);
@@ -433,7 +433,7 @@ void kbd_light_sequence(uart_port_t uart_num)
 		if(atoi(s1.c_str())<sysLights.numLuces)
 		{
 			pos=atoi(s1.c_str());
-			printf("IOPorts(%s/%s)(%s):",byte_to_binarytxt(sysLights.lasLuces[pos].ioports,true).c_str(),byte_to_binarytxt(sysLights.lasLuces[pos].inports,false).c_str(),algo.c_str());
+			printf("IOPorts(x,y)(%s/%s)(%s):",byte_to_binarytxt(sysLights.lasLuces[pos].ioports,true).c_str(),byte_to_binarytxt(sysLights.lasLuces[pos].inports,false).c_str(),algo.c_str());
 			fflush(stdout);
 			s1=get_string((uart_port_t)uart_num,10,true);
 			if(s1!=""){

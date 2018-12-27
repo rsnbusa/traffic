@@ -17,7 +17,8 @@
 #define NKEYS 								24
 #define KCMDS								35
 #define MAXLOGINTIME						60   //one minute
-
+#define MAXRETRYRUN							10
+#define TIMESPREAD							500
 #define UIO									5  //GMT local time
 
 #define MG_LISTEN_ADDR						"80"

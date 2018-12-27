@@ -889,7 +889,7 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 		if(!rxmessagef)
 		{
 			printf("Launch Rxmessage %d\n",rxmessagef);
-			xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+			xTaskCreate(&rxMessage, "rxMulti", 8092, (void*)0, configMAX_PRIORITIES - 1, &rxHandle);
 		}
 		break;
 
@@ -1031,7 +1031,7 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		setup_repeater_ap(); //Start the AP
 		//Repeater now active. Start our relayer
 		if(!repeaterConf)
-			xTaskCreate(&repeater, "repeater", 8092, (void*)0, 4, &rxHandle);
+			xTaskCreate(&repeater, "repeater", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
 		connf=repeaterConf=true;
 		break;
 
@@ -2289,10 +2289,6 @@ void streamTask(void *pArg) //for Repeater configuration
 
 			if( xQueueReceive( ap?upQ:downQ, &comand, portMAX_DELAY ))
 			{
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<TRAFFICD))
-				printf("[TRAFFICD]Sending %s CMD(%d) %s Ip %d:%d:%d:%d\n",ap?"Up":"Down",comand.cmd,tcmds[comand.cmd],IP2STR(&if_info.ip));
-#endif
 				err=sendto(sock, &comand, sizeof(cmd_struct), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
 				if (err < 0)
 				{
@@ -2300,6 +2296,10 @@ void streamTask(void *pArg) //for Repeater configuration
 					close(sock); //we are going to die anyway. Should do something usefull like blink all lights
 					break; //reopen socket, etc
 				}
+#ifdef DEBUGSYS
+		if(sysConfig.traceflag & (1<<TRAFFICD))
+				printf("[TRAFFICD]Sending %s CMD(%d) %s Ip %d:%d:%d:%d\n",ap?"Up":"Down",comand.cmd,tcmds[comand.cmd],IP2STR(&if_info.ip));
+#endif
 			}
 		}
     }
@@ -2338,68 +2338,70 @@ void repeater(void *pArg) //connected to the STA
 		vTaskDelete(NULL);
 	}
 
-	xTaskCreate(&streamTask,"upstream",4096,(void*)1, 5, NULL);
-	xTaskCreate(&streamTask,"downstream",4096,(void*)0, 5, NULL);
+	xTaskCreate(&streamTask,"upstream",8092,(void*)1, configMAX_PRIORITIES - 1, NULL);
+	xTaskCreate(&streamTask,"downstream",8092,(void*)0, configMAX_PRIORITIES - 1, NULL);
 	repeaterConf=true;
 	while(1)
 	{
+again:
 		socklen_t socklen = sizeof(raddr);
 		int len = recvfrom(theSock,(void*)&comando, sizeof(comando), MSG_WAITALL,(struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0)
 		{
 			printf("multicast recvfrom failed: errno %d\n", errno);
-			exit(1);
+			delay(100);
+			goto again;
 		}
 
 		if (comando.centinel==THECENTINEL)
 		{
-		entrats=millis()-lastts;
-		lastts=millis();
+			entrats=millis()-lastts;
+			lastts=millis();
 
-#ifdef DEBUGSYS
-		if(sysConfig.traceflag & (1<<TRAFFICD))
-		{
-			memset(raddr_name,0,sizeof(raddr_name));
-			if (raddr.sin6_family == PF_INET)
-				inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
-			printf("[TRAFFICD]Repeater In from %s seq %d msg %s towho %d\n",raddr_name,comando.seqnum, comando.buff,comando.towho);
-		}
-#endif
-
-
-		u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
-		if(me != este)
-		{
-			u8 monton[4];
-			u32 mask=0x00ffffff;
-			u32 res=(este&mask)<<8;
-			memcpy(monton,&res,4);
+			u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
+			if(me != este)
+			{
+				u8 monton[4];
+				u32 mask=0x00ffffff;
+				u32 res=(este&mask)<<8;
+				memcpy(monton,&res,4);
 	#ifdef DEBUGSYS
 			if(sysConfig.traceflag&(1<<TRAFFICD))
 				printf("[TRAFFIC]Repeater RxMess for STA %d %d %d %d r=%x d=%x u=%x\n",monton[0],monton[1],monton[2],monton[3],res,downstream,upstream);
 	#endif
-			if(res==upstream)
-			{
-				xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+				if(res==upstream)
+				{
+					xQueueSend( upQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
 	#ifdef DEBUGSYS
-			if(sysConfig.traceflag&(1<<TRAFFICD))
-				printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
+					if(sysConfig.traceflag&(1<<TRAFFICD))
+						printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
 	#endif
-			}
-			if(res==downstream)
-			{
+				}
+				if(res==downstream)
+				{
 				//also send because you there can be clones....
-				xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
+					xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
 
 	#ifdef DEBUGSYS
-			if(sysConfig.traceflag&(1<<TRAFFICD))
-					printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+					if(sysConfig.traceflag&(1<<TRAFFICD))
+						printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
 	#endif
 
-				if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
-					process_cmd(comando);
+					if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
+						process_cmd(comando);
+				}
+
+
+#ifdef DEBUGSYS
+			if(sysConfig.traceflag & (1<<TRAFFICD))
+			{
+				memset(raddr_name,0,sizeof(raddr_name));
+				if (raddr.sin6_family == PF_INET)
+					inet_ntoa_r(((struct sockaddr_in *)&raddr)->sin_addr.s_addr,raddr_name, sizeof(raddr_name)-1);
+				printf("[TRAFFICD]Repeater In from %s seq %d msg %s towho %d\n",raddr_name,comando.seqnum, comando.buff,comando.towho);
 			}
+#endif
 		}
 	}
 		else
@@ -2603,6 +2605,7 @@ void initVars()
 	FACTOR2=sysConfig.reserved2;
 	if(FACTOR2==0)
 		FACTOR2=1000;
+	gTIMESPREAD=FACTOR2;
 
 	// Task handles to NULL
 	runHandle			=NULL;
@@ -3076,16 +3079,14 @@ void doneCallback( TimerHandle_t xTimer )
 void cycleManager(void * pArg)
 {
 	char theNodes[50];
-	int voy=0,cual,esteCycle,vanv,vanc=0;
+	int voy=0,esteCycle,vanv,vanc=0;
 	node_struct intersections;
 	char textl[20];
 	time_t now;
-	u16 soyYo; //Street Number like 0,1,2. Should not skip one, ex, 0,2,3
+	u16 soyYo;
 	u32 st,fueron;
 
-	cual=(int)pArg; //cycle to use
-	esteCycle=sysSequence.sequences[cual].cycleId;
-
+	esteCycle=sysSequence.sequences[(int)pArg].cycleId;
 
 	// review this idea
 	while(!rxtxf)
@@ -3096,7 +3097,7 @@ void cycleManager(void * pArg)
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<TRAFFICD))
-		printf("[TRAFFICD]Schedule %d Cycle %d\n",cual,esteCycle);
+		printf("[TRAFFICD]Schedule %d Cycle %d\n",(int)pArg,esteCycle);
 #endif
 
 	strcpy(theNodes,allCycles.nodeSeq[esteCycle]);
@@ -3121,23 +3122,25 @@ void cycleManager(void * pArg)
 				gCycleTime=intersections.timeval[voy];
 				sprintf(textl,"   %3ds   ",gCycleTime);
 				eraseMainScreen();
-				drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,DISPLAYIT, REPLACE);
-				drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,NODISPLAY, REPLACE);
+				drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				vanv=internal_stats.started[esteCycle][intersections.nodeid[voy]];
 				sprintf(textl,"%d",vanv);
-				drawString(110, 38, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				drawString(100, 38, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				vanv=internal_stats.timeout[esteCycle][intersections.nodeid[voy]];
 				sprintf(textl,"%d",vanv);
-				drawString(110, 20, textl, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				drawString(110, 20, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				display.drawLine(0,18,127,18);
 				display.drawLine(0,50,127,50);
-				display.display();
+				display.display();//display everything at once
 				xSemaphoreGive(I2CSem);
 			}
 		}
+		//for Status report Tracing
 		globalNode=intersections.nodeid[voy];
 		globalDuration=intersections.timeval[voy]*FACTOR;
 
+		// Statistics
 		time(&now);
 		internal_stats.schedule_changes++;
 		internal_stats.started[esteCycle][intersections.nodeid[voy]]++;
@@ -3145,11 +3148,13 @@ void cycleManager(void * pArg)
 					if(sysConfig.traceflag & (1<<TRAFFICD))
 						printf("[TRAFFICD]RUN Node %d delay %d\n",intersections.nodeid[voy],intersections.timeval[voy]);
 #endif
-		int retry=10;
+		//Here we go. Send RUN msg to Street
+		//Need an ACK from it so retry 10 times
+		int retry=MAXRETRYRUN;
 		while(retry--)
 		{
 			sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
-			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again
+			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again almost 5 secs before failure
 				break;
 		}
 		if (retry==0)
@@ -3159,46 +3164,80 @@ void cycleManager(void * pArg)
 			if(intersections.timeval[voy]<5)
 				printf("TIMER Fault %d\n",intersections.timeval[voy]);
 
+				//set timer for TIMEOUT in case no response and start the timer
 			vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
-			xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,(intersections.timeval[voy]+3)*FACTOR,0,0);//MUST wait for done so 2 secs more and no timeout
+			xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,intersections.timeval[voy]*FACTOR+gTIMESPREAD,0,0);//MUST wait for done so TIMESPREAD secs more and no timeout
 			xTimerStart(doneTimer,0);
 
-			st=millis();
-
+			st=millis(); //To track how long it took from beginning to end
 			while(true)
-			{
-				if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 				{
-					xTimerStop(doneTimer,0); //just in case
+					if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
+					{
+						xTimerStop(doneTimer,0); //just in case
 
-					if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
-					{
-						gCycleTime=-1;
-						internal_stats.confirmed[esteCycle][soyYo]++;
-						fueron=millis()-st;
-	#ifdef DEBUGSYS
-						if(sysConfig.traceflag & (1<<TRAFFICD))
-							printf("[TRAFFICD]DONE received %d\n",fueron);
-	#endif
-						break; //next in cycle
-					}
-					else
-					{
-						if(soyYo==100){
-							internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
-							sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-							printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-							break;
+						if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
+						{
+							gCycleTime=-1;
+							internal_stats.confirmed[esteCycle][soyYo]++;
+							fueron=millis()-st;
+		#ifdef DEBUGSYS
+							if(sysConfig.traceflag & (1<<TRAFFICD))
+								printf("[TRAFFICD]DONE received %d\n",fueron);
+		#endif
+							break; //next in cycle
 						}
-
-	#ifdef DEBUGSYS
 						else
-						if(sysConfig.traceflag & (1<<TRAFFICD))
-							printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
-	#endif
+						{
+							if(soyYo==100){
+								internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
+								sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+								printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
+								break;
+							}
+
+		#ifdef DEBUGSYS
+							else
+							if(sysConfig.traceflag & (1<<TRAFFICD))
+								printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
+		#endif
+						}
 					}
 				}
-			}
+
+//			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
+//			{
+//				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
+//
+//				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
+//				{
+//					gCycleTime=-1;
+//					internal_stats.confirmed[esteCycle][soyYo]++;
+//#ifdef DEBUGSYS
+//					fueron=millis()-st;
+//					if(sysConfig.traceflag & (1<<TRAFFICD))
+//						printf("[TRAFFICD]DONE received %d\n",fueron);
+//#endif
+//				}
+//				else
+//				{
+//					if(soyYo==100)
+//					{
+//						internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
+//						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+//#ifdef DEBUGSYS
+//						if(sysConfig.traceflag & (1<<TRAFFICD))
+//							printf("[TRAFFICD]Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
+//#endif
+//					}
+//
+//#ifdef DEBUGSYS
+//					else
+//					if(sysConfig.traceflag & (1<<TRAFFICD))
+//						printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
+//#endif
+//				}
+//			}
 		}
 
 		voy++;
@@ -3206,7 +3245,7 @@ void cycleManager(void * pArg)
 		{
 			voy=0;
 			vanc++;
-			if(vanc > 20) //every 20 full cycles
+			if(vanc > 20) //every 20 full cycles save stats
 			{
 				write_stats();
 				vanc=0;
