@@ -318,25 +318,46 @@ void print_general_section(u8 full)
 	string algo;
 	char textl[100];
 	struct tm  ts;
+	u32 lu32;
 
 	if(full==0 || full==5)
 	{
 		printf("\n========== General ===========\n");
 
-		int este=scheduler.seqNum[scheduler.voy];
+		if(sysConfig.mode==REPEATER)
+		{
+			lu32=repeaterTimestamp;
+			localtime_r((time_t*)&lu32, &ts);
+			printf("REPEATER Rx last seen %s",asctime(&ts));
+		}
+
+		if(sysConfig.mode==CLIENT)
+		{
+			lu32=rxMessageTimestamp;
+			localtime_r((time_t*)&lu32, &ts);
+			printf("CLIENT Rx last seen %s",asctime(&ts));
+		}
+
+		int este=scheduler.schNum[scheduler.voy];
 		ts = *localtime((const time_t*)&sysSequence.sequences[este].startSeq);
 		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-		int cyc=sysSequence.sequences[scheduler.seqNum[scheduler.voy]].cycleId;
+		int cyc=sysSequence.sequences[scheduler.schNum[scheduler.voy]].cycleId;
+		localtime_r((time_t*)&rxMessageTimestamp, &ts);
 		if(sysConfig.mode==SERVER)
+		{
+			lu32=rxMessageTimestamp;
+			localtime_r((time_t*)&lu32, &ts);
+			printf("SERVER Rx last seen %s",asctime(&ts));
 			printf("RxTxf %d Timef %d RTCF %d Connected %d Semaphores are %s in Cycle %s of Schedule %s-",rxtxf,timef,rtcf,
 					totalConnected,semaphoresOff?"Off":"On",parseCycle(allCycles.nodeSeq[cyc]).c_str(),textl);
-		ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
-		strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
-		printf("%s\n",textl);
+			ts = *localtime((const time_t*)&sysSequence.sequences[este].stopSeq);
+			strftime(textl, sizeof(textl), "%H:%M:%S", &ts);
+			printf("%s\n",textl);
 
-		for (int a=0;a<6;a++)
-			if(sysConfig.calles[a][0]!=0)
-				printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
+			for (int a=0;a<6;a++)
+				if(sysConfig.calles[a][0]!=0)
+					printf("Street[%d] is %s\n",a,sysConfig.calles[a]);
+		}
 
 		printf("========== Lights =============\n");
 		for(int a=0;a<MAXNODES;a++)
@@ -403,13 +424,17 @@ void print_stats_section(u8 full)
 void print_cycle_section(u8 full)
 {
 	char textl[100];
+	struct tm  ts;
+	u32 lu32;
 
 	if(full==0 || full==4)
 	{
 		printf("\n========== Cycles ===========\n");
+		lu32=cycleTimestamp;
+		localtime_r((time_t*)&lu32, &ts);
 
 		sprintf(textl,"with total duration %d in Light %d %d ms\n",cuantoDura,globalLuz,globalLuzDuration);
-		printf("Traffic light is %srunning %s",runHandle?"":"not ",runHandle?textl:"\n");
+		printf("Traffic light is %srunning %sCycle(last seen) %s",runHandle?"":"not ",runHandle?textl:"\n",asctime(&ts));
 		if(sysConfig.mode==SERVER)
 			printf("Controller is in Street %s duration %d ms\n",sysConfig.calles[globalNode],globalDuration);
 	}

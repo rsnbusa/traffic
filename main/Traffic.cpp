@@ -44,11 +44,21 @@ void makeMd5(void *que, int len, void * donde)
 	mbedtls_md_finish(&md5, (unsigned char *)donde);
 }
 
-void blink(int cual)
+void blinktask(void *pArg)
 {
+	int cual=(int)pArg;
 	gpio_set_level((gpio_num_t)cual, 1);
 	delay(interval);
 	gpio_set_level((gpio_num_t)cual, 0);
+	vTaskDelete(NULL);
+}
+void blink(int cual)
+{
+	xTaskCreate(&blinktask,"blink",1024,(void*)cual, MGOS_TASK_PRIORITY, NULL);						// Log Manager
+
+//	gpio_set_level((gpio_num_t)cual, 1);
+//	delay(interval);
+//	gpio_set_level((gpio_num_t)cual, 0);
 }
 
 void eraseMainScreen()
@@ -1257,18 +1267,20 @@ void cmd_ack(cmd_struct cual)
 {
 #ifdef DEBUGSYS
 			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD][%d-%d]ACK received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
+				   printf("[TRAFFICD][%d-%d]ACK received from %d->" IPSTR " free1 %d\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip),
+						   cual.free1);
 #endif
-		   if(uxSemaphoreGetCount(ackSemaphore)==0) //its free
+			   globalAckFail=cual.free1;
+
+			   if(xSemaphoreGive(ackSemaphore)!= pdTRUE)
 			   {
-				   if(xSemaphoreGive(ackSemaphore)!= pdTRUE)
 #ifdef DEBUGSYS
-			   if(sysConfig.traceflag & (1<<TRAFFICD))
-				   printf("[TRAFFICD]Ack semaphore failed\n");
-#else
-				   cual.alignn=cual.alignn; //for debugiff condition
+				   if(sysConfig.traceflag & (1<<TRAFFICD))
+				 	 printf("[TRAFFICD]Ack semaphore failed\n");
 #endif
-			  }
+			   }
+
+
 }
 
 void cmd_nak(cmd_struct cual)
@@ -1380,7 +1392,7 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 	   if(sysConfig.traceflag & (1<<TRAFFICD))
 		   printf("[TRAFFICD]Start Cycle for %d time\n",cual.free1*FACTOR);
 #endif
-		xTaskCreate(&runLight,"light",4096,(void*)cual.free1, MGOS_TASK_PRIORITY, &runHandle);				//Manages all display to LCD
+		xTaskCreate(&runLight,"light",8092,(void*)cual.free1, MGOS_TASK_PRIORITY, &runHandle);				//Manages all display to LCD
 }
 
 void cmd_off(cmd_struct cual)
@@ -1856,10 +1868,7 @@ void runLight(void * pArg)
 	u32 					ledStatus,tempread;
 	bool 					qfue;
 
-	if(!sysConfig.clone)
-		sendMsg(ACK,EVERYBODY,0,0,NULL,0);
-
-	cuantoDura=(int)pArg*FACTOR2;
+	cuantoDura=(int)pArg*FACTOR;
 
 	vmstate=VMRUN;
 	for (int a=0;a<sysLights.numLuces;a++)
@@ -1868,18 +1877,32 @@ void runLight(void * pArg)
 			restar+=sysLights.lasLuces[a].valor;
 	}
 
-	cuantoDura-=(restar*FACTOR2);
+	cuantoDura-=(restar*FACTOR);
 #ifdef DEBUGSYS
 	   if(sysConfig.traceflag & (1<<WEBD))
 		   printf("[WEBD]RunLights Time %d\n",cuantoDura);
 #endif
+
+	   if (cuantoDura>0)
+	   {
+			if(!sysConfig.clone)
+				sendMsg(ACK,EVERYBODY,0,0,NULL,0);
+	   }
+	   else
+	   {
+		   if(!sysConfig.clone)
+			   sendMsg(ACK,EVERYBODY,1,0,NULL,0); //Negative time, wrong configuration. Notice the 1 in the ACK message
+		   runHandle=NULL;
+		   vTaskDelete(NULL);
+	   }
+
 
 	for (int a=0;a<sysLights.numLuces;a++)
 	{
 		if(sysLights.lasLuces[a].typ)
 			demora=cuantoDura*sysLights.lasLuces[a].valor/100;
 		else
-			demora=sysLights.lasLuces[a].valor*FACTOR2;
+			demora=sysLights.lasLuces[a].valor*FACTOR;
 
 		globalLuz=a;
 		globalLuzDuration=demora;
@@ -1905,7 +1928,7 @@ void runLight(void * pArg)
 				REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 				REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[a].ioports);//clear all set bits
 				u32 ledStatus=REG_READ(GPIO_IN_REG );//read bits
-				delay(100);
+				delay(10);
 				ledStatus=REG_READ(GPIO_IN_REG );//read bits
 				if((sysLights.lasLuces[a].inports & ledStatus)!=sysLights.lasLuces[a].inports )
 					reportLight(sysLights.lasLuces[a].inports, ledStatus);
@@ -1920,7 +1943,7 @@ void runLight(void * pArg)
 					printf("[WEBD]Read GPIO %x expected %x and %x result %s\n",ledStatus,sysLights.lasLuces[a].inports,tempread,qfue?"True":"False");
 				}
 #endif
-				delay(demora-100);
+				delay(demora-10);
 			}
 
 			if(copyOptions==1) //Blink
@@ -1958,7 +1981,7 @@ void runLight(void * pArg)
 #endif
 			REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 			REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[a].ioports);//clear all set bits
-			delay(100);
+			delay(5);
 			ledStatus=REG_READ(GPIO_IN_REG );//read bits
 			if((sysLights.lasLuces[a].inports & ledStatus)!=sysLights.lasLuces[a].inports )
 				reportLight(sysLights.lasLuces[a].inports, ledStatus);
@@ -1982,10 +2005,10 @@ void runLight(void * pArg)
 		while(retry--)
 		{
 			sendMsg(DONE,EVERYBODY,0,0,NULL,0);
-			if(sysConfig.mode!=SERVER) //when server its guaranteed to received its own
+			if(sysConfig.mode!=SERVER) //when server its guaranteed to received its own DONE message
 			{
-				if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again
-					break;
+					if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 200)) //every half second try again
+						break;
 			}
 			else
 				break;
@@ -2203,14 +2226,22 @@ void rxMessage(void *pArg)
     int 		theSock;
 
     rxmessagef=true;
+    dale:
 	theSock = create_multicast_ipv4_socket(UDP_PORT,sysConfig.mode);
 	if (theSock < 0) {
-		ESP_LOGE(TAG, "RX Failed to create IPv4 multicast socket");
+		printf("[TRAFFICD]RX Failed to create IPv4 multicast socket");
+	}
+
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+	if (setsockopt(theSock, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+	    perror("Settimeout");
 	}
 
 	while(1)
 	{
-	//	dale:
+		again:
 		memset(raddr_name,0,sizeof(raddr_name));
 
 		socklen_t socklen = sizeof(raddr);
@@ -2218,9 +2249,17 @@ void rxMessage(void *pArg)
 						   (struct sockaddr *)&raddr, &socklen);
 
 		if (len < 0) {
+			if(errno==EAGAIN) //no more process apparently=timeout
+			{
+				time((time_t*)&rxMessageTimestamp);
+				goto again;
+			}
 
-			ESP_LOGE(TAG, "multicast recvfrom failed: errno %d", errno);
-			vTaskDelete(NULL);
+			 perror("RcvError");
+			printf("[TRAFFICD]multicast recvfrom failed: errno %d\n", errno);
+
+			goto dale;
+		//	vTaskDelete(NULL);
 			//exit(1);
 		}
 
@@ -2263,7 +2302,7 @@ void streamTask(void *pArg) //for Repeater configuration
 		if (sock < 0)
 		{
 			ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
-			return;
+			vTaskDelete(NULL);
 		}
 
 
@@ -2281,7 +2320,7 @@ void streamTask(void *pArg) //for Repeater configuration
 		{
 			ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
 			close(sock);
-			return;
+			vTaskDelete(NULL);
 		  }
 
 		while(true)
@@ -2318,6 +2357,7 @@ void repeater(void *pArg) //connected to the STA
     printf("Repeater started\n");
 	tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);
 	me=ip_info.ip.addr;
+
 	u8 monton[4];
 	memcpy(&monton,(void*)&ip_info.ip.addr,4);
 	monton[3]=0;
@@ -2331,15 +2371,23 @@ void repeater(void *pArg) //connected to the STA
 	memcpy(&upstream,&monton,4);
 	upstream=upstream<<8;
 
+	xTaskCreate(&streamTask,"upstream",8092,(void*)1, configMAX_PRIORITIES - 1, NULL);
+	xTaskCreate(&streamTask,"downstream",8092,(void*)0, configMAX_PRIORITIES - 2, NULL);
+
+	dale:
 	theSock = create_multicast_ipv4_socket(UDP_PORT,sysConfig.mode);
 	if (theSock < 0)
 	{
-		printf("RX Failed to create IPv4 multicast socket\n");
+		printf("Repeater RX Failed to create IPv4 multicast socket\n");
 		vTaskDelete(NULL);
 	}
+	struct timeval tv;
+	tv.tv_sec = 0;
+	tv.tv_usec = 100000;
+	if (setsockopt(theSock, SOL_SOCKET, SO_RCVTIMEO,&tv,sizeof(tv)) < 0) {
+	    perror("SettimeoutRep");
+	}
 
-	xTaskCreate(&streamTask,"upstream",8092,(void*)1, configMAX_PRIORITIES - 1, NULL);
-	xTaskCreate(&streamTask,"downstream",8092,(void*)0, configMAX_PRIORITIES - 1, NULL);
 	repeaterConf=true;
 	while(1)
 	{
@@ -2349,9 +2397,13 @@ again:
 
 		if (len < 0)
 		{
+			if(errno==EAGAIN)
+			{
+				time((time_t*)&repeaterTimestamp);
+				goto again;
+			}
 			printf("multicast recvfrom failed: errno %d\n", errno);
-			delay(100);
-			goto again;
+			goto dale;
 		}
 
 		if (comando.centinel==THECENTINEL)
@@ -2360,7 +2412,7 @@ again:
 			lastts=millis();
 
 			u32 este=((struct sockaddr_in *)&raddr)->sin_addr.s_addr;
-			if(me != este)
+			if(me != este) //Why????
 			{
 				u8 monton[4];
 				u32 mask=0x00ffffff;
@@ -2378,20 +2430,24 @@ again:
 						printf("[TRAFFICD]Send Upstream Cmd %s\n",tcmds[comando.cmd]);
 	#endif
 				}
-				if(res==downstream)
+				else
 				{
-				//also send because you there can be clones....
-					xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
+					if(res==downstream)
+					{
+						//also send because you there can be clones....
+						xQueueSend( downQ, &comando,( TickType_t ) 0 );//start up-down repeating process
 
 	#ifdef DEBUGSYS
-					if(sysConfig.traceflag&(1<<TRAFFICD))
-						printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
+						if(sysConfig.traceflag&(1<<TRAFFICD))
+							printf("[TRAFFICD]Send Downstream %d Cmd %s\n",comando.towho,tcmds[comando.cmd]);
 	#endif
 
-					if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
-						process_cmd(comando);
+						if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
+							process_cmd(comando);
+					}
+					else
+						printf("Repeater Invalid Stream %x\n",res);
 				}
-
 
 #ifdef DEBUGSYS
 			if(sysConfig.traceflag & (1<<TRAFFICD))
@@ -2403,6 +2459,7 @@ again:
 			}
 #endif
 		}
+		printf("Repeater Not for me\n");
 	}
 		else
 			printf("Invalid Centinel\n");
@@ -2586,12 +2643,12 @@ void initVars()
 	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
 
 	loginSemaphore= xSemaphoreCreateBinary();
-	if(loginSemaphore)
-		xSemaphoreGive(loginSemaphore);
+//	if(loginSemaphore)
+	//	xSemaphoreGive(loginSemaphore);
 
 	ackSemaphore= xSemaphoreCreateBinary();
-	if(ackSemaphore)
-		xSemaphoreGive(ackSemaphore);
+//	if(ackSemaphore)
+	//	xSemaphoreGive(ackSemaphore);
 
 	sonUid=0;
 
@@ -2681,6 +2738,7 @@ void initVars()
 	strcpy(lookuptable[9].key,"ALIVED");
 	strcpy(lookuptable[10].key,"MQTTT");
 	strcpy(lookuptable[11].key,"HEAPD");
+	strcpy(lookuptable[12].key,"TIMED");
 
 	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
 	{
@@ -2872,7 +2930,7 @@ void initRtc()
 
 	//Now load system time for internal use
 
-	u32 now=algo.getEpoch()-(5*3600);
+	u32 now=algo.getEpoch();//-(5*3600);
 	struct timeval tm;
 	tm.tv_sec=now;
 	tm.tv_usec=0;
@@ -3021,18 +3079,18 @@ bool loadScheduler()
 	u32 faltan=86400; //secs in a day. Should be Zero when finished
 	time_t now;
 	time(&now);
+	u32 dur;
 
 	for (int a=0;a<sysSequence.numSequences;a++)
 	 {
 		 if (sysSequence.sequences[a].weekDay & TODAY)
 		 {
-//			 printf("Seq %d WeedDay %x Stop %d Start %d  Son %d\n",a,sysSequence.sequences[a].weekDay,
-//							 sysSequence.sequences[a].stopSeq,sysSequence.sequences[a].startSeq,
-//									 sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
-			 faltan -= (sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
-			 scheduler.seqNum[nextSchedule]=a; //Sequence number
-			 scheduler.duration[nextSchedule]=sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq; //Duration
+			 faltan -=dur= (sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
+			 scheduler.schNum[nextSchedule]=a; //Sequence number
+			 scheduler.duration[nextSchedule]=dur; //sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq; //Duration
 			 nextSchedule++;
+			 printf("Seq %d WeedDay %x Stop %d Start %d  Son %d\n",a,sysSequence.sequences[a].weekDay,
+			 					sysSequence.sequences[a].stopSeq,sysSequence.sequences[a].startSeq,dur);
 		 }
 	 }
 	 scheduler.howmany=nextSchedule;
@@ -3109,6 +3167,7 @@ void cycleManager(void * pArg)
 
 	while(true) //will be killed by timer call back every time schedule changes. Try to die gracefully and not abruptly
 	{
+		time((time_t*)&cycleTimestamp);
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
 			printf("[TRAFFICD]Send %s %d secs\n",sysConfig.calles[intersections.nodeid[voy]],intersections.timeval[voy]);
@@ -3149,16 +3208,33 @@ void cycleManager(void * pArg)
 						printf("[TRAFFICD]RUN Node %d delay %d\n",intersections.nodeid[voy],intersections.timeval[voy]);
 #endif
 		//Here we go. Send RUN msg to Street
-		//Need an ACK from it so retry 10 times
+		//Need an ACK from it so retry X times. globalAckFail will indicate a Wronmg Configuration, less time than required by Street Light
+					// sent 22secs and 22-(walk stuff20+yellow 3)=-1000 --> wrong configuration
 		int retry=MAXRETRYRUN;
 		while(retry--)
 		{
-			sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
-			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 500)) //every half second try again almost 5 secs before failure
+		//	bool yahora=xSemaphoreTake(ackSemaphore, ( TickType_t ) 1); // peek and clear in any case
+				sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
+			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 200))
+			{
+#ifdef DEBUGSYS
+				if(sysConfig.traceflag & (1<<TRAFFICD))
+						printf("[TRAFFICD]Wrong configuration\n");
+#endif
 				break;
+			}
 		}
+
+
 		if (retry==0)
-			printf("[TRAFFID] Could Not Send RUN to %d for %d secs\n",intersections.nodeid[voy],intersections.timeval[voy]);
+		{
+#ifdef DEBUGSYS
+			if(sysConfig.traceflag & (1<<TRAFFICD))
+			{
+				printf("[TRAFFID] Could Not Send RUN to %d for %d secs\n",intersections.nodeid[voy],intersections.timeval[voy]);
+			}
+#endif
+		}
 		else
 		{
 			if(intersections.timeval[voy]<5)
@@ -3170,74 +3246,40 @@ void cycleManager(void * pArg)
 			xTimerStart(doneTimer,0);
 
 			st=millis(); //To track how long it took from beginning to end
-			while(true)
+
+			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
+			{
+				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
+
+				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
 				{
-					if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
-					{
-						xTimerStop(doneTimer,0); //just in case
-
-						if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle
-						{
-							gCycleTime=-1;
-							internal_stats.confirmed[esteCycle][soyYo]++;
-							fueron=millis()-st;
-		#ifdef DEBUGSYS
-							if(sysConfig.traceflag & (1<<TRAFFICD))
-								printf("[TRAFFICD]DONE received %d\n",fueron);
-		#endif
-							break; //next in cycle
-						}
-						else
-						{
-							if(soyYo==100){
-								internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
-								sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-								printf("Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-								break;
-							}
-
-		#ifdef DEBUGSYS
-							else
-							if(sysConfig.traceflag & (1<<TRAFFICD))
-								printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
-		#endif
-						}
-					}
+					gCycleTime=-1;
+					internal_stats.confirmed[esteCycle][soyYo]++;
+#ifdef DEBUGSYS
+					fueron=millis()-st;
+					if(sysConfig.traceflag & (1<<TIMED))
+						printf("[TIMED]DONE %d received %d\n",soyYo,fueron);
+#endif
 				}
+				else
+				{
+					if(soyYo==100)
+					{
+						internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
+						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
+#ifdef DEBUGSYS
+						if(sysConfig.traceflag & (1<<TIMED))
+							printf("[TIMED]Timeout %d for %d. Assumed its done\n",fueron=millis()-st,intersections.nodeid[voy]);
+#endif
+					}
 
-//			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
-//			{
-//				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
-//
-//				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
-//				{
-//					gCycleTime=-1;
-//					internal_stats.confirmed[esteCycle][soyYo]++;
-//#ifdef DEBUGSYS
-//					fueron=millis()-st;
-//					if(sysConfig.traceflag & (1<<TRAFFICD))
-//						printf("[TRAFFICD]DONE received %d\n",fueron);
-//#endif
-//				}
-//				else
-//				{
-//					if(soyYo==100)
-//					{
-//						internal_stats.timeout[esteCycle][intersections.nodeid[voy]]++;
-//						sendMsg(KILL,intersections.nodeid[voy],0,0,NULL,0); //if necessary
-//#ifdef DEBUGSYS
-//						if(sysConfig.traceflag & (1<<TRAFFICD))
-//							printf("[TRAFFICD]Timeout for %d. Assumed its done\n",intersections.nodeid[voy]);
-//#endif
-//					}
-//
-//#ifdef DEBUGSYS
-//					else
-//					if(sysConfig.traceflag & (1<<TRAFFICD))
-//						printf("[TRAFFICD]Talking out of turn %d. Possible configuration problem\n",soyYo);
-//#endif
-//				}
-//			}
+#ifdef DEBUGSYS
+					else
+					if(sysConfig.traceflag & (1<<TIMED))
+						printf("[TIMED]Talking out of turn %d. Possible configuration problem\n",soyYo);
+#endif
+				}
+			}
 		}
 
 		voy++;
@@ -3254,26 +3296,31 @@ void cycleManager(void * pArg)
 	}
 }
 
-void timerCallback( TimerHandle_t xTimer )
+void scheduleChanger( TimerHandle_t xTimer )
 {
-int este;
+	// Current schedule is done. Next schedule
+	int este;
+
 	if(xTimer==scheduleTimer)
 	{
-	//	printf("Timer expired. Current %d Howmany %d \n",scheduler.voy,scheduler.howmany);
+		printf("Timer expired. Current %d Howmany %d \n",scheduler.voy,scheduler.howmany);
 		scheduler.voy++;
 		if (scheduler.voy>scheduler.howmany-1)
-			scheduler.voy=0;
+			scheduler.voy=0; //start again from 0
+
 		if(cycleHandle!=NULL)
+		{
 			vTaskDelete(cycleHandle);
-		cycleHandle=NULL;
-		este=scheduler.seqNum[scheduler.voy];
+			cycleHandle=NULL;
+		}
+		este=scheduler.schNum[scheduler.voy];
 		//reload timer new value
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
 			printf("\n\n\n[TRAFFICD]Next %d Timer in %d\n",scheduler.voy,scheduler.duration[scheduler.voy]);
 #endif
 
-		int sq= scheduler.seqNum[scheduler.voy];
+		int sq= scheduler.schNum[scheduler.voy];
 		int cyc=sysSequence.sequences[sq].cycleId;
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
@@ -3288,7 +3335,7 @@ int este;
 				semaphoresOff=false;
 			}
 
-			xTaskCreate(&cycleManager,"cycle",4096,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
+			xTaskCreate(&cycleManager,"cycle",8092,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 		}
 		else
 		{
@@ -3303,7 +3350,7 @@ int este;
 				semaphoresOff=true;
 			}
 		}
-		xTimerStart(scheduleTimer,0);
+	//	xTimerStart(scheduleTimer,0);
 	}
 
 }
@@ -3318,6 +3365,7 @@ struct tm timeinfo ;
 	while(!(timef || rtcf) || !rxtxf) //wait for all Logins and the Timer Flag
 		delay(1000);
 
+	//Load all stored schedules into memory
 	if(!loadScheduler())
 	{
 		printf("Scheduler not enabled.\n");
@@ -3326,8 +3374,9 @@ struct tm timeinfo ;
 
 
 //	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
-	now=time(NULL)-5*3600;
+	now=time(NULL);//-5*3600;
 	localtime_r(&now, &timeinfo);
+	printf("Local time %s",asctime(&timeinfo));
 	timeinfo.tm_mday=1;
 	timeinfo.tm_mon=0;
 	timeinfo.tm_year=2000 - 1900;
@@ -3335,27 +3384,28 @@ struct tm timeinfo ;
 	now=mktime(&timeinfo);
 
 	scheduler.voy=0;
+	//Find first schedule from Now on
 	for (int a=0;a<scheduler.howmany;a++)
 	{
-		cual=scheduler.seqNum[a];
+		cual=scheduler.schNum[a];
 		if(sysSequence.sequences[cual].startSeq<=now && now<sysSequence.sequences[cual].stopSeq)
 		{
 			scheduler.voy=a;
 			//restart now-start a duration
 			 u32 pasaron= now-sysSequence.sequences[cual].startSeq;
-		//	printf("Now %d Start %d Duration %d pasaron %d\n",(u32)now,(u32)sysSequence.sequences[cual].startSeq,scheduler.duration[scheduler.voy],pasaron);
+			printf("Now %d Start %d Duration %d pasaron %d\n",(u32)now,(u32)sysSequence.sequences[cual].startSeq,scheduler.duration[scheduler.voy],pasaron);
 			 scheduler.duration[scheduler.voy]-=pasaron;
-			// printf("Final %d\n",scheduler.duration[scheduler.voy]);
+			 printf("Final %d\n",scheduler.duration[scheduler.voy]);
 			break;
 		}
 	}
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<TRAFFICD))
-		printf("[TRAFFICD]Start in timer %d\n",scheduler.voy);
+		printf("[TRAFFICD]Start in Schedule %d\n",scheduler.voy);
 #endif
-	este=scheduler.seqNum[scheduler.voy];
+	este=scheduler.schNum[scheduler.voy];
 
-	int sq= scheduler.seqNum[este];
+	int sq= scheduler.schNum[este];
 	int cyc=sysSequence.sequences[sq].cycleId;
 
 #ifdef DEBUGSYS
@@ -3365,7 +3415,7 @@ struct tm timeinfo ;
 	cycleHandle=NULL;
 
 	if(allCycles.totalTime[cyc]>3)
-		xTaskCreate(&cycleManager,"cycle",4096,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
+		xTaskCreate(&cycleManager,"cycle",8092,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 	else
 	{
 		if(allCycles.totalTime[cyc]==0)
@@ -3379,7 +3429,7 @@ struct tm timeinfo ;
 	if(sysConfig.traceflag & (1<<TRAFFICD))
 		printf("[TRAFFICD]First Timer %d Factor %d\n",scheduler.duration[scheduler.voy]*FACTOR,FACTOR);
 #endif
-	scheduleTimer=xTimerCreate("Schedule",(scheduler.duration[scheduler.voy]*FACTOR) /portTICK_PERIOD_MS,pdFALSE,( void * ) 0,&timerCallback);
+	scheduleTimer=xTimerCreate("Schedule",(scheduler.duration[scheduler.voy]*FACTOR) /portTICK_PERIOD_MS,pdFALSE,( void * ) 0,&scheduleChanger);
 
 	if(scheduleTimer==NULL)
 		printf("Failed to create timer\n");
@@ -3569,7 +3619,7 @@ void app_main(void)
 
     open_recovery();
     load_config();
-	esp_log_level_set("*", (esp_log_level_t)sysConfig.free); //shut up
+	esp_log_level_set("*", (esp_log_level_t)sysConfig.free);
 
 	gpio_set_direction((gpio_num_t)0, GPIO_MODE_INPUT);
 	printf("3 Secs to erase\n");
@@ -3637,6 +3687,10 @@ if(sysConfig.mode==SERVER)
 
 	vmstate=VMWIFI;
 
+	if(sysConfig.mode==SERVER){
+		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
+	}
+
 	if(sysConfig.mode==CLIENT)
 			initWiFiSta();
 	if(sysConfig.mode==SERVER)
@@ -3644,7 +3698,5 @@ if(sysConfig.mode==SERVER)
 	if(sysConfig.mode==REPEATER)
 	    initWiFiRepeater();
 
-	if(sysConfig.mode==SERVER){
-		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
-	}
+
 }

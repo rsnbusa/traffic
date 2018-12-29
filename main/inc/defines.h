@@ -14,10 +14,10 @@
 
 #define FOREVER								true
 #define MINHEAP								20000
-#define NKEYS 								24
+#define NKEYS 								26
 #define KCMDS								35
 #define MAXLOGINTIME						60   //one minute
-#define MAXRETRYRUN							10
+#define MAXRETRYRUN							3
 #define TIMESPREAD							500
 #define UIO									5  //GMT local time
 

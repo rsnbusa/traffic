@@ -78,11 +78,12 @@ using namespace std;
  	 	 	 	 	 	 	 	 	 	globalWalk,backupf,rtcf,rebootf,loginf,repeaterConf;
  EXTERN float							oldtemp;
  EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
- EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins;
+ EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins,globalAckFail;
  EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID,burnt[MAXNODES];
  EXTERN u16								gTIMESPREAD;
  EXTERN int								RSSI,gCycleTime,cuantoDura,addHTTP,llevoHTTP,socket_id,keepAlive;
  EXTERN uint32_t						uidLogin[5],entran,salen,howmuch,interval,entrats,connectedToAp[20],upstream,downstream;
+ EXTERN u32 							rxMessageTimestamp,cycleTimestamp,repeaterTimestamp;
  EXTERN char 							APP[20],MQTTSERVER[18],meses[12][4],http_request[100],kbdTable[KCMDS][20],tcmds[30][10],
  	 	 	 	 	 	 	 	 	 	cmdName[MAXCMDS][20],bulbColors[10][10];
  EXTERN const char						miclient[40];

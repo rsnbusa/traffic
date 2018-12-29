@@ -391,9 +391,11 @@ void kbd_factor(uart_port_t uart_num)
 	s1=get_string((uart_port_t)uart_num,10,true);
 	for (auto & c: s1) c = toupper(c);
 	if (s1=="Y")
-	{
 		sendMsg(LEDS,EVERYBODY,1,0,NULL,0);
-	}
+	else
+		sendMsg(LEDS,EVERYBODY,0,0,NULL,0);
+	sysConfig.showLeds=s1=="Y"?1:0;
+
 	write_to_flash(true);
 }
 void kbd_light_sequence(uart_port_t uart_num)

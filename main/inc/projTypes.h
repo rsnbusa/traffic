@@ -84,6 +84,7 @@ typedef struct {
 	u8 howmany;
 	u8 nodeid[MAXNODES];
 	u16 timeval[MAXNODES];
+	u16 tranNum[MAXNODES];
 } node_struct;
 
 typedef struct {
@@ -140,7 +141,7 @@ typedef struct  {
 
 typedef struct {
 	u8 howmany,voy;
-	u8 seqNum[30];
+	u8 schNum[30];
 	u32 duration[30];
 } scheduler_struct;
 
@@ -180,7 +181,7 @@ typedef struct {
 } trace_struct;
 
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
-enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD};
+enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD,TIMED};
 
 typedef struct { char key[10]; int val; } t_symstruct;
 
