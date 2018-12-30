@@ -360,6 +360,7 @@ void print_general_section(u8 full)
 		}
 
 		printf("========== Lights =============\n");
+		printf("Station Avg Time %d count %d lastTran %d\n",stationTime.avgTime,stationTime.llevo,stationTime.lastTran);
 		for(int a=0;a<MAXNODES;a++)
 		{
 			algo="";

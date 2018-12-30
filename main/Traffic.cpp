@@ -1372,7 +1372,7 @@ void cmd_kill(cmd_struct cual)
 
 void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 {
-	//guard for a UDP gone rogue
+	//guard for a UDP gone rogue High or Low
 	if(((cual.free1>stationTime.avgTime*2) || (cual.free1<stationTime.avgTime/2)) && stationTime.llevo>0)
 	{
 		printf("[GUARDD]Guard activated %s In %d Tran %d set to %d Tran %d\n",cual.free1>stationTime.avgTime*2?"High":"Low",cual.free1,cual.free2,stationTime.avgTime,stationTime.lastTran+1);
@@ -1922,7 +1922,11 @@ void runLight(void * pArg)
 	cual=(cmd_struct*)pArg;
 	memcpy(&comando,pArg,sizeof(comando));
 	cuantoDura=comando.free1*FACTOR;
-	printf("RunLight TranNum %d free1 %d cuantodura %d cualfree2 %d\n",comando.free2,comando.free1,cuantoDura,cual->free2);
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<RUND))
+		printf("[RUND]RunLight TranNum %d free1 %d cuantodura %d cualfree2 %d\n",comando.free2,comando.free1,cuantoDura,cual->free2);
+#endif
 
 	vmstate=VMRUN;
 	for (int a=0;a<sysLights.numLuces;a++)
@@ -2796,6 +2800,8 @@ void initVars()
 	strcpy(lookuptable[11].key,"HEAPD");
 	strcpy(lookuptable[12].key,"TIMED");
 	strcpy(lookuptable[13].key,"SENDMD");
+	strcpy(lookuptable[14].key,"RUND");
+
 
 	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
 	{
@@ -3272,7 +3278,10 @@ void cycleManager(void * pArg)
 					// sent 22secs and 22-(walk stuff20+yellow 3)=-1000 --> wrong configuration
 		int retry=MAXRETRYRUN;
 		intersections.tranNum[voy]++;
-		printf("Send %d Run tranNum %d voy %d\n",intersections.nodeid[voy],intersections.tranNum[voy],voy);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<RUND))
+		printf("[RUND]Send %d Run tranNum %d voy %d\n",intersections.nodeid[voy],intersections.tranNum[voy],voy);
+#endif
 		while(retry--)
 		{
 			sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],intersections.tranNum[voy],(char*)&now,sizeof(now)); //Send date/time as server
@@ -3309,7 +3318,10 @@ void cycleManager(void * pArg)
 			if( xQueueReceive( cola, &comando, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 			{
 				soyYo=comando.fromwho;
-				printf("DONE %d Free1 %d free2 %d fromwho %d\n",soyYo,comando.free1,comando.free2,comando.fromwho);
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<RUND))
+		printf("[RUND]DONE %d Free1 %d free2 %d fromwho %d\n",soyYo,comando.free1,comando.free2,comando.fromwho);
+#endif
 				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
 
 				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
