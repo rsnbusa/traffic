@@ -1293,6 +1293,9 @@ void cmd_nak(cmd_struct cual)
 
 void cmd_done(cmd_struct cual)
 {
+//	cmd_struct comando;
+//	memcpy(&comando,&cual,sizeof(comando));
+
 	   if(sysConfig.mode==SERVER)
 	   {
 #ifdef DEBUGSYS
@@ -1301,7 +1304,7 @@ void cmd_done(cmd_struct cual)
 #endif
 			sendMsg(ACK,cual.fromwho,0,0,NULL,0);
 
-		   xQueueSend( cola, ( void * ) &cual.fromwho,( TickType_t ) 0 );
+		   xQueueSend( cola, ( void * ) &cual,( TickType_t ) 0 );
 	   }
 }
 
@@ -1369,30 +1372,29 @@ void cmd_kill(cmd_struct cual)
 
 void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 {
-	time_t		now;
-	struct tm	timeinfo;
-	timeval		tm;
+	//guard for a UDP gone rogue
+	if(((cual.free1>stationTime.avgTime*2) || (cual.free1<stationTime.avgTime/2)) && stationTime.llevo>0)
+	{
+		printf("[GUARDD]Guard activated %s In %d Tran %d set to %d Tran %d\n",cual.free1>stationTime.avgTime*2?"High":"Low",cual.free1,cual.free2,stationTime.avgTime,stationTime.lastTran+1);
+		cual.free1=stationTime.avgTime;
+		cual.free2=stationTime.lastTran++;
+	}
 
-   if(runHandle!=NULL) //do not duplicate task
+	stationTime.time+=cual.free1;
+	stationTime.llevo++;
+	stationTime.lastTran=cual.free2;
+	stationTime.avgTime=stationTime.time/stationTime.llevo;
+
+	if(runHandle!=NULL) //do not duplicate task
    {
 	   vTaskDelete(runHandle),
 	   runHandle=NULL;
    }
-
-   memcpy(&now,cual.buff,sizeof(now));
-
-   tm.tv_sec=now;
-   tm.tv_usec=0;
-   settimeofday(&tm,NULL);
-   time(&now);
-   localtime_r(&now, &timeinfo);
-//	   printf("Received time from Controller %s",asctime(&timeinfo));
-
 #ifdef DEBUGSYS
 	   if(sysConfig.traceflag & (1<<TRAFFICD))
 		   printf("[TRAFFICD]Start Cycle for %d time\n",cual.free1*FACTOR);
 #endif
-		xTaskCreate(&runLight,"light",8092,(void*)cual.free1, MGOS_TASK_PRIORITY, &runHandle);				//Manages all display to LCD
+		xTaskCreate(&runLight,"light",10240,(void*)&cual, MGOS_TASK_PRIORITY, &runHandle);				//Manages all display to LCD
 }
 
 void cmd_off(cmd_struct cual)
@@ -1615,7 +1617,7 @@ void cmd_login(cmd_struct cual)
 
 void cmd_alarm(cmd_struct cual)
 {
-char textl[70];
+char textl[100];
 
 	if(sysConfig.mode==SERVER) //Only server
 	{
@@ -1824,8 +1826,13 @@ void process_cmd(cmd_struct cual)
 	}
 }
 
-void reportLight(u32 expected, u32 readleds)
+void reportT(report_struct *theleds)
 {
+	u32 expected, readleds;
+
+	expected=theleds->expected;
+	readleds=theleds->readleds;
+
 	u32 xored,bt;
 	int fue=0;
 	char textl[80];
@@ -1844,21 +1851,64 @@ void reportLight(u32 expected, u32 readleds)
 						fue=b;
 						break;
 					}
-				sysLights.failed = sysLights.failed|(1ul<<a);
-		//		write_to_flash_lights();
-//				if(sysConfig.mode==SERVER)
-//				{
-//					sprintf(textl,"Street %s/%s Light %s failed",sysConfig.groupName,sysConfig.lightName, sysLights.theNames[fue]);
-//					sendAlert(string(textl),strlen(textl));
-//				}
-//				else
-//				{
+					sysLights.failed = sysLights.failed|(1ul<<a);
 					sprintf(textl,"%s station %s light failed",sysConfig.stationName, bulbColors[sysLights.theNames[fue]]);
 					sendMsg(ALARM,EVERYBODY,fue,sysConfig.stationid,textl,strlen(textl));
-//				}
 			}
 		}
 	}
+}
+
+void reportTask(void *pArg)
+{
+	report_struct theleds;
+	u32 expected, readleds;
+	u32 xored,bt;
+	int fue=0;
+	char textl[80];
+
+	while(true)
+	{
+		if( xQueueReceive(reportQ, &theleds, portMAX_DELAY ))
+		{
+
+			expected=theleds.expected;
+			readleds=theleds.readleds;
+
+
+			xored=(expected&readleds)^expected;
+			for (int a=0;a<32;a++)
+			{
+				bt=1ul<<a;
+				if((xored & bt))
+				{
+					if(!(sysLights.failed & (1ul<<a)))
+					{
+						fue=-1;
+						for (int b=0;b<6;b++)
+							if(sysLights.inPorts[b]==a)
+							{
+								fue=b;
+								break;
+							}
+						sysLights.failed = sysLights.failed|(1ul<<a);
+
+							sprintf(textl,"%s station %s light failed",sysConfig.stationName, bulbColors[sysLights.theNames[fue]]);
+							sendMsg(ALARM,EVERYBODY,fue,sysConfig.stationid,textl,strlen(textl));
+					}
+				}
+			}
+		}
+	}
+}
+
+void reportLight(u32 expected, u32 readleds)
+{
+	report_struct theleds;
+	theleds.expected=expected;
+	theleds.readleds=readleds;
+//	xQueueSend( reportQ, &theleds,( TickType_t ) 0 ); //use a high number to signal Timeout
+	reportT(&theleds);
 }
 
 void runLight(void * pArg)
@@ -1867,8 +1917,12 @@ void runLight(void * pArg)
 	int 					restar=0;
 	u32 					ledStatus,tempread;
 	bool 					qfue;
+	cmd_struct				comando,*cual;
 
-	cuantoDura=(int)pArg*FACTOR;
+	cual=(cmd_struct*)pArg;
+	memcpy(&comando,pArg,sizeof(comando));
+	cuantoDura=comando.free1*FACTOR;
+	printf("RunLight TranNum %d free1 %d cuantodura %d cualfree2 %d\n",comando.free2,comando.free1,cuantoDura,cual->free2);
 
 	vmstate=VMRUN;
 	for (int a=0;a<sysLights.numLuces;a++)
@@ -1886,12 +1940,12 @@ void runLight(void * pArg)
 	   if (cuantoDura>0)
 	   {
 			if(!sysConfig.clone)
-				sendMsg(ACK,EVERYBODY,0,0,NULL,0);
+				sendMsg(ACK,EVERYBODY,0,comando.free2,NULL,0);
 	   }
 	   else
 	   {
 		   if(!sysConfig.clone)
-			   sendMsg(ACK,EVERYBODY,1,0,NULL,0); //Negative time, wrong configuration. Notice the 1 in the ACK message
+			   sendMsg(ACK,EVERYBODY,1,comando.free2,NULL,0); //Negative time, wrong configuration. Notice the 1 in the ACK message
 		   runHandle=NULL;
 		   vTaskDelete(NULL);
 	   }
@@ -2004,7 +2058,7 @@ void runLight(void * pArg)
 	{// If not a clone send DONE for the whole CLONE Group
 		while(retry--)
 		{
-			sendMsg(DONE,EVERYBODY,0,0,NULL,0);
+			sendMsg(DONE,EVERYBODY,0,comando.free2,NULL,0);
 			if(sysConfig.mode!=SERVER) //when server its guaranteed to received its own DONE message
 			{
 					if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 200)) //every half second try again
@@ -2135,6 +2189,7 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
     struct sockaddr_in   		groupSock;
     tcpip_adapter_ip_info_t 	ip_info ;
 
+    memset(&answer,0,sizeof(answer));
 
 	answer.centinel=THECENTINEL;
 	answer.cmd=cmd;
@@ -2144,23 +2199,21 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 	answer.lapse=millis();
 	answer.free1=f1;
 	answer.free2=f2;
-	answer.seqnum++;
+//	answer.seqnum++;
 	if(sysConfig.mode==SERVER)
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP,&answer.ipstuff);
 	else
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&answer.ipstuff);
-//	answer.myip=localIp;
+	answer.myip=localIp;
 	time(&answer.theTime);
 
 #ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]%s(%d) SendMsg(%s) towho %d\n",sysConfig.stationName,sysConfig.stationid,tcmds[cmd],aquien);
+	if(sysConfig.traceflag & (1<<SENDMD))
+		printf("[SENDMD]%s(%d) SendMsg(%s) towho %d Free1 %d Free2 %d\n",sysConfig.stationName,sysConfig.stationid,tcmds[cmd],aquien,f1,f2);
 #endif
 	memset(&answer.buff,0,sizeof(answer.buff));
-	if(que && (len>0))
+	if(que && (len>0)&&(len<sizeof(answer.buff)))
 		memcpy(&answer.buff,que,len);
-
-	//tcpip_adapter_get_ip_info(sysConfig.mode?TCPIP_ADAPTER_IF_AP:TCPIP_ADAPTER_IF_STA, &answer.ipstuff);
 
 	salen++;
 	sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
@@ -2192,8 +2245,8 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
 
 #ifdef DEBUGSYS
-	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]SendMsg to Ip %d:%d:%d:%d\n",IP2STR(&ip_info.ip));
+	if(sysConfig.traceflag & (1<<SENDMD))
+		printf("[SENDMD]SendMsg to Ip %d.%d.%d.%d\n",IP2STR(&answer.ipstuff.ip));
 #endif
 
 	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
@@ -2459,7 +2512,6 @@ again:
 			}
 #endif
 		}
-		printf("Repeater Not for me\n");
 	}
 		else
 			printf("Invalid Centinel\n");
@@ -2638,9 +2690,10 @@ void initVars()
 	//We do it this way so we can have a single global.h file with EXTERN variables(when not main app)
 	// and be able to compile routines in an independent file
 
-	cola = xQueueCreate( 10, sizeof( u16 ) ); //DONE queue
+	cola = xQueueCreate( 10, sizeof(cmd_struct ) ); //DONE queue
 	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Upstream queue
 	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
+	reportQ = xQueueCreate( 10, sizeof( report_struct ) ); //Report queue
 
 	loginSemaphore= xSemaphoreCreateBinary();
 //	if(loginSemaphore)
@@ -2656,6 +2709,7 @@ void initVars()
 	interval=100;
 	howmuch=1000;
 
+	memset(&stationTime,0,sizeof(stationTime));
 	FACTOR=sysConfig.reserved;
 	if(FACTOR==0)
 		FACTOR=1000;
@@ -2726,6 +2780,8 @@ void initVars()
 	strcpy(bulbColors[6],"WLK");
 
 	strcpy(APP,"TrafficIoT");
+
+	//DEBUG Commands
 	strcpy(lookuptable[0].key,"BOOTD");
 	strcpy(lookuptable[1].key,"WIFID");
 	strcpy(lookuptable[2].key,"MQTTD");
@@ -2739,6 +2795,7 @@ void initVars()
 	strcpy(lookuptable[10].key,"MQTTT");
 	strcpy(lookuptable[11].key,"HEAPD");
 	strcpy(lookuptable[12].key,"TIMED");
+	strcpy(lookuptable[13].key,"SENDMD");
 
 	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
 	{
@@ -3103,7 +3160,7 @@ bool loadScheduler()
 	 return true;
 }
 
-void makeNodeTime(string cual, node_struct* losnodos)
+void makeNodeTime(string cual, node_struct* losnodos,int cualCycle)
 {
 	string s;
 	uint16_t res=0;
@@ -3118,6 +3175,7 @@ void makeNodeTime(string cual, node_struct* losnodos)
 		  pch = strtok (NULL,",");
 		  losnodos->timeval[res]=atoi(pch);
 		//  printf("Time %s\n",pch);
+		  losnodos->tranNum[res]=internal_stats.started[cualCycle][res];
 		  res++;
 		  pch = strtok (NULL, "-");
 		  if(pch!=NULL)
@@ -3136,13 +3194,13 @@ void doneCallback( TimerHandle_t xTimer )
 
 void cycleManager(void * pArg)
 {
-	char theNodes[50];
-	int voy=0,esteCycle,vanv,vanc=0;
-	node_struct intersections;
-	char textl[20];
-	time_t now;
-	u16 soyYo;
-	u32 st,fueron;
+	char 						theNodes[50];
+	int 						voy=0,esteCycle,vanv,vanc=0;
+	char 						textl[20];
+	time_t 						now;
+	u16 						soyYo;
+	u32 						st,fueron;
+	cmd_struct 					comando;
 
 	esteCycle=sysSequence.sequences[(int)pArg].cycleId;
 
@@ -3159,7 +3217,9 @@ void cycleManager(void * pArg)
 #endif
 
 	strcpy(theNodes,allCycles.nodeSeq[esteCycle]);
-	makeNodeTime(theNodes,&intersections);
+	memset(&intersections,0,sizeof(intersections));
+
+	makeNodeTime(theNodes,&intersections,esteCycle);
 
 	doneTimer=xTimerCreate("DoneMsh",1,pdFALSE,( void * ) 0,&doneCallback); //just create it. Time will be changed per Node
 	if(scheduleTimer==NULL)
@@ -3211,20 +3271,19 @@ void cycleManager(void * pArg)
 		//Need an ACK from it so retry X times. globalAckFail will indicate a Wronmg Configuration, less time than required by Street Light
 					// sent 22secs and 22-(walk stuff20+yellow 3)=-1000 --> wrong configuration
 		int retry=MAXRETRYRUN;
+		intersections.tranNum[voy]++;
+		printf("Send %d Run tranNum %d voy %d\n",intersections.nodeid[voy],intersections.tranNum[voy],voy);
 		while(retry--)
 		{
-		//	bool yahora=xSemaphoreTake(ackSemaphore, ( TickType_t ) 1); // peek and clear in any case
-				sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],0,(char*)&now,sizeof(now)); //Send date/time as server
+			sendMsg(RUN,intersections.nodeid[voy],intersections.timeval[voy],intersections.tranNum[voy],(char*)&now,sizeof(now)); //Send date/time as server
 			if(xSemaphoreTake(ackSemaphore, ( TickType_t ) 200))
 			{
-#ifdef DEBUGSYS
-				if(sysConfig.traceflag & (1<<TRAFFICD))
-						printf("[TRAFFICD]Wrong configuration\n");
-#endif
-				break;
+				if(globalAckFail)
+					goto aca;
+				else
+					break;
 			}
 		}
-
 
 		if (retry==0)
 		{
@@ -3237,8 +3296,8 @@ void cycleManager(void * pArg)
 		}
 		else
 		{
-			if(intersections.timeval[voy]<5)
-				printf("TIMER Fault %d\n",intersections.timeval[voy]);
+		//	if(intersections.timeval[voy]<5)
+		//		printf("TIMER Fault %d\n",intersections.timeval[voy]);
 
 				//set timer for TIMEOUT in case no response and start the timer
 			vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
@@ -3247,8 +3306,10 @@ void cycleManager(void * pArg)
 
 			st=millis(); //To track how long it took from beginning to end
 
-			if( xQueueReceive( cola, &soyYo, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
+			if( xQueueReceive( cola, &comando, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 			{
+				soyYo=comando.fromwho;
+				printf("DONE %d Free1 %d free2 %d fromwho %d\n",soyYo,comando.free1,comando.free2,comando.fromwho);
 				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
 
 				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
@@ -3281,7 +3342,7 @@ void cycleManager(void * pArg)
 				}
 			}
 		}
-
+aca:
 		voy++;
 		if (voy>=intersections.howmany)
 		{
@@ -3335,7 +3396,7 @@ void scheduleChanger( TimerHandle_t xTimer )
 				semaphoresOff=false;
 			}
 
-			xTaskCreate(&cycleManager,"cycle",8092,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
+			xTaskCreate(&cycleManager,"cycle",15000,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 		}
 		else
 		{
@@ -3415,7 +3476,7 @@ struct tm timeinfo ;
 	cycleHandle=NULL;
 
 	if(allCycles.totalTime[cyc]>3)
-		xTaskCreate(&cycleManager,"cycle",8092,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
+		xTaskCreate(&cycleManager,"cycle",10240,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 	else
 	{
 		if(allCycles.totalTime[cyc]==0)
@@ -3678,7 +3739,6 @@ if(sysConfig.mode==SERVER)
 
 	vmstate=VMBOOT;
 	rxtxf=false; //default stop
-	memset(&answer,0,sizeof(answer));
 	// Start Main Tasks
 	if(sysConfig.mode==SERVER)
 		xTaskCreate(&timerManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
@@ -3686,6 +3746,8 @@ if(sysConfig.mode==SERVER)
 	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
 
 	vmstate=VMWIFI;
+
+	xTaskCreate(&reportTask,"repTask",8092,NULL, 8, &controllerHandle);									// If we are a Controller
 
 	if(sysConfig.mode==SERVER){
 		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
@@ -3697,6 +3759,4 @@ if(sysConfig.mode==SERVER)
 			initWiFi();
 	if(sysConfig.mode==REPEATER)
 	    initWiFiRepeater();
-
-
 }

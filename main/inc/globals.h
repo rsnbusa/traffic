@@ -46,20 +46,18 @@ using namespace std;
  EXTERN esp_partition_t 				operate_partition;
 
  EXTERN SemaphoreHandle_t 				I2CSem,logSem;
- EXTERN QueueHandle_t 					cola,uart0_queue,logQueue,upQ,downQ;
+ EXTERN QueueHandle_t 					cola,uart0_queue,logQueue,upQ,downQ,reportQ;
  EXTERN struct mg_mgr 					mgr;
  EXTERN RESET_REASON 					reboot;
  EXTERN struct mg_send_mqtt_handshake_opts opts;
  EXTERN FILE 							*bitacora;
  EXTERN TimerHandle_t 					scheduleTimer,doneTimer;
  EXTERN QueueHandle_t 					mqttQ;
- //EXTERN void*							mqttCon;
  EXTERN t_symstruct 					lookuptable[NKEYS];
  EXTERN esp_mqtt_client_config_t  		settings;
  EXTERN esp_mqtt_client_handle_t		gClient;
  EXTERN nvs_handle 						nvshandle,seqhandle,lighthandle,backhandle;
  EXTERN esp_mqtt_client_handle_t 		clientCloud;
- EXTERN cmd_struct 						answer;
  EXTERN scheduler_struct				scheduler;
  EXTERN TaskHandle_t 					cycleHandle,runHandle,rxHandle,blinkHandle,mqttHandle,httpHandle,mdnsHandle,loginHandle,controllerHandle;
  EXTERN sta_status						activeNodes;
@@ -72,6 +70,9 @@ using namespace std;
  EXTERN statistics_struct				internal_stats;
  EXTERN SemaphoreHandle_t 				loginSemaphore,ackSemaphore;
  EXTERN vmstate_type					vmstate;
+ EXTERN node_struct 					intersections;
+ EXTERN cmd_struct						answer;
+ EXTERN stationGuard_struct				stationTime;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];
  EXTERN bool 							rxmessagef,llogf,connf,httpf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,

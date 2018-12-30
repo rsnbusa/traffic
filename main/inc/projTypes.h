@@ -56,14 +56,19 @@ typedef struct {
 	u8 towho;
 	u8 fromwho;
 	u8 alignn;
-	u16 lapse;
+	u32 lapse;
 	u16 seqnum;
 	u16 free1,free2;
 	ip4_addr_t myip;
 	tcpip_adapter_ip_info_t ipstuff; //12 size
 	time_t theTime;
-	char buff[218]; //for whatever. Try make struct 256bytes
+	char buff[216]; //for whatever. Try make struct 256bytes
 } cmd_struct;
+
+typedef struct {
+	u32 time,llevo;
+	u16 avgTime,lastTran;
+}stationGuard_struct;
 
 typedef struct {
 	u32 ioports;
@@ -84,7 +89,7 @@ typedef struct {
 	u8 howmany;
 	u8 nodeid[MAXNODES];
 	u16 timeval[MAXNODES];
-	u16 tranNum[MAXNODES];
+	u32 tranNum[MAXNODES];
 } node_struct;
 
 typedef struct {
@@ -180,8 +185,13 @@ typedef struct {
 	u16 outports,inports,delay;
 } trace_struct;
 
+typedef struct {
+	u32 expected;
+	u32 readleds;
+} report_struct;
+
 // Bootup sequence, WIFI related, MQTT, publishsubscribe, Mongoose, CMD like find,Web cmds,General trace,Laser stuff,DOOR STATES,
-enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD,TIMED};
+enum debugflags{BOOTD,WIFID,MQTTD,PUBSUBD,MONGOOSED,CMDD,WEBD,GEND,TRAFFICD,ALIVED,MQTTT,HEAPD,TIMED,SENDMD};
 
 typedef struct { char key[10]; int val; } t_symstruct;
 
