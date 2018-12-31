@@ -14,7 +14,7 @@
 
 #define FOREVER								true
 #define MINHEAP								20000
-#define NKEYS 								30
+#define NKEYS 								32
 #define KCMDS								35
 #define MAXLOGINTIME						60   //one minute
 #define MAXRETRYRUN							3

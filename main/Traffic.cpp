@@ -1375,8 +1375,11 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 	//guard for a UDP gone rogue High or Low
 	if(((cual.free1>stationTime.avgTime*2) || (cual.free1<stationTime.avgTime/2)) && stationTime.llevo>0)
 	{
+#ifdef DEBUGSYS
+	   if(sysConfig.traceflag & (1<<GUARDD))
 		printf("[GUARDD]Guard activated %s In %d Tran %d set to %d Tran %d\n",cual.free1>stationTime.avgTime*2?"High":"Low",cual.free1,cual.free2,stationTime.avgTime,stationTime.lastTran+1);
-		cual.free1=stationTime.avgTime;
+#endif
+	   cual.free1=stationTime.avgTime;
 		cual.free2=stationTime.lastTran++;
 	}
 
@@ -1387,6 +1390,7 @@ void cmd_runlight(cmd_struct cual) //THE routine. All for this process!!!!
 
 	if(runHandle!=NULL) //do not duplicate task
    {
+		printf("Killing runlight!!!\n");
 	   vTaskDelete(runHandle),
 	   runHandle=NULL;
    }
@@ -1917,18 +1921,38 @@ void runLight(void * pArg)
 	int 					restar=0;
 	u32 					ledStatus,tempread;
 	bool 					qfue;
-	cmd_struct				comando,*cual;
+	cmd_struct				comando;
 
-	cual=(cmd_struct*)pArg;
+	//make local copy so that we are not affected by changes elsewhere
 	memcpy(&comando,pArg,sizeof(comando));
+
 	cuantoDura=comando.free1*FACTOR;
+
+	//Guard check
+	if(((comando.free1>stationTime.avgTime*2) || (comando.free1<stationTime.avgTime/2)) && stationTime.llevo>0)
+		{
+#ifdef DEBUGSYS
+	   if(sysConfig.traceflag & (1<<GUARDD))
+			printf("[GUARDD]RLGuard activated %s In %d Tran %d set to %d Tran %d\n",comando.free1>stationTime.avgTime*2?"High":"Low",comando.free1,
+					comando.free2,stationTime.avgTime,stationTime.lastTran+1);
+#endif
+	   	   comando.free1=stationTime.avgTime;
+	   	   comando.free2=stationTime.lastTran++;
+		}
+
+		//update runtime station time guard structure
+		stationTime.time+=comando.free1;
+		stationTime.llevo++;
+		stationTime.lastTran=comando.free2;
+		stationTime.avgTime=stationTime.time/stationTime.llevo;
 
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<RUND))
-		printf("[RUND]RunLight TranNum %d free1 %d cuantodura %d cualfree2 %d\n",comando.free2,comando.free1,cuantoDura,cual->free2);
+		printf("[RUND]RunLight TranNum %d free1 %d cuantodura %d cualfree2 %d\n",comando.free2,comando.free1,cuantoDura,comando.free2);
 #endif
 
 	vmstate=VMRUN;
+	//calculate run time = given time - wlk time and yellow time. Anything that is FIXED=0
 	for (int a=0;a<sysLights.numLuces;a++)
 	{
 		if (!sysLights.lasLuces[a].typ)
@@ -1941,19 +1965,21 @@ void runLight(void * pArg)
 		   printf("[WEBD]RunLights Time %d\n",cuantoDura);
 #endif
 
+	   //If positive time send ACK with free1 =0
 	   if (cuantoDura>0)
 	   {
 			if(!sysConfig.clone)
 				sendMsg(ACK,EVERYBODY,0,comando.free2,NULL,0);
 	   }
 	   else
-	   {
+	   { //Negative time, send ACK with free1=1(NAK)
 		   if(!sysConfig.clone)
 			   sendMsg(ACK,EVERYBODY,1,comando.free2,NULL,0); //Negative time, wrong configuration. Notice the 1 in the ACK message
 		   runHandle=NULL;
 		   vTaskDelete(NULL);
 	   }
 
+//Loop thru all lights and their time
 
 	for (int a=0;a<sysLights.numLuces;a++)
 	{
@@ -1975,10 +2001,10 @@ void runLight(void * pArg)
 			int copyOptions=sysLights.lasLuces[a].opt;
 			if (copyOptions>1) //for walk and walk-blink
 			{
-				if (globalWalk)
+				if (globalWalk) //a walk signal is ACTIVE
 					copyOptions-=2;
 				else
-					copyOptions=99; //Skip everything down. WALK button not pressed
+					copyOptions=99; //Skip everything down. WALK button not pressed, so do not execute anything
 			}
 
 			if(copyOptions==0) //Just turn ON
@@ -2002,7 +2028,7 @@ void runLight(void * pArg)
 				}
 #endif
 				delay(demora-10);
-			}
+			} //copyoptions =0
 
 			if(copyOptions==1) //Blink
 			{
@@ -2029,9 +2055,9 @@ void runLight(void * pArg)
 					}
 #endif
 				}
-			}
+			} //copyoptions =1
 		}
-		else
+		else //last light
 		{
 #ifdef DEBUGSYS
 			if(sysConfig.traceflag & (1<<WEBD))
@@ -2056,8 +2082,8 @@ void runLight(void * pArg)
 #endif
 		}
 	}
-	int retry=10;
-
+	int retry=5;
+//send Done and wait for ACK for retry times*200ms max timeout
 	if(!sysConfig.clone)
 	{// If not a clone send DONE for the whole CLONE Group
 		while(retry--)
@@ -2184,6 +2210,110 @@ int create_multicast_ipv4_socket(int port,int ap)
 err:
     close(sock);
     return -1;
+}
+
+void process_cmd_task(void *pArg)
+{
+
+	cmd_struct 			cual;
+
+
+	while(true)
+	{
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<CMDD))
+		printf("[CMDD]Process Cmd(%d) %s towho %d Fromwho %d Node %d Me %d Free1 %d Free2 %d\n",cual.cmd,tcmds[cual.cmd],
+							cual.towho,cual.fromwho,cual.nodeId,sysConfig.whoami,cual.free1,cual.free2);
+#endif
+
+	if(((cual.towho==EVERYBODY) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
+	{
+		show_leds(cual.cmd);
+		entran++;
+
+	   switch (cual.cmd)
+	   {
+		   case ACK:
+			   cmd_ack(cual);
+			   break;
+		   case NAK:
+			   cmd_nak(cual);
+			   break;
+		   case DONE:
+			   cmd_done(cual);
+			   break;
+		   case PING:
+			   cmd_ping(cual);
+			   break;
+		   case PONG:
+			   cmd_pong(cual);
+			   break;
+		   case QUIET:
+			   cmd_quiet(cual);
+			   break;
+		   case NEWID:
+			   cmd_newid(cual);
+			   break;
+		   case RESET:
+			   cmd_reset(cual);
+			   break;
+		   case KILL:
+			   cmd_kill(cual);
+			   break;
+		   case RUN:
+			   cmd_runlight(cual);
+			   break;
+		   case OFF:
+			   cmd_off(cual);
+				break;
+		   case ON:
+			   cmd_on(cual);
+				break;
+		   case RUALIVE:
+			   cmd_are_you_alive(cual);
+				break;
+		   case IMALIVE:
+			   cmd_i_am_alive(cual);
+			   break;
+		   case BLINK:
+			   cmd_blink(cual);
+				break;
+		   case LEDS:
+			   cmd_leds(cual);
+			   break;
+		   case FWARE:
+			   cmd_firmware(cual);
+			   break;
+		   case WALK:
+			   cmd_walk(cual);
+			   break;
+		   case EXECW:
+			   cmd_execute_walk(cual);
+			   break;
+		   case CLONE:
+			   cmd_clone(cual);
+			   break;
+		   case SENDCLONE:
+			   cmd_send_clone(cual);
+			   break;
+		   case LOGIN:
+			   cmd_login(cual);
+			   	   break;
+		   case ALARM:
+			   cmd_alarm(cual);
+			   break;
+		   case ACKL:
+			   cmd_acklogin(cual);
+			   break;
+		   case EMERGENCY:
+			   cmd_emergency(cual);
+			   break;
+		   default:
+			   printf("Invalid incoming Command %d\n",cual.cmd);
+			   break;
+	   }
+	}
+	}
 }
 
 void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
@@ -2801,6 +2931,7 @@ void initVars()
 	strcpy(lookuptable[12].key,"TIMED");
 	strcpy(lookuptable[13].key,"SENDMD");
 	strcpy(lookuptable[14].key,"RUND");
+	strcpy(lookuptable[15].key,"GUARDD");
 
 
 	for (int i=NKEYS/2;i<NKEYS;i++) //Do the - version of trace
@@ -3322,6 +3453,9 @@ void cycleManager(void * pArg)
 	if(sysConfig.traceflag & (1<<RUND))
 		printf("[RUND]DONE %d Free1 %d free2 %d fromwho %d\n",soyYo,comando.free1,comando.free2,comando.fromwho);
 #endif
+
+	// decision if DONE tran# not the same as RUN tran#
+
 				xTimerStop(doneTimer,0); //Stop the timer when OK and useless when Timed out, its stopped
 
 				if(soyYo==intersections.nodeid[voy]) //Its supposed to be for the current Street of the Cycle, intersections.nodeid[voy]
@@ -3380,6 +3514,17 @@ void scheduleChanger( TimerHandle_t xTimer )
 		scheduler.voy++;
 		if (scheduler.voy>scheduler.howmany-1)
 			scheduler.voy=0; //start again from 0
+
+		if(runHandle!=NULL)
+		{
+			vTaskDelete(runHandle);
+			runHandle=NULL;
+		}
+		if(blinkHandle!=NULL)
+		{
+			vTaskDelete(blinkHandle);
+			blinkHandle=NULL;
+		}
 
 		if(cycleHandle!=NULL)
 		{
@@ -3653,9 +3798,13 @@ void write_stats()
 {
 	int q=nvs_set_blob(backhandle,"stats",&internal_stats,sizeof(internal_stats));
 	if (q !=ESP_OK)
-	{
 		printf("Error write Stats Boot %d\n",q);
 
+	else
+	{
+		q = nvs_commit(backhandle);
+		if (q !=ESP_OK)
+			printf("Commit Error Stats %d\n",q);
 	}
 }
 
