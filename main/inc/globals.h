@@ -45,8 +45,8 @@ using namespace std;
  EXTERN esp_ota_handle_t 				update_handle ;
  EXTERN esp_partition_t 				operate_partition;
 
- EXTERN SemaphoreHandle_t 				I2CSem,logSem;
- EXTERN QueueHandle_t 					cola,uart0_queue,logQueue,upQ,downQ,reportQ;
+ EXTERN SemaphoreHandle_t 				I2CSem,logSem,sendSem;
+ EXTERN QueueHandle_t 					cola,uart0_queue,logQueue,upQ,downQ,reportQ,processQ,sendQ;
  EXTERN struct mg_mgr 					mgr;
  EXTERN RESET_REASON 					reboot;
  EXTERN struct mg_send_mqtt_handshake_opts opts;
@@ -71,7 +71,7 @@ using namespace std;
  EXTERN SemaphoreHandle_t 				loginSemaphore,ackSemaphore;
  EXTERN vmstate_type					vmstate;
  EXTERN node_struct 					intersections;
- EXTERN cmd_struct						answer;
+ //EXTERN cmd_struct						answer;
  EXTERN stationGuard_struct				stationTime;
 
  EXTERN string							logText[20],idd,calles[6],spublishTopic,cmdTopic,AP_NameString,nameStr,uidStr,montonUid[5];

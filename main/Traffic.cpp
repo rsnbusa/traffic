@@ -23,6 +23,7 @@ void rxMessage(void * pArg);
 void repeater(void * pArg);
 void blinkLight(void *pArg);
 void controller(void *pArg);
+void sendMsgTask(void *pArg);
 void write_stats();
 
 using namespace std;
@@ -641,6 +642,8 @@ void station_setup(system_event_t *event)
 	if(sysConfig.mode==CLIENT ){
 		xTaskCreate(&login, "login", 4096, NULL, 4, NULL);
 		xTaskCreate(&rxMessage, "rxMulti", 4096, (void*)0, 4, &rxHandle);
+		xTaskCreate(&sendMsgTask, "sendT", 8092, (void*)0, 10, &rxHandle);
+
 	}
 
 }
@@ -898,8 +901,10 @@ esp_err_t wifi_event_handler_Server(void *ctx, system_event_t *event)
 #endif
 		if(!rxmessagef)
 		{
-			printf("Launch Rxmessage %d\n",rxmessagef);
+		//	printf("Launch Rxmessage %d\n",rxmessagef);
 			xTaskCreate(&rxMessage, "rxMulti", 8092, (void*)0, configMAX_PRIORITIES - 1, &rxHandle);
+			xTaskCreate(&sendMsgTask, "sendT", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
+
 		}
 		break;
 
@@ -1040,8 +1045,11 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 			vTaskDelete(blinkHandle);
 		setup_repeater_ap(); //Start the AP
 		//Repeater now active. Start our relayer
-		if(!repeaterConf)
+		if(!repeaterConf){
 			xTaskCreate(&repeater, "repeater", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
+			xTaskCreate(&sendMsgTask, "sendMsg", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
+
+		}
 		connf=repeaterConf=true;
 		break;
 
@@ -1731,7 +1739,7 @@ void cmd_emergency(cmd_struct cual)
 
 }
 
-
+/*
 void process_cmd(cmd_struct cual)
 {
 
@@ -1829,7 +1837,7 @@ void process_cmd(cmd_struct cual)
 	   }
 	}
 }
-
+*/
 void reportT(report_struct *theleds)
 {
 	u32 expected, readleds;
@@ -2220,108 +2228,114 @@ void process_cmd_task(void *pArg)
 
 	while(true)
 	{
+		if( xQueueReceive( processQ, &cual, portMAX_DELAY ))
+		{
+
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))
-		printf("[CMDD]Process Cmd(%d) %s towho %d Fromwho %d Node %d Me %d Free1 %d Free2 %d\n",cual.cmd,tcmds[cual.cmd],
+		printf("[CMDD]TaskProcess Cmd(%d) %s towho %d Fromwho %d Node %d Me %d Free1 %d Free2 %d\n",cual.cmd,tcmds[cual.cmd],
 							cual.towho,cual.fromwho,cual.nodeId,sysConfig.whoami,cual.free1,cual.free2);
 #endif
 
-	if(((cual.towho==EVERYBODY) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
-	{
-		show_leds(cual.cmd);
-		entran++;
+			if(((cual.towho==EVERYBODY) || (cual.towho==sysConfig.whoami)) && cual.nodeId==sysConfig.nodeid)
+			{
+				show_leds(cual.cmd);
+				entran++;
 
-	   switch (cual.cmd)
-	   {
-		   case ACK:
-			   cmd_ack(cual);
-			   break;
-		   case NAK:
-			   cmd_nak(cual);
-			   break;
-		   case DONE:
-			   cmd_done(cual);
-			   break;
-		   case PING:
-			   cmd_ping(cual);
-			   break;
-		   case PONG:
-			   cmd_pong(cual);
-			   break;
-		   case QUIET:
-			   cmd_quiet(cual);
-			   break;
-		   case NEWID:
-			   cmd_newid(cual);
-			   break;
-		   case RESET:
-			   cmd_reset(cual);
-			   break;
-		   case KILL:
-			   cmd_kill(cual);
-			   break;
-		   case RUN:
-			   cmd_runlight(cual);
-			   break;
-		   case OFF:
-			   cmd_off(cual);
-				break;
-		   case ON:
-			   cmd_on(cual);
-				break;
-		   case RUALIVE:
-			   cmd_are_you_alive(cual);
-				break;
-		   case IMALIVE:
-			   cmd_i_am_alive(cual);
-			   break;
-		   case BLINK:
-			   cmd_blink(cual);
-				break;
-		   case LEDS:
-			   cmd_leds(cual);
-			   break;
-		   case FWARE:
-			   cmd_firmware(cual);
-			   break;
-		   case WALK:
-			   cmd_walk(cual);
-			   break;
-		   case EXECW:
-			   cmd_execute_walk(cual);
-			   break;
-		   case CLONE:
-			   cmd_clone(cual);
-			   break;
-		   case SENDCLONE:
-			   cmd_send_clone(cual);
-			   break;
-		   case LOGIN:
-			   cmd_login(cual);
-			   	   break;
-		   case ALARM:
-			   cmd_alarm(cual);
-			   break;
-		   case ACKL:
-			   cmd_acklogin(cual);
-			   break;
-		   case EMERGENCY:
-			   cmd_emergency(cual);
-			   break;
-		   default:
-			   printf("Invalid incoming Command %d\n",cual.cmd);
-			   break;
-	   }
-	}
+			   switch (cual.cmd)
+			   {
+				   case ACK:
+					   cmd_ack(cual);
+					   break;
+				   case NAK:
+					   cmd_nak(cual);
+					   break;
+				   case DONE:
+					   cmd_done(cual);
+					   break;
+				   case PING:
+					   cmd_ping(cual);
+					   break;
+				   case PONG:
+					   cmd_pong(cual);
+					   break;
+				   case QUIET:
+					   cmd_quiet(cual);
+					   break;
+				   case NEWID:
+					   cmd_newid(cual);
+					   break;
+				   case RESET:
+					   cmd_reset(cual);
+					   break;
+				   case KILL:
+					   cmd_kill(cual);
+					   break;
+				   case RUN:
+					   cmd_runlight(cual);
+					   break;
+				   case OFF:
+					   cmd_off(cual);
+						break;
+				   case ON:
+					   cmd_on(cual);
+						break;
+				   case RUALIVE:
+					   cmd_are_you_alive(cual);
+						break;
+				   case IMALIVE:
+					   cmd_i_am_alive(cual);
+					   break;
+				   case BLINK:
+					   cmd_blink(cual);
+						break;
+				   case LEDS:
+					   cmd_leds(cual);
+					   break;
+				   case FWARE:
+					   cmd_firmware(cual);
+					   break;
+				   case WALK:
+					   cmd_walk(cual);
+					   break;
+				   case EXECW:
+					   cmd_execute_walk(cual);
+					   break;
+				   case CLONE:
+					   cmd_clone(cual);
+					   break;
+				   case SENDCLONE:
+					   cmd_send_clone(cual);
+					   break;
+				   case LOGIN:
+					   cmd_login(cual);
+						   break;
+				   case ALARM:
+					   cmd_alarm(cual);
+					   break;
+				   case ACKL:
+					   cmd_acklogin(cual);
+					   break;
+				   case EMERGENCY:
+					   cmd_emergency(cual);
+					   break;
+				   default:
+					   printf("Invalid incoming Command %d\n",cual.cmd);
+					   break;
+			   }
+			}
+		}
 	}
 }
 
+/*
 void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 {
 	int 						sock,err;
     struct in_addr       		localInterface;
     struct sockaddr_in   		groupSock;
     tcpip_adapter_ip_info_t 	ip_info ;
+    cmd_struct					answer;
 
     memset(&answer,0,sizeof(answer));
 
@@ -2403,6 +2417,114 @@ void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
 		blink(SENDLED);
 	close(sock);
 }
+*/
+void sendMsg(int cmd,int aquien,int f1,int f2,char * que,int len)
+{
+    cmd_struct					answer;
+
+    memset(&answer,0,sizeof(answer));
+
+	answer.centinel=THECENTINEL;
+	answer.cmd=cmd;
+	answer.nodeId=sysConfig.nodeid;
+	answer.towho=aquien;
+	answer.fromwho=sysConfig.whoami;
+	answer.lapse=millis();
+	answer.free1=f1;
+	answer.free2=f2;
+//	answer.seqnum++;
+	if(sysConfig.mode==SERVER)
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP,&answer.ipstuff);
+	else
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA,&answer.ipstuff);
+	answer.myip=localIp;
+	time(&answer.theTime);
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<SENDMD))
+		printf("[SENDMD]%s(%d) SendMsg(%s) towho %d Free1 %d Free2 %d\n",sysConfig.stationName,sysConfig.stationid,tcmds[cmd],aquien,f1,f2);
+#endif
+	memset(&answer.buff,0,sizeof(answer.buff));
+	if(que && (len>0)&&(len<sizeof(answer.buff)))
+		memcpy(&answer.buff,que,len);
+
+	salen++;
+//	printf("SendM first stage cmd %d\n",answer.cmd);
+	xQueueSend( sendQ, &answer,( TickType_t ) 0 ); //use a high number to signal Timeout
+}
+
+void sendMsgTask(void *pArg)
+{
+	int 						sock,err;
+    struct in_addr       		localInterface;
+    struct sockaddr_in   		groupSock;
+    tcpip_adapter_ip_info_t 	ip_info ;
+    cmd_struct					comando;
+
+  //  printf("Task Send\n");
+    //when we lost the connection!!! Think how to manage this. STA Ip Assign for Client and Repeater must launch this task. Sta disco must kill it
+	sock = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
+	if (sock < 0)
+	{
+		ESP_LOGE(TAG, "Failed to create socketl. Error %d %s", errno, strerror(errno));
+		vTaskDelete(NULL);
+	}
+	//SET THE MULTICAST ADDRESS AND PORT
+	 memset((char *) &groupSock, 0, sizeof(groupSock));
+	 groupSock.sin_family = AF_INET;
+	 groupSock.sin_addr.s_addr = inet_addr(MULTICAST_IPV4_ADDR);
+	 groupSock.sin_port = htons(UDP_PORT);
+
+	 // send ourselves the same message since we also are a station. Default is 0 so no message. Set it to 1
+	char loopch=1;
+	if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_LOOP,(char *)&loopch, sizeof(loopch)) < 0)
+	{
+		ESP_LOGE(TAG,"Setting IP_MULTICAST_LOOP:%d %s",errno,strerror(errno));
+		close(sock);
+		vTaskDelete(NULL);
+	}
+
+	//set the Interface we want to use.
+//	tcpip_adapter_ip_info_t if_info;
+	if(sysConfig.mode==CLIENT || sysConfig.mode==REPEATER)
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_STA, &ip_info);//repeater and client send to the STA
+	else
+		tcpip_adapter_get_ip_info(TCPIP_ADAPTER_IF_AP, &ip_info); //server sends to the AP
+
+#ifdef DEBUGSYS
+	if(sysConfig.traceflag & (1<<SENDMD))
+		printf("[SENDMD]SendMsg to Ip %d.%d.%d.%d\n",IP2STR(&ip_info.ip));
+#endif
+
+	localInterface.s_addr =(in_addr_t) ip_info.ip.addr;
+	if (setsockopt(sock, IPPROTO_IP, IP_MULTICAST_IF,(char *)&localInterface,sizeof(localInterface)) < 0)
+	{
+		ESP_LOGE(TAG,"Setting local interface %d %s\n",errno,strerror(errno));
+		close(sock);
+		vTaskDelete(NULL);
+	  }
+//	printf("FIn Task Send...wait\n");
+//socket created
+	while(true)
+	{
+	//Send it
+		if( xQueueReceive( sendQ, &comando, portMAX_DELAY ))
+		{
+		//	printf("Send Msg Cmd %d\n",comando.cmd);
+			err=sendto(sock, &comando, sizeof(comando), 0,(struct sockaddr*)&groupSock,sizeof(groupSock));
+			if (err < 0)
+			{
+				ESP_LOGE(TAG, "IPV4 sendto failed. errno: %d %s", errno, strerror(errno));
+				close(sock);
+				vTaskDelete(NULL);
+			}
+			if(sysConfig.showLeds)
+				blink(SENDLED);
+		}
+	}
+
+}
+
 
 void rxMessage(void *pArg)
 {
@@ -2468,7 +2590,10 @@ void rxMessage(void *pArg)
 		if (comando.centinel!=THECENTINEL)
 			printf("Invalid centinel\n");
 		else
-			process_cmd(comando);
+		{
+			xQueueSend( processQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+			//process_cmd(comando);
+		}
 		}
   }
 
@@ -2630,7 +2755,11 @@ again:
 	#endif
 
 						if(comando.towho==sysConfig.stationid || comando.towho==EVERYBODY ) //its for us, you are also a standard light
-							process_cmd(comando);
+						{
+							xQueueSend( processQ, &comando,( TickType_t ) 0 ); //use a high number to signal Timeout
+
+						//	process_cmd(comando);
+						}
 					}
 					else
 						printf("Repeater Invalid Stream %x\n",res);
@@ -2827,6 +2956,8 @@ void initVars()
 	cola = xQueueCreate( 10, sizeof(cmd_struct ) ); //DONE queue
 	upQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Upstream queue
 	downQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Downstream queue
+	processQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Process Commands queue
+	sendQ = xQueueCreate( 20, sizeof( cmd_struct ) ); //Process Commands queue
 	reportQ = xQueueCreate( 10, sizeof( report_struct ) ); //Report queue
 
 	loginSemaphore= xSemaphoreCreateBinary();
@@ -3908,7 +4039,10 @@ if(sysConfig.mode==SERVER)
 
 	vmstate=VMWIFI;
 
-	xTaskCreate(&reportTask,"repTask",8092,NULL, 8, &controllerHandle);									// If we are a Controller
+	//report task for sending Bulbs failure.Not working????
+//	xTaskCreate(&reportTask,"repTask",8092,NULL, 8, &controllerHandle);									// If we are a Controller
+	//Process Cmds received. Queue thems so we set the pace of response
+	xTaskCreate(&process_cmd_task,"process",8092,NULL, configMAX_PRIORITIES - 1, &controllerHandle);									// If we are a Controller
 
 	if(sysConfig.mode==SERVER){
 		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
