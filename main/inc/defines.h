@@ -20,6 +20,7 @@
 #define MAXRETRYRUN							3
 #define TIMESPREAD							500
 #define UIO									5  //GMT local time
+#define STATSSAVE							20
 
 #define MG_LISTEN_ADDR						"80"
 #define MG_TASK_STACK_SIZE 					4096 /* bytes */

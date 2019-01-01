@@ -1919,8 +1919,8 @@ void reportLight(u32 expected, u32 readleds)
 	report_struct theleds;
 	theleds.expected=expected;
 	theleds.readleds=readleds;
-//	xQueueSend( reportQ, &theleds,( TickType_t ) 0 ); //use a high number to signal Timeout
-	reportT(&theleds);
+	xQueueSend( reportQ, &theleds,( TickType_t ) 0 ); //use a high number to signal Timeout
+//	reportT(&theleds);
 }
 
 void runLight(void * pArg)
@@ -3402,8 +3402,6 @@ bool loadScheduler()
 {
 	nextSchedule=0;
 	u32 faltan=86400; //secs in a day. Should be Zero when finished
-	time_t now;
-	time(&now);
 	u32 dur;
 
 	for (int a=0;a<sysSequence.numSequences;a++)
@@ -3412,7 +3410,7 @@ bool loadScheduler()
 		 {
 			 faltan -=dur= (sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq);
 			 scheduler.schNum[nextSchedule]=a; //Sequence number
-			 scheduler.duration[nextSchedule]=dur; //sysSequence.sequences[a].stopSeq-sysSequence.sequences[a].startSeq; //Duration
+			 scheduler.duration[nextSchedule]=dur;//duration
 			 nextSchedule++;
 			 printf("Seq %d WeedDay %x Stop %d Start %d  Son %d\n",a,sysSequence.sequences[a].weekDay,
 			 					sysSequence.sequences[a].stopSeq,sysSequence.sequences[a].startSeq,dur);
@@ -3491,11 +3489,13 @@ void cycleManager(void * pArg)
 
 	doneTimer=xTimerCreate("DoneMsh",1,pdFALSE,( void * ) 0,&doneCallback); //just create it. Time will be changed per Node
 	if(scheduleTimer==NULL)
-		printf("Failed to create timer\n");
+	{
+		printf("Failed to create timer\n");//Non Fatal no Time Out but not good
+	}
 
 	while(true) //will be killed by timer call back every time schedule changes. Try to die gracefully and not abruptly
 	{
-		time((time_t*)&cycleTimestamp);
+		time((time_t*)&cycleTimestamp); //for tracing to see activity in Task Cyclemanager
 #ifdef DEBUGSYS
 		if(sysConfig.traceflag & (1<<TRAFFICD))
 			printf("[TRAFFICD]Send %s %d secs\n",sysConfig.calles[intersections.nodeid[voy]],intersections.timeval[voy]);
@@ -3536,8 +3536,8 @@ void cycleManager(void * pArg)
 						printf("[TRAFFICD]RUN Node %d delay %d\n",intersections.nodeid[voy],intersections.timeval[voy]);
 #endif
 		//Here we go. Send RUN msg to Street
-		//Need an ACK from it so retry X times. globalAckFail will indicate a Wronmg Configuration, less time than required by Street Light
-					// sent 22secs and 22-(walk stuff20+yellow 3)=-1000 --> wrong configuration
+		//Need an ACK from it so retry X times. globalAckFail will indicate a Wrong Configuration, less time than required by Street Light
+		// sent 22secs and 22-(walk stuff20+yellow 3)=-1000 --> wrong configuration
 		int retry=MAXRETRYRUN;
 		intersections.tranNum[voy]++;
 #ifdef DEBUGSYS
@@ -3556,7 +3556,7 @@ void cycleManager(void * pArg)
 			}
 		}
 
-		if (retry==0)
+		if (retry==0) //Failed to get an Ack to the RUN cmd
 		{
 #ifdef DEBUGSYS
 			if(sysConfig.traceflag & (1<<TRAFFICD))
@@ -3567,16 +3567,14 @@ void cycleManager(void * pArg)
 		}
 		else
 		{
-		//	if(intersections.timeval[voy]<5)
-		//		printf("TIMER Fault %d\n",intersections.timeval[voy]);
-
-				//set timer for TIMEOUT in case no response and start the timer
+			//set timer for TIMEOUT in case no response and start the timer. Will fail if could not create the Timer
 			vTimerSetTimerID( doneTimer, ( void * ) 0 ); //clear time out signal from timer
 			xTimerGenericCommand(doneTimer,tmrCOMMAND_CHANGE_PERIOD,intersections.timeval[voy]*FACTOR+gTIMESPREAD,0,0);//MUST wait for done so TIMESPREAD secs more and no timeout
 			xTimerStart(doneTimer,0);
 
 			st=millis(); //To track how long it took from beginning to end
 
+			//Wait for DONE. Its a Done Queue. Check for DONE sync is correct
 			if( xQueueReceive( cola, &comando, portMAX_DELAY )) //two reasons, a Done CMd or a TimeOut
 			{
 				soyYo=comando.fromwho;
@@ -3625,7 +3623,7 @@ aca:
 		{
 			voy=0;
 			vanc++;
-			if(vanc > 20) //every 20 full cycles save stats
+			if(vanc > STATSSAVE) //every X full cycles save stats
 			{
 				write_stats();
 				vanc=0;
@@ -3706,12 +3704,11 @@ void scheduleChanger( TimerHandle_t xTimer )
 
 void controller(void* arg)
 {
-//wait for time flag
 int este,cual;
 time_t now;
 struct tm timeinfo ;
 
-	while(!(timef || rtcf) || !rxtxf) //wait for all Logins and the Timer Flag
+	while(!(timef || rtcf) || !rxtxf) //wait for all Logins and the Timer Flag(sntp or rtc)
 		delay(1000);
 
 	//Load all stored schedules into memory
@@ -3719,13 +3716,14 @@ struct tm timeinfo ;
 	{
 		printf("Scheduler not enabled.\n");
 		vTaskDelete(NULL);
+		//Stop Controller
 	}
 
-
-//	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
+	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
 	now=time(NULL);//-5*3600;
 	localtime_r(&now, &timeinfo);
 	printf("Local time %s",asctime(&timeinfo));
+
 	timeinfo.tm_mday=1;
 	timeinfo.tm_mon=0;
 	timeinfo.tm_year=2000 - 1900;
@@ -3742,9 +3740,9 @@ struct tm timeinfo ;
 			scheduler.voy=a;
 			//restart now-start a duration
 			 u32 pasaron= now-sysSequence.sequences[cual].startSeq;
-			printf("Now %d Start %d Duration %d pasaron %d\n",(u32)now,(u32)sysSequence.sequences[cual].startSeq,scheduler.duration[scheduler.voy],pasaron);
+		//	printf("Now %d Start %d Duration %d pasaron %d\n",(u32)now,(u32)sysSequence.sequences[cual].startSeq,scheduler.duration[scheduler.voy],pasaron);
 			 scheduler.duration[scheduler.voy]-=pasaron;
-			 printf("Final %d\n",scheduler.duration[scheduler.voy]);
+		//	 printf("Final %d\n",scheduler.duration[scheduler.voy]);
 			break;
 		}
 	}
@@ -3763,7 +3761,7 @@ struct tm timeinfo ;
 #endif
 	cycleHandle=NULL;
 
-	if(allCycles.totalTime[cyc]>3)
+	if(allCycles.totalTime[cyc]>3) //the work time is 3 for blink 0 for Stop
 		xTaskCreate(&cycleManager,"cycle",10240,(void*)este, MGOS_TASK_PRIORITY, &cycleHandle);				//Manages all display to LCD
 	else
 	{
@@ -3790,18 +3788,19 @@ struct tm timeinfo ;
 
 void heartBeat(void *pArg)
 {
+	if(sysConfig.keepAlive<10000)
+		sysConfig.keepAlive=10000;
+
 	while(true)
 	{
 		if(kalive )
 			sendMsg(RUALIVE,EVERYBODY,0,0,NULL,0);
-		if(sysConfig.keepAlive<10000)
-			sysConfig.keepAlive=10000;
 		delay(sysConfig.keepAlive);
 	}
 }
 
 void blink_lights(int lon)
-{
+{ //stop the Light
 	while(1)
 	{
 		gpio_set_level((gpio_num_t)WIFILED, 1);
@@ -3843,7 +3842,7 @@ void open_recovery()
 	int err = nvs_open("backup", NVS_READWRITE, &backhandle);
 		if(err!=ESP_OK)
 		{
-			printf("Error opening Backup File\n");
+			printf("Error opening Backup File %d\n",err);
 			return;
 		}
 	backupf=true;
@@ -3854,7 +3853,7 @@ void load_config()
 	int err = nvs_open("config", NVS_READWRITE, &nvshandle);
 	if(err!=ESP_OK)
 	{
-		printf("Error opening NVS File\n");
+		printf("Error opening NVS File %d\n",err);
 		blink_lights(100);
 	}
 	else
@@ -3873,11 +3872,10 @@ void load_config()
 
 void load_others()
 {
-
 	int err = nvs_open("seq", NVS_READWRITE, &seqhandle);
 	if(err!=ESP_OK)
 	{
-		printf("Error opening Seq File\n");
+		printf("Error opening Seq File %d\n",err);
 		blink_lights(500);
 	}
 	else
@@ -3908,7 +3906,7 @@ void load_lights()
 	int err = nvs_open("lights", NVS_READWRITE, &lighthandle);
 	if(err!=ESP_OK)
 	{
-		printf("Error opening Lights File\n");
+		printf("Error opening Lights File %d\n",err);
 		blink_lights(1000);
 	}
 	else
@@ -3930,7 +3928,6 @@ void write_stats()
 	int q=nvs_set_blob(backhandle,"stats",&internal_stats,sizeof(internal_stats));
 	if (q !=ESP_OK)
 		printf("Error write Stats Boot %d\n",q);
-
 	else
 	{
 		q = nvs_commit(backhandle);
@@ -3958,8 +3955,6 @@ void app_main(void)
 {
     esp_err_t err = nvs_flash_init();
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
-        // NVS partition was truncated and needs to be erased
-        // Retry nvs_flash_init
         ESP_ERROR_CHECK(nvs_flash_erase());
         err = nvs_flash_init();
     }
@@ -3991,14 +3986,17 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	nvs_erase_all(nvshandle);
 	nvs_erase_all(seqhandle);
 	nvs_erase_all(lighthandle);
+	nvs_erase_all(backhandle);
 	nvs_commit(seqhandle);
 	nvs_commit(lighthandle);
 	nvs_commit(nvshandle);
+	nvs_commit(backhandle);
 	erase_config();
 }
 
-if(sysConfig.mode==SERVER)
-	load_stats();
+	if(sysConfig.mode==SERVER)
+		load_stats();
+
 	printf("VersionEsp32-1.0.1\n");
 
 	curSSID=sysConfig.lastSSID;
@@ -4009,23 +4007,25 @@ if(sysConfig.mode==SERVER)
 	{
 		initI2C();  			// for Screen
 		initScreen();			// Screen
-		init_temp();		// Temperature sensors
-		initRtc();			//RTC CLock
+		init_temp();			// Temperature sensors
+		initRtc();				// RTC CLock
 	}
 
-	init_log();				// Log file management
-	initPorts();			//Output and Input ports
+	init_log();					// Log file management
+	initPorts();				//Output and Input ports
 
-	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
+//	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 
 	REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 	REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[sysLights.numLuces-1].ioports);//set last light state
 
 	keepAlive=sysConfig.keepAlive;//minute
+
 	//Save new boot count and reset code
 	sysConfig.bootcount++;
 	sysConfig.lastResetCode=reboot;
 	sysLights.failed=0;
+
 	write_to_flash_lights(false);
 	write_to_flash(true);
 
@@ -4034,20 +4034,23 @@ if(sysConfig.mode==SERVER)
 	// Start Main Tasks
 	if(sysConfig.mode==SERVER)
 		xTaskCreate(&timerManager,"dispMgr",10240,NULL, MGOS_TASK_PRIORITY, NULL);				//Manages all display to LCD
+#ifdef DEBUGSYS
 	xTaskCreate(&kbd,"kbd",8192,NULL, MGOS_TASK_PRIORITY, NULL);								// User interface while in development. Erased in RELEASE
-	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);						// Log Manager
+#endif
+	xTaskCreate(&logManager,"log",6144,NULL, MGOS_TASK_PRIORITY, NULL);							// Log Manager
 
 	vmstate=VMWIFI;
 
 	//report task for sending Bulbs failure.Not working????
-//	xTaskCreate(&reportTask,"repTask",8092,NULL, 8, &controllerHandle);									// If we are a Controller
+	xTaskCreate(&reportTask,"repTask",8092,NULL, 8, &controllerHandle);
+
 	//Process Cmds received. Queue thems so we set the pace of response
-	xTaskCreate(&process_cmd_task,"process",8092,NULL, configMAX_PRIORITIES - 1, &controllerHandle);									// If we are a Controller
+	xTaskCreate(&process_cmd_task,"process",8092,NULL, configMAX_PRIORITIES - 1, &controllerHandle);
 
-	if(sysConfig.mode==SERVER){
+	if(sysConfig.mode==SERVER)
 		xTaskCreate(&controller,"controller",10240,NULL, 5, &controllerHandle);									// If we are a Controller
-	}
 
+	//Launch the appropiatte WiFi Handler
 	if(sysConfig.mode==CLIENT)
 			initWiFiSta();
 	if(sysConfig.mode==SERVER)
