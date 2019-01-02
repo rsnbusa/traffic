@@ -8,7 +8,7 @@
 #include "firmware.h"
 using namespace std;
 
-extern void postLog(int code,int code1);
+extern void postLog(int code,int code1,char *mensa);
 extern void delay(uint32_t a);
 
 void startDownload(void *pArg);
@@ -311,7 +311,7 @@ void startDownload(void* pArg)
 		printf( "esp_ota_set_boot_partition failed! err=0x%x\n", err);
 		exit(1);
 	}
-	postLog(FWUPDATE,0);
+//	postLog(FWUPDATE,0);
 	printf("Prepare to restart system!\n");
 	algo="OTA Loaded. Rebooting...";
 	algo="";

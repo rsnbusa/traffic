@@ -78,7 +78,7 @@ using namespace std;
  EXTERN bool 							rxmessagef,llogf,connf,httpf,sntpf,displayf,rxtxf,semaphoresOff,kalive,mqttf,tracef,timef,firmwf,
  	 	 	 	 	 	 	 	 	 	globalWalk,backupf,rtcf,rebootf,loginf,repeaterConf;
  EXTERN float							oldtemp;
- EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz;
+ EXTERN u8								daysInMonth[12],sensors[1][8],numsensors,quiet,nextSchedule,totalConnected,TODAY,globalNode,globalLuz,walk[MAXNODES];
  EXTERN u8               				mesg,diag,horag,oldHorag,oldDiag,oldMesg,lastalign,lastFont,barX[3],barH[3],userNum,sonUid,numLogins,globalAckFail;
  EXTERN u16								binary_file_length,yearg,daysg,FACTOR,FACTOR2,vanconnect,globalDuration,globalLuzDuration,curSSID,burnt[MAXNODES];
  EXTERN u16								gTIMESPREAD;

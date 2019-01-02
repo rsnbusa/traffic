@@ -11,7 +11,7 @@
 #include "driver/adc.h"
 
 const char *TAG = "TFF";
-extern void postLog(int code,int code1);
+extern void postLog(int code,int code1,string mensa);
 extern void timerManager(void *pArg);
 extern void drawBars();
 
@@ -425,8 +425,7 @@ void initialize_sntp(void *args)
 	sntp_init();
 
 	const int retry_count = 10;
-//	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
-//	tzset();
+
 
 	timeinfo.tm_hour=timeinfo.tm_min=timeinfo.tm_sec=0;
 	timeinfo.tm_mday=1;
@@ -445,6 +444,8 @@ void initialize_sntp(void *args)
 		timef=true;
 		vTaskDelete(NULL);
 	}
+	setenv("TZ", "EST5", 1); //UTC is 5 hours ahead for Quito
+	tzset();
 
 	now=now-UIO*3600;
 	timeval tm;
@@ -470,7 +471,7 @@ void initialize_sntp(void *args)
 	time(&sysConfig.lastTime);
 	write_to_flash(true);
 	timef=1;
-	postLog(0,sysConfig.bootcount);
+	postLog(SNTPL,sysConfig.bootcount,"Sntp Time loaded");
 	rtc.setEpoch(now);
 	vTaskDelete(NULL);
 }
@@ -666,6 +667,9 @@ void station_setup_server(system_event_t *event)
 	   gpio_set_level((gpio_num_t)sysLights.defaultLight,1);
    }
 
+	if(!connf)
+		postLog(SERVCONL,0,"ServerWiFiConn");
+
 	connf=true;
 	if(!mqttf)
 	{
@@ -704,6 +708,7 @@ void station_disconnected_server(system_event_t *event)
 	if(!connf)
 		return; //already done this
 
+	postLog(SERVERDL,0,"Server Station Disco");
 	connf=false;
 	gpio_set_level((gpio_num_t)RXLED, 0);
 	gpio_set_level((gpio_num_t)SENDLED, 0);
@@ -757,12 +762,6 @@ void station_disconnected(system_event_t *event)
 		xTaskCreate(&blinkLight, "blink", 1024, (void*)sysLights.defaultLight, (UBaseType_t)3, &blinkHandle); //will get date
 	}
 
-//	if(cycleHandle)
-//	{
-//		vTaskDelete(cycleHandle);
-//		cycleHandle=NULL;
-//	}
-
 		REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 		gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
 
@@ -789,8 +788,6 @@ void station_disconnected(system_event_t *event)
 	if(sysConfig.traceflag & (1<<WIFID))
 		printf("[WIFID]Temp[%d]==%s=\n",curSSID,temp.c_str());
 #endif
-
-//	xTaskCreate(&newSSID,"newssid",4096,(void*)curSSID, MGOS_TASK_PRIORITY, NULL);
 }
 
 esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
@@ -805,6 +802,8 @@ esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
 			printf("[WIFID]Client Got IP\n");
 #endif
 		station_setup(event);
+		if(!connf)
+			postLog(CLIENTIPL,0,"Client Conn");
 		connf=true;
 		break;
 
@@ -836,6 +835,8 @@ esp_err_t wifi_event_handler_client(void *ctx, system_event_t *event)
 			printf("[WIFID]Client STA Disconnected\n");
 #endif
 		station_disconnected(event);
+		if(connf)
+			postLog(CLIENTSTAL,0,"Client Disco");
 		connf=false;
 		esp_wifi_connect();
 		break;
@@ -1046,6 +1047,7 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		setup_repeater_ap(); //Start the AP
 		//Repeater now active. Start our relayer
 		if(!repeaterConf){
+			postLog(REPEATCONL,0,"Repeat Conn");
 			xTaskCreate(&repeater, "repeater", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
 			xTaskCreate(&sendMsgTask, "sendMsg", 8092, (void*)0, configMAX_PRIORITIES - 2, &rxHandle);
 
@@ -1085,6 +1087,8 @@ esp_err_t wifi_event_handler_Repeater(void *ctx, system_event_t *event)
 		if(sysConfig.traceflag & (1<<WIFID))
 			printf("[WIFID]Repeater STA Stopped from Controller\n");
 #endif
+		if(connf)
+			postLog(REPEATSTAL,0,"RepeaterStaDisco");
 		connf=repeaterConf=false;
 		gpio_set_level((gpio_num_t)RXLED, 0);
 		gpio_set_level((gpio_num_t)SENDLED, 0);
@@ -1311,7 +1315,7 @@ void cmd_done(cmd_struct cual)
 			   printf("[TRAFFICD][%d-%d]DONE received from %d->" IPSTR "\n",cual.towho,sysConfig.whoami,cual.fromwho,IP2STR(&cual.ipstuff.ip));
 #endif
 			sendMsg(ACK,cual.fromwho,0,0,NULL,0);
-
+			walk[cual.fromwho]=0;
 		   xQueueSend( cola, ( void * ) &cual,( TickType_t ) 0 );
 	   }
 }
@@ -1538,7 +1542,8 @@ void cmd_walk(cmd_struct cual)
 			printf("[WIFID]Walk In from %d NodeId %d Button %d\n",cual.fromwho,cual.nodeId, cual.free1);
 	#endif
 	//Inform the Street cual.free1;
-	sendMsg(EXECW,cual.free1,0,0,NULL,0);
+		sendMsg(EXECW,cual.free1,0,0,NULL,0);
+		walk[cual.free1]=1;
 	}
 }
 
@@ -1934,8 +1939,6 @@ void runLight(void * pArg)
 	//make local copy so that we are not affected by changes elsewhere
 	memcpy(&comando,pArg,sizeof(comando));
 
-	cuantoDura=comando.free1*FACTOR;
-
 	//Guard check
 	if(((comando.free1>stationTime.avgTime*2) || (comando.free1<stationTime.avgTime/2)) && stationTime.llevo>0)
 		{
@@ -1944,9 +1947,12 @@ void runLight(void * pArg)
 			printf("[GUARDD]RLGuard activated %s In %d Tran %d set to %d Tran %d\n",comando.free1>stationTime.avgTime*2?"High":"Low",comando.free1,
 					comando.free2,stationTime.avgTime,stationTime.lastTran+1);
 #endif
+	   	   postLog(GUARDL,comando.free1,comando.free1>stationTime.avgTime*2?"High Trigger":"Low Trigger");
 	   	   comando.free1=stationTime.avgTime;
 	   	   comando.free2=stationTime.lastTran++;
 		}
+
+		cuantoDura=comando.free1*FACTOR;
 
 		//update runtime station time guard structure
 		stationTime.time+=comando.free1;
@@ -2106,8 +2112,10 @@ void runLight(void * pArg)
 				break;
 		}
 	}
-	if(retry==0)
+	if(retry==0){
 		printf("Failed to received Ack from controller\n");
+		postLog(ACKDONEL,0,"DONE Ack failed");
+	}
 	globalWalk=false;
 	runHandle=NULL;
 	vmstate=VMREADY;
@@ -3110,7 +3118,7 @@ void initVars()
 	strcpy(kbdTable[7],"Id");
 	strcpy(kbdTable[8],"Firmware");
 	strcpy(kbdTable[9],"Logclear");
-	strcpy(kbdTable[10],"Log");
+	strcpy(kbdTable[10],"LogShow");
 	strcpy(kbdTable[11],"Quiet");
 	strcpy(kbdTable[12],"Trace");
 	strcpy(kbdTable[13],"Temperature");
@@ -3209,16 +3217,16 @@ void initVars()
 	httpf=false;
 	//compile_date[] = __DATE__ " " __TIME__;
 
-	logText[0]="System booted";
-	logText[1]="Log CLeared";
-	logText[2]="Firmware Updated";
-	logText[3]="General Error";
-	logText[4]="Door Open-Close";
-	logText[5]="Log";
-	logText[6]="Door reset";
-	logText[7]="Ap Set";
-	logText[8]="Internal";
-	logText[9]="Door Activated";
+	logText[0]="SNTP Time";
+	logText[1]="System Boot";
+	logText[2]="Timer Guard";
+	logText[3]="ServerDiscoSta";
+	logText[4]="Repeater Disco";
+	logText[5]="Client Disco";
+	logText[6]="Client Connect";
+	logText[7]="Repeat Connect";
+	logText[8]="Server Conn Sta";
+	logText[9]="DONE ACK failed";
 	logText[10]="Named";
 	logText[11]="Open canceled";
 	logText[12]="Door Stuck";
@@ -3287,12 +3295,6 @@ int init_log()
 	// Create Queue
 	if(logQueue==NULL)
 		return -1;
-
-	logSem= xSemaphoreCreateBinary();
-	if(logSem)
-		xSemaphoreGive(logSem);  //SUPER important else its born locked
-	else
-		printf("Cant allocate Log Sem\n");
 
 	esp_err_t err = esp_vfs_fat_spiflash_mount(base_path, "storage", &mount_config, &s_wl_handle);
 	if (err != ESP_OK) {
@@ -3512,11 +3514,13 @@ void cycleManager(void * pArg)
 				drawString(64, 20, string(sysConfig.calles[intersections.nodeid[voy]]),24, TEXT_ALIGN_CENTER,NODISPLAY, REPLACE);
 				drawString(90, 0, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				vanv=internal_stats.started[esteCycle][intersections.nodeid[voy]];
-				sprintf(textl,"%d",vanv);
-				drawString(100, 38, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
+				sprintf(textl," %d ",vanv);
+			//	drawString(93, 38, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
+				drawString(64, 51, textl, 10, TEXT_ALIGN_CENTER,NODISPLAY, REPLACE);
+
 				vanv=internal_stats.timeout[esteCycle][intersections.nodeid[voy]];
 				sprintf(textl,"%d",vanv);
-				drawString(110, 20, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
+				drawString(110, 28, textl, 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				display.drawLine(0,18,127,18);
 				display.drawLine(0,50,127,50);
 				display.display();//display everything at once
@@ -4014,8 +4018,6 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	init_log();					// Log file management
 	initPorts();				//Output and Input ports
 
-//	gpio_set_level((gpio_num_t)sysLights.defaultLight, 1);
-
 	REG_WRITE(GPIO_OUT_W1TC_REG, sysLights.outbitsPorts);//clear all set bits
 	REG_WRITE(GPIO_OUT_W1TS_REG, sysLights.lasLuces[sysLights.numLuces-1].ioports);//set last light state
 
@@ -4029,6 +4031,7 @@ if (sysConfig.centinel!=CENTINEL || !gpio_get_level((gpio_num_t)0))
 	write_to_flash_lights(false);
 	write_to_flash(true);
 
+	postLog(BOOTL,reboot,"BOOTED");
 	vmstate=VMBOOT;
 	rxtxf=false; //default stop
 	// Start Main Tasks

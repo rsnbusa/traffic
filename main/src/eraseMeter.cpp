@@ -7,7 +7,7 @@
 
 #include "eraseMeter.h"
 extern void write_to_flash(bool andRecovery);
-extern void postLog(int code, string mensaje);
+extern void postLog(int code, int code1,char *mensaje);
 extern int write_backup_config();
 
 void erase_config() //do the dirty work

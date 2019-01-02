@@ -13,7 +13,7 @@ extern bool set_commonCmd(arg* pArg,bool check);
 extern string getParameter(arg* argument,string cual);
 extern void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
 extern void erase_config();
-extern void postLog(int code,int code1);
+extern void postLog(int code,int code1,char *mensa);
 
 void set_eraseConfig(void * pArg){
 	arg *argument=(arg*)pArg;
@@ -33,7 +33,7 @@ void set_eraseConfig(void * pArg){
 
 	erase_config();
 	algo="Erased Configuration";
-	postLog(DRESET,0);
+//	postLog(DRESET,0);
 	sendResponse( argument->pComm,argument->typeMsg, algo,algo.length(),MINFO,false,false);            // send to someones browser when asked
 #ifdef DEBUGSYS
 	if(sysConfig.traceflag & (1<<CMDD))

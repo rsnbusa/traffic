@@ -704,7 +704,7 @@ void kbd_showlog(uart_port_t uart_num)
 	int add;
 	time_t t;
 	u16 errorcode,code1;
-
+	char mensaje[50];
 	printf("Log:\n");
 	fseek(bitacora,0,SEEK_SET);
 	while(1)
@@ -720,7 +720,10 @@ void kbd_showlog(uart_port_t uart_num)
 		add=fread(&code1,1,2,bitacora);
 		if(add==0)
 			break;
-		printf("Date %s|Code %d|%s|Code1 %d\n",makeDateString(t).c_str(),errorcode,logText[errorcode].c_str(),code1);
+		add=fread(mensaje,1,sizeof(mensaje),bitacora);
+		if(add==0)
+			break;
+		printf("Date %s|Code %d|%s|Code1 %d| %s\n",makeDateString(t).c_str(),errorcode,logText[errorcode].c_str(),code1,mensaje);
 	}
 
 }

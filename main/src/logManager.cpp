@@ -3,28 +3,20 @@
 
 extern string makeDateString(time_t t);
 
-void postLog(int code, int code1)
+void postLog(int code, int code1, string mensa)
 {
 
 	logq mensaje;
-	mensaje.code=code;
-	mensaje.code1=code1;
 	if(!llogf)
 		return;
 
-	if(logSem)
-	{
-		if(	xSemaphoreTake(logSem, portMAX_DELAY))
-		{
-			if (logQueue)
-				if(!xQueueSend(logQueue,&mensaje,1000))
-					printf("Error logging message %d\n",code);
-			xSemaphoreGive(logSem);
-			//	vTaskDelay(1000 /  portTICK_RATE_MS);
-		}
-	}
-	else
-		printf("Log Semaphore failed\n");
+	mensaje.code=code;
+	mensaje.code1=code1;
+	memset(&mensaje.mensaje,0,sizeof(mensaje.mensaje));
+	memcpy(mensaje.mensaje,mensa.c_str(),mensa.length());
+
+	if(!xQueueSend(logQueue,&mensaje,( TickType_t ) 0))
+		printf("Error logging message %d\n",code);
 }
 
 void logManager(void *pArg)
@@ -33,8 +25,7 @@ void logManager(void *pArg)
 	time_t t;
 	while(1)
 	{
-		if(logQueue)
-		{
+
 			if( xQueueReceive( logQueue, &mensaje, portMAX_DELAY ) )
 			{
 				time(&t);
@@ -53,6 +44,9 @@ void logManager(void *pArg)
 				wr=fwrite(&mensaje.code1,1,2,bitacora);
 				if(wr!=2)
 					printf("Failedw log code1\n");
+				wr=fwrite(&mensaje.mensaje,1,sizeof(mensaje.mensaje),bitacora);
+				if(wr!=sizeof(mensaje.mensaje))
+					printf("Failedw log mensaje\n");
 
 
 #ifdef DEBUGSYS
@@ -60,15 +54,14 @@ void logManager(void *pArg)
 					printf("[CMDD]To write date %s code %d code1 %d\n",makeDateString(t).c_str(),mensaje.code,mensaje.code1);
 #endif
 				fclose(bitacora);
+			//	fflush(bitacora);
 				if(errno!=ENOMEM)
 					bitacora = fopen("/spiflash/log.txt", "r+");
 				}
 			}
-		}
 		else
 			vTaskDelay(100 /  portTICK_RATE_MS);
 	}
-
 }
 
 

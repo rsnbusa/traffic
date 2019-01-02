@@ -180,6 +180,8 @@ void timerManager(void *arg) {
 	bool sentLogin=false;
 	u16 tryMqtt=20;
 	float temp=200.0,diff;
+	u32 wasmillis=0;
+
 
 	while(true)
 	{
@@ -232,28 +234,32 @@ void timerManager(void *arg) {
 
 		if (displayf)
 		{
-			temp=DS_get_temp(&sensors[0][0]);
-			diff=temp-oldtemp;
-			if(diff<0.0)
-				diff*=-1.0;
-			if (diff>0.3 && temp<130.0)
+			if(millis()-wasmillis>10000)
 			{
-				if(xSemaphoreTake(I2CSem, portMAX_DELAY))
+				wasmillis=millis();
+				temp=DS_get_temp(&sensors[0][0]);
+				diff=temp-oldtemp;
+				if(diff<0.0)
+					diff*=-1.0;
+				if (diff>0.3 && temp<130.0)
 				{
-					sprintf(textl,"%.02fC\n",temp);
-					drawString(50, 0, "     ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-					drawString(50, 0, string(textl), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
-					oldtemp=temp;
-					xSemaphoreGive(I2CSem);
+					if(xSemaphoreTake(I2CSem, portMAX_DELAY))
+					{
+						sprintf(textl,"%.02fC\n",temp);
+						drawString(50, 0, "     ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+						drawString(50, 0, string(textl), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+						oldtemp=temp;
+						xSemaphoreGive(I2CSem);
+					}
 				}
 			}
 
 			if(xSemaphoreTake(I2CSem, portMAX_DELAY))
 			{
-				sprintf(textd,"%02d/%02d/%04d",timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year);
+				sprintf(textd,"%02d/%02d/%02d   ",timeinfo.tm_mday,timeinfo.tm_mon+1,1900+timeinfo.tm_year-2000);
 				sprintf(textt,"%02d:%02d:%02d",timeinfo.tm_hour,timeinfo.tm_min,timeinfo.tm_sec);
 				drawString(16, 5, mqttf?string("m"):string("   "), 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
-				drawString(0, 51, string(textd), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				drawString(0, 51, string(textd), 10, TEXT_ALIGN_LEFT,NODISPLAY, REPLACE);
 				drawString(86, 51, string(textt), 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 			//	drawString(61, 51, sysConfig.working?"On  ":"Off", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				if(gCycleTime>0)
@@ -261,6 +267,12 @@ void timerManager(void *arg) {
 					sprintf(textd,"   %3ds   ",gCycleTime--);
 					drawString(90, 0, textd, 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
 				}
+				if(walk[globalNode])
+					drawString(10, 28, " W ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+				else
+					drawString(10, 28, "    ", 10, TEXT_ALIGN_LEFT,DISPLAYIT, REPLACE);
+
+
 				xSemaphoreGive(I2CSem);
 			}
 		}

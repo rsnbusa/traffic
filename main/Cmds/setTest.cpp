@@ -4,7 +4,7 @@ using namespace std;
 extern bool set_commonCmd(arg* pArg,bool check);
 extern int getParameter(arg* argument, string cual,char * donde);
 extern void sendResponse(void* comm,int msgTipo,string que,int len,int errorcode,bool withHeaders, bool retain);
-extern void postLog(int code,int code1);
+extern void postLog(int code,int code1,char *mensa);
 extern uint32_t IRAM_ATTR millis();
 
 void set_test(void * pArg){
